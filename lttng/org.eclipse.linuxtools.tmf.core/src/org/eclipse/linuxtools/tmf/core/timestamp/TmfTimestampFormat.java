@@ -7,7 +7,8 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *   Francois Chouinard - Initial API and implementation
+ *     Francois Chouinard - Initial API and implementation
+ *     Marc-Andre Laperle - Add time zone preference
  *******************************************************************************/
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -266,6 +268,17 @@ public class TmfTimestampFormat extends SimpleDateFormat {
     }
 
     /**
+     * The full constructor
+     *
+     * @param pattern the format pattern
+     * @param timeZone the time zone
+     */
+    public TmfTimestampFormat(String pattern, TimeZone timeZone) {
+        setTimeZone(timeZone);
+        applyPattern(pattern);
+    }
+
+    /**
      * The copy constructor
      *
      * @param other the other format pattern
@@ -280,10 +293,11 @@ public class TmfTimestampFormat extends SimpleDateFormat {
 
     /**
      * @param pattern the new default time pattern
+     * @param timeZone the new default time zone
      */
-    public static void setDefaultTimeFormat(final String pattern) {
+    public static void setDefaultTimeFormat(final String pattern, final TimeZone timeZone) {
         fDefaultTimePattern = pattern;
-        fDefaultTimeFormat = new TmfTimestampFormat(fDefaultTimePattern);
+        fDefaultTimeFormat = new TmfTimestampFormat(fDefaultTimePattern, timeZone);
         TmfSignalManager.dispatchSignal(new TmfTimestampFormatUpdateSignal(null));
     }
 
