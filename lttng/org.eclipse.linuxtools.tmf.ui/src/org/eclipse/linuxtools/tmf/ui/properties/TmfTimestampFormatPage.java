@@ -21,6 +21,7 @@ import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.preference.RadioGroupFieldEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimePreferences;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestampFormat;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -176,7 +177,7 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
      * The default constructor
      */
     public TmfTimestampFormatPage() {
-        fPreferenceStore = TmfTimePreferences.getPreferenceStore();
+        fPreferenceStore = getPreferenceStore();
         fTimePreference = TmfTimePreferences.getInstance();
     }
 

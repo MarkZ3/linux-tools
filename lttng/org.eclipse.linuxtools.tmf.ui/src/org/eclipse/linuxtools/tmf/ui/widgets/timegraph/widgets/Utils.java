@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.TimeZone;
 
-import org.eclipse.linuxtools.tmf.ui.properties.TmfTimePreferences;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimePreferences;
 import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.model.ITimeEvent;
 import org.eclipse.linuxtools.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
 import org.eclipse.swt.graphics.Color;
