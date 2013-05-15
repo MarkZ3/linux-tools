@@ -12,6 +12,9 @@
 
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 
@@ -32,6 +35,19 @@ public final class CtfTmfTimestamp extends TmfTimestamp {
      */
     public CtfTmfTimestamp(long timestamp) {
         super(timestamp, ITmfTimestamp.NANOSECOND_SCALE, 0);
+    }
+
+    private CtfTmfTimestamp() {
+    }
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    public static CtfTmfTimestamp newAndSerialize(InputStream stream) throws IOException {
+        CtfTmfTimestamp c = new CtfTmfTimestamp();
+        c.serialize(stream);
+        return c;
     }
 
 }

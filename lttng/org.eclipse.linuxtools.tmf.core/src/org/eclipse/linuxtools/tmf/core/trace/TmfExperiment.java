@@ -15,6 +15,9 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -33,6 +36,7 @@ import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointIndexer;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
@@ -524,6 +528,23 @@ public class TmfExperiment extends TmfTrace implements ITmfEventParser {
         if (signal.getTrace() == this) {
             initializeStreamingMonitor();
         }
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+        return null;
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public int getCheckointSize() {
+        // TODO Auto-generated method stub
+        return 0;
     }
 
 }

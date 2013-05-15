@@ -10,6 +10,12 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
+
 /**
  * The data object to go in a {@link CtfLocation}.
  *
@@ -18,8 +24,8 @@ package org.eclipse.linuxtools.tmf.core.ctfadaptor;
  */
 public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
 
-    private final long timestamp;
-    private final long index;
+    private long timestamp;
+    private long index;
 
     /**
      * @param ts
@@ -107,4 +113,25 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
         return 0;
     }
 
+    /**
+     * @param stream
+     * @throws IOException
+     * @since 3.0
+     */
+    public void serialize(OutputStream stream) throws IOException {
+        IndexHelper.writeLong(stream, timestamp);
+        IndexHelper.writeLong(stream, index);
+
+    }
+
+    /**
+     * @param stream
+     * @throws IOException
+     * @since 3.0
+     */
+    public void serialize(InputStream stream) throws IOException {
+        timestamp = IndexHelper.readLong(stream);
+        index = IndexHelper.readLong(stream);
+
+    }
 }

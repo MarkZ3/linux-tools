@@ -13,6 +13,8 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
@@ -27,6 +29,7 @@ import org.eclipse.linuxtools.tmf.core.statistics.ITmfStatistics;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.ITmfTraceIndexer;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
 /**
@@ -239,6 +242,23 @@ public interface ITmfTrace extends ITmfDataProvider {
     TmfTimeRange getTimeRange();
 
     /**
+     * Set the trace known number of events. This can be quite dynamic
+     * during indexing or for live traces.
+     *
+     * @param nbEvents The number of events
+     * @since 3.0
+     */
+    void setNbEvents(long nbEvents);
+
+    /**
+     * Update the trace events time range
+     *
+     * @param range the new time range
+     * @since 3.0
+     */
+    void setTimeRange(TmfTimeRange range);
+
+    /**
      * @return the timestamp of the first trace event
      * @since 2.0
      */
@@ -358,4 +378,14 @@ public interface ITmfTrace extends ITmfDataProvider {
      */
    String getHostId();
 
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException;
+
+    /**
+     * @since 3.0
+     */
+    public int getCheckointSize();
 }

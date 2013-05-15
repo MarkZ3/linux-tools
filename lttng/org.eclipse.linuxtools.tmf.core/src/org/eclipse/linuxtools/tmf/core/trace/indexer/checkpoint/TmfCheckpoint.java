@@ -14,6 +14,11 @@
 
 package org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
@@ -38,6 +43,8 @@ public class TmfCheckpoint implements ITmfCheckpoint {
 
     // The checkpoint timestamp
     private final ITmfTimestamp fTimestamp;
+
+    private int fRank = 0;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -169,4 +176,39 @@ public class TmfCheckpoint implements ITmfCheckpoint {
         return getClass().getSimpleName() + " [fLocation=" + fLocation + ", fTimestamp=" + fTimestamp + "]";
     }
 
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    @Override
+    public void serialize(OutputStream stream) throws IOException {
+        fLocation.serialize(stream);
+        fTimestamp.serialize(stream);
+        IndexHelper.writeInt(stream, fRank);
+    }
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    @Override
+    public void serialize(InputStream stream) throws IOException {
+        fRank = IndexHelper.readInt(stream);
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void setRank(int rank) {
+        fRank = rank;
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public int getRank() {
+        return fRank;
+    }
 }

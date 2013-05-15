@@ -15,6 +15,12 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
+
 /**
  * A generic timestamp implementation. The timestamp is represented by the
  * tuple { value, scale, precision }. By default, timestamps are scaled in
@@ -65,17 +71,17 @@ public class TmfTimestamp implements ITmfTimestamp {
     /**
      * The timestamp raw value (mantissa)
      */
-    private final long fValue;
+    private long fValue;
 
     /**
      * The timestamp scale (magnitude)
      */
-    private final int fScale;
+    private int fScale;
 
     /**
      * The value precision (tolerance)
      */
-    private final int fPrecision;
+    private int fPrecision;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -335,6 +341,41 @@ public class TmfTimestamp implements ITmfTimestamp {
         catch (ArithmeticException e) {
             return format.format(0);
         }
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void serialize(OutputStream stream) throws IOException {
+        IndexHelper.writeLong(stream, fValue);
+
+        IndexHelper.writeInt(stream, fScale);
+        IndexHelper.writeInt(stream, fPrecision);
+    }
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    @Override
+    public void serialize(InputStream stream) throws IOException {
+        fValue = IndexHelper.readLong(stream);
+        fScale = IndexHelper.readInt(stream);
+        fPrecision = IndexHelper.readInt(stream);
+
+    }
+
+    /**
+     * @param stream
+     * @return
+     * @throws IOException
+     * @since 3.0
+     */
+    public static TmfTimestamp newAndSerialize(InputStream stream) throws IOException {
+        TmfTimestamp t = new TmfTimestamp();
+        t.serialize(stream);
+        return t;
     }
 
 }

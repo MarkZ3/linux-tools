@@ -13,8 +13,10 @@
 
 package org.eclipse.linuxtools.tmf.tests.stubs.trace;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,11 +29,14 @@ import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfEventParser;
 import org.eclipse.linuxtools.tmf.core.trace.TmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.ITmfTraceIndexer;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
 
@@ -345,6 +350,30 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
             return Status.OK_STATUS;
         }
         return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "File does not exist: " + path);
+    }
+
+    @Override
+    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+        ITmfLocation location = TmfLongLocation.newAndserialize(stream);
+        TmfTimestamp timeStamp = TmfTimestamp.newAndSerialize(stream);
+        TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
+        tmfCheckpoint.serialize(stream);
+        return tmfCheckpoint;
+    }
+
+    @Override
+    public int getCheckointSize() {
+        TmfCheckpoint c = new TmfCheckpoint(new TmfTimestamp(0), new TmfLongLocation(0L));
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try {
+            c.serialize(stream);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return stream.size();
     }
 
 }

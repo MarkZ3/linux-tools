@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.List;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
@@ -29,10 +28,11 @@ import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.tests.TmfCoreTestPlugin;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfIndex;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.TmfContext;
-import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointIndexer;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointIndexer;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfEmptyTraceStub;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
 import org.junit.After;
@@ -86,7 +86,7 @@ public class TmfCheckpointIndexTest {
         public TestIndexer(EmptyTestTrace testTrace) {
             super(testTrace, BLOCK_SIZE);
         }
-        public List<ITmfCheckpoint> getCheckpoints() {
+        public ITmfIndex getCheckpoints() {
             return getTraceIndex();
         }
     }
@@ -152,7 +152,7 @@ public class TmfCheckpointIndexTest {
         assertEquals("getStartTime",   1,          fTrace.getStartTime().getValue());
         assertEquals("getEndTime",     NB_EVENTS,  fTrace.getEndTime().getValue());
 
-        List<ITmfCheckpoint> checkpoints = fTrace.getIndexer().getCheckpoints();
+        ITmfIndex checkpoints = fTrace.getIndexer().getCheckpoints();
         int pageSize = fTrace.getCacheSize();
         assertTrue("Checkpoints exist",  checkpoints != null);
         assertEquals("Checkpoints size", NB_EVENTS / BLOCK_SIZE, checkpoints.size());
@@ -176,7 +176,7 @@ public class TmfCheckpointIndexTest {
         assertEquals("getStartTime",   TmfTimestamp.BIG_BANG, fEmptyTrace.getStartTime());
         assertEquals("getEndTime",     TmfTimestamp.BIG_BANG, fEmptyTrace.getEndTime());
 
-        List<ITmfCheckpoint> checkpoints = fEmptyTrace.getIndexer().getCheckpoints();
+        ITmfIndex checkpoints = fEmptyTrace.getIndexer().getCheckpoints();
         int pageSize = fEmptyTrace.getCacheSize();
         assertTrue("Checkpoints exist",  checkpoints != null);
         assertEquals("Checkpoints size", 0, checkpoints.size());
