@@ -13,6 +13,8 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.eclipse.core.runtime.Platform;
@@ -88,25 +90,12 @@ public class TmfTimePreferences {
 
     private static TmfTimePreferences fPreferences;
 
-    // private static IPreferenceStore fPreferenceStore;
-    private static String fTimestampPattern;
-    private static String fIntervalPattern;
-
-    private String fDatimeFormat;
-    private String fDateFormat;
-    private String fTimeFormat;
-    private String fSSecFormat;
-
-    private String fDateFieldSep = "-"; //$NON-NLS-1$
-    private String fTimeFieldSep = ":"; //$NON-NLS-1$
-    private String fSSecFieldSep = " "; //$NON-NLS-1$
-
     // ------------------------------------------------------------------------
     // Constructor
     // ------------------------------------------------------------------------
 
     public static void init() {
-        IEclipsePreferences defaultPreferences = getDefaultPreferences();
+        IEclipsePreferences defaultPreferences = DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID);
         defaultPreferences.put(TmfTimePreferences.DATIME, DATIME_DEFAULT);
         defaultPreferences.put(TmfTimePreferences.SUBSEC, SUBSEC_DEFAULT);
         defaultPreferences.put(TmfTimePreferences.DATE_DELIMITER, DATE_DELIMITER_DEFAULT);
@@ -114,17 +103,14 @@ public class TmfTimePreferences {
         defaultPreferences.put(TmfTimePreferences.SSEC_DELIMITER, SSEC_DELIMITER_DEFAULT);
         defaultPreferences.put(TmfTimePreferences.TIME_ZONE, TIME_ZONE_DEFAULT);
 
-        // Create the singleton and initialize format preferences
+        // Create the singleton and update default formats
         getInstance();
-    }
-
-    private static IEclipsePreferences getDefaultPreferences() {
-        return DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID);
     }
 
     public static synchronized TmfTimePreferences getInstance() {
         if (fPreferences == null) {
             fPreferences = new TmfTimePreferences();
+            TmfTimestampFormat.updateDefaultFormats();
         }
         return fPreferences;
     }
@@ -133,8 +119,6 @@ public class TmfTimePreferences {
      * Local constructor
      */
     private TmfTimePreferences() {
-        initPatterns();
-        setTimePattern(fTimestampPattern, getTimeZone());
     }
 
     // ------------------------------------------------------------------------
@@ -144,83 +128,12 @@ public class TmfTimePreferences {
     /**
      * @return the timestamp pattern
      */
-    public static String getTimePattern() {
-        return fTimestampPattern;
+    public String getTimePattern() {
+        return computeTimePattern(getPreferenceMap(false));
     }
 
-    /**
-     * Sets the timestamp, timezone and updates TmfTimestampFormat
-     *
-     * @param timePattern
-     *            the new timestamp pattern
-     * @param timeZone
-     *            the new time zone
-     */
-    public static void setTimePattern(String timePattern, TimeZone timeZone) {
-        fTimestampPattern = timePattern;
-        TmfTimestampFormat.setDefaultTimeFormat(fTimestampPattern, timeZone);
-        TmfTimestampFormat.setDefaultIntervalFormat(fIntervalPattern);
-    }
-
-    /**
-     * Update the Date field separator
-     *
-     * @param pattern
-     *            the Date field separator
-     */
-    public void setDateFieldSep(String pattern) {
-        fDateFieldSep = pattern;
-    }
-
-    /**
-     * Update the Time field separator
-     *
-     * @param pattern
-     *            the Time field separator
-     */
-    public void setTimeFieldSep(String pattern) {
-        fTimeFieldSep = pattern;
-    }
-
-    /**
-     * Update the Subseconds field separator
-     *
-     * @param pattern
-     *            the Subseconds field separator
-     */
-    public void setSSecFieldSep(String pattern) {
-        fSSecFieldSep = pattern;
-    }
-
-    /**
-     * Update the Date/Time format
-     *
-     * @param pattern
-     *            the Date/Time format
-     */
-    public void setDateTimeFormat(String pattern) {
-        fDatimeFormat = pattern;
-        if (fDatimeFormat == null) {
-            fDatimeFormat = DEFAULT_TIME_PATTERN;
-        }
-        int index = fDatimeFormat.indexOf(' ');
-        if (index != -1) {
-            fDateFormat = fDatimeFormat.substring(0, fDatimeFormat.indexOf(' ') + 1);
-            fTimeFormat = fDatimeFormat.substring(fDateFormat.length());
-        } else {
-            fDateFormat = ""; //$NON-NLS-1$
-            fTimeFormat = fDatimeFormat;
-        }
-    }
-
-    /**
-     * Update the Subseconds format
-     *
-     * @param pattern
-     *            the Subseconds format
-     */
-    public void setSSecFormat(String pattern) {
-        fSSecFormat = pattern;
+    public String getIntervalPattern() {
+        return computeIntervalPattern(getPreferenceMap(false));
     }
 
     /**
@@ -230,41 +143,64 @@ public class TmfTimePreferences {
      */
     public TimeZone getTimeZone() {
         IPreferencesService prefs = Platform.getPreferencesService();
-        return TimeZone.getTimeZone(prefs.get(TIME_ZONE, TimeZone.getDefault().getID(), null));
+        return TimeZone.getTimeZone(prefs.getString(Activator.PLUGIN_ID, TIME_ZONE, TimeZone.getDefault().getID(), null));
     }
 
     // ------------------------------------------------------------------------
     // Operations
     // ------------------------------------------------------------------------
 
-    public void initPatterns() {
-        IPreferencesService prefs = Platform.getPreferencesService();
-        setDateTimeFormat(prefs.get(DATIME, DATIME_DEFAULT, null));
-
-        fSSecFormat = prefs.get(SUBSEC, SUBSEC_DEFAULT, null);
-        fDateFieldSep = prefs.get(DATE_DELIMITER, DATE_DELIMITER_DEFAULT, null);
-        fTimeFieldSep = prefs.get(TIME_DELIMITER, TIME_DELIMITER_DEFAULT, null);
-        fSSecFieldSep = prefs.get(SSEC_DELIMITER, SSEC_DELIMITER_DEFAULT, null);
-
-        updatePatterns();
+    public Map<String, String> getPreferenceMap(boolean defaultValues) {
+        Map<String, String> prefsMap = new HashMap<String, String>();
+        IEclipsePreferences prefs = defaultValues ? DefaultScope.INSTANCE.getNode(Activator.PLUGIN_ID) : InstanceScope.INSTANCE.getNode(Activator.PLUGIN_ID);
+        prefToMap(prefs, prefsMap, SUBSEC, SUBSEC_DEFAULT);
+        prefToMap(prefs, prefsMap, TIME_DELIMITER, TIME_DELIMITER_DEFAULT);
+        prefToMap(prefs, prefsMap, SSEC_DELIMITER, SSEC_DELIMITER_DEFAULT);
+        prefToMap(prefs, prefsMap, DATIME, DATIME_DEFAULT);
+        prefToMap(prefs, prefsMap, DATE_DELIMITER, DATE_DELIMITER_DEFAULT);
+        return prefsMap;
     }
 
-    public void updatePatterns() {
-        String dateFmt = fDateFormat.replaceAll("-", fDateFieldSep); //$NON-NLS-1$
-        String timeFmt = fTimeFormat.replaceAll(":", fTimeFieldSep); //$NON-NLS-1$
-        String ssecFmt = fSSecFormat.replaceAll(" ", fSSecFieldSep); //$NON-NLS-1$
-
-        fTimestampPattern = dateFmt + timeFmt + "." + ssecFmt; //$NON-NLS-1$
-        fIntervalPattern = "TTT." + ssecFmt; //$NON-NLS-1$
+    private static String computeIntervalPattern(Map<String, String> prefsMap) {
+        String ssecFmt = computeSubSecFormat(prefsMap);
+        return "TTT." + ssecFmt; //$NON-NLS-1$
     }
 
-    public void setDefaults() {
-        setDateTimeFormat(TmfTimePreferences.DATIME_DEFAULT);
-        setSSecFormat(TmfTimePreferences.SUBSEC_DEFAULT);
-        setDateFieldSep(TmfTimePreferences.DATE_DELIMITER_DEFAULT);
-        setTimeFieldSep(TmfTimePreferences.TIME_DELIMITER_DEFAULT);
-        setSSecFieldSep(TmfTimePreferences.SSEC_DELIMITER_DEFAULT);
-        updatePatterns();
+    private static String computeSubSecFormat(Map<String, String> prefsMap) {
+        String sSecFormat = prefsMap.get(SUBSEC);
+        String sSecFieldSep = prefsMap.get(SSEC_DELIMITER);
+        String ssecFmt = sSecFormat.replaceAll(" ", sSecFieldSep); //$NON-NLS-1$
+        return ssecFmt;
+    }
+
+    private static void prefToMap(IEclipsePreferences node, Map<String, String> prefsMap, String key, String defaultValue) {
+        prefsMap.put(key, node.get(key, defaultValue));
+    }
+
+    public String computeTimePattern(Map<String, String> prefsMap) {
+        String dateTimeFormat = prefsMap.get(DATIME);
+        if (dateTimeFormat == null) {
+            dateTimeFormat = DEFAULT_TIME_PATTERN;
+        }
+
+        String dateFormat;
+        String timeFormat;
+        int index = dateTimeFormat.indexOf(' ');
+        if (index != -1) {
+            dateFormat = dateTimeFormat.substring(0, dateTimeFormat.indexOf(' ') + 1);
+            timeFormat = dateTimeFormat.substring(dateFormat.length());
+        } else {
+            dateFormat = ""; //$NON-NLS-1$
+            timeFormat = dateTimeFormat;
+        }
+
+        String dateFieldSep = prefsMap.get(DATE_DELIMITER);
+        String timeFieldSep = prefsMap.get(TIME_DELIMITER);
+        String dateFmt = dateFormat.replaceAll("-", dateFieldSep); //$NON-NLS-1$
+        String timeFmt = timeFormat.replaceAll(":", timeFieldSep); //$NON-NLS-1$
+
+        String ssecFmt = computeSubSecFormat(prefsMap);
+        return dateFmt + timeFmt + "." + ssecFmt; //$NON-NLS-1$;
     }
 
 }

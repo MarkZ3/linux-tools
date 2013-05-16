@@ -13,6 +13,7 @@
 
 package org.eclipse.linuxtools.tmf.ui.properties;
 
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.eclipse.jface.preference.ComboFieldEditor;
@@ -152,7 +153,6 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
     private Composite fExampleSection;
     private Text fPatternDisplay;
     private Text fExampleDisplay;
-    private String fTimePattern;
 
     // Timezone section
     private ComboFieldEditor fCombo;
@@ -170,6 +170,8 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
     private String fProperty;
     private String fChangedProperty;
 
+    private Map<String, String> fPreferenceMap;
+
     // ------------------------------------------------------------------------
     // Constructors
     // ------------------------------------------------------------------------
@@ -180,6 +182,7 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
     public TmfTimestampFormatPage() {
         fPreferenceStore = getPreferenceStore();
         fTimePreference = TmfTimePreferences.getInstance();
+        fPreferenceMap = fTimePreference.getPreferenceMap(false);
     }
 
     // ------------------------------------------------------------------------
@@ -281,7 +284,6 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
         fSSecFieldDelim.load();
         fSSecFieldDelim.setPropertyChangeListener(this);
 
-        fTimePreference.initPatterns();
         refresh();
         return fPage;
     }
@@ -295,8 +297,7 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
         fSSecFieldDelim.loadDefault();
         fCombo.loadDefault();
 
-        fTimePreference.setDefaults();
-        fTimePattern = TmfTimePreferences.getTimePattern();
+        fPreferenceMap = TmfTimePreferences.getInstance().getPreferenceMap(true);
         displayExample();
     }
 
@@ -309,7 +310,7 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
         fSSecFieldDelim.store();
         fCombo.store();
 
-        TmfTimePreferences.setTimePattern(fTimePattern, TimeZone.getTimeZone(fPreferenceStore.getString(TmfTimePreferences.TIME_ZONE)));
+        TmfTimestampFormat.updateDefaultFormats();
         displayExample();
     }
 
@@ -358,27 +359,22 @@ public class TmfTimestampFormatPage extends PreferencePage implements IWorkbench
     }
 
     void updatePatterns() {
-        if (TmfTimePreferences.DATIME.equals(fProperty)) {
-            fTimePreference.setDateTimeFormat(fChangedProperty);
-        } else if (TmfTimePreferences.SUBSEC.equals(fProperty)) {
-            fTimePreference.setSSecFormat(fChangedProperty);
-        } else if (TmfTimePreferences.DATE_DELIMITER.equals(fProperty)) {
-            fTimePreference.setDateFieldSep(fChangedProperty);
-        } else if (TmfTimePreferences.TIME_DELIMITER.equals(fProperty)) {
-            fTimePreference.setTimeFieldSep(fChangedProperty);
-        } else if (TmfTimePreferences.SSEC_DELIMITER.equals(fProperty)) {
-            fTimePreference.setSSecFieldSep(fChangedProperty);
+        if (TmfTimePreferences.DATIME.equals(fProperty) ||
+                TmfTimePreferences.SUBSEC.equals(fProperty) ||
+                TmfTimePreferences.DATE_DELIMITER.equals(fProperty) ||
+                TmfTimePreferences.TIME_DELIMITER.equals(fProperty) ||
+                TmfTimePreferences.SSEC_DELIMITER.equals(fProperty)) {
+            fPreferenceMap.put(fProperty, fChangedProperty);
         }
-        fTimePreference.updatePatterns();
-        fTimePattern = TmfTimePreferences.getTimePattern();
     }
 
     private void displayExample() {
         long ts = 1332170682500677380L;
-        fPatternDisplay.setText(fTimePattern);
+        String timePattern = fTimePreference.computeTimePattern(fPreferenceMap);
+        fPatternDisplay.setText(timePattern);
         fPatternDisplay.redraw();
 
-        fExampleDisplay.setText(new TmfTimestampFormat(fTimePattern).format(ts));
+        fExampleDisplay.setText(new TmfTimestampFormat(timePattern).format(ts));
         fExampleDisplay.redraw();
     }
 
