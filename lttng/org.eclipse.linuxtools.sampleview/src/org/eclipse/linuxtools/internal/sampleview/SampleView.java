@@ -1,4 +1,4 @@
-package org.eclipse.linuxtools.internal.signalview;
+package org.eclipse.linuxtools.internal.sampleview;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,16 +21,16 @@ import org.swtchart.Chart;
 import org.swtchart.ISeries.SeriesType;
 import org.swtchart.Range;
 
-public class SignalView extends TmfView {
+public class SampleView extends TmfView {
 
 	private static final String SERIES_NAME = "Series";
 	private static final String FIELD = "foo";
 	private static final String Y_AXIS_TITLE = "Signal";
 	private static final String X_AXIS_TITLE = "Time";
-	private static final String VIEW_NAME = "Signal view";
+	private static final String VIEW_NAME = "Sample view";
 	private Chart chart;
 
-	public SignalView() {
+	public SampleView() {
 		super(VIEW_NAME);
 	}
 

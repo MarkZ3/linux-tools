@@ -5,9 +5,9 @@
          point="org.eclipse.ui.views">
       <view
             category="org.eclipse.linuxtools.tmf.ui.views.category"
-            class="org.eclipse.linuxtools.internal.signalview.SignalView"
-            id="org.eclipse.linuxtools.internal.signalview.view"
-            name="Signal View"
+            class="org.eclipse.linuxtools.internal.sampleview.SampleView"
+            id="org.eclipse.linuxtools.internal.sampleview.view"
+            name="Sample View"
             restorable="true">
       </view>
    </extension>

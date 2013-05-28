@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: MyTmfView
-Bundle-SymbolicName: org.eclipse.linuxtools.signalview;singleton:=true
+Bundle-SymbolicName: org.eclipse.linuxtools.sampleview;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: Eclipse
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6

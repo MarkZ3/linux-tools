@@ -126,7 +126,7 @@ To create a new project with name org.eclipse.linuxtools.tmf.sample.ui select ''
 
 [[Image:images/Screenshot-NewPlug-inProject2.png]]<br>
 
-[[Image:Screenshot-NewPlug-inProject3.png]]<br>
+[[Image:images/Screenshot-NewPlug-inProject3.png]]<br>
 
 === Creating a Sequence Diagram View ===
 
@@ -1021,4 +1021,39 @@ There are other helper files that format given events for views, they are simple
 
 === Limitations ===
 For the moment live trace reading is not supported, there are no sources of traces to test on.
+
+== View Tutorial  ==
+
+This tutorial describes how to create a simple view using the TMF framework and the SWTChart library.
+
+=== Prerequisites ===
+
+The tutorial is based on Eclipse 4.3 (Eclipse Kepler), TMF 2.0.0 and SWTChart 0.7.0. You can install SWTChart by using the Orbit update site. http://download.eclipse.org/tools/orbit/downloads/
+
+=== Creating an Eclipse UI Plug-in ===
+
+To create a new project with name org.eclipse.linuxtools.tmf.sample.ui select '''File -> New -> Project -> Plug-in Development -> Plug-in Project'''. <br>
+[[Image:images/Screenshot-NewPlug-inProject1.png]]<br>
+
+[[Image:images/Screenshot-NewPlug-inProject2.png]]<br>
+
+[[Image:images/Screenshot-NewPlug-inProject3.png]]<br>
+
+=== Creating a View ===
+
+To open the plug-in manifest, double-click on the MANIFEST.MF file. <br>
+[[Image:images/SelectManifest.png]]<br>
+
+Change to the Dependencies tab and select '''Add...''' of the ''Required Plug-ins'' section. A new dialog box will open. Next find plug-in ''org.eclipse.linuxtools.tmf.ui'' and press '''OK'''<br>
+Repeat the same process and add the ''org.swtchart'' plug-in.<br> 
+[[Image:images/AddDependencyTmfUi.png]]<br>
+
+Change to the Extensions tab and select '''Add...''' of the ''All Extension'' section. A new dialog box will open. Find the view extension ''org.eclipse.ui.views'' and press '''Finish'''.<br> 
+[[Image:images/AddViewExtension1.png]]<br>
+ 
+To create a Sequence Diagram View, click the right mouse button. Then select '''New -> view'''<br>
+[[Image:images/AddViewExtension2.png]]<br>
+
+A new view entry has been created. Fill in the fields ''id'' and ''name''. For ''class'' click on the class hyperlink and it will show the New Java Class dialog. Enter the name ''SampleView'' and click Finish. This will fill the ''class'' field.<br>
+[[Image:images/FillSampleViewExtension.png]]<br>
 
