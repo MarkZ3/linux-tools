@@ -12,35 +12,40 @@ import org.eclipse.linuxtools.tmf.core.request.TmfEventRequest;
 import org.eclipse.linuxtools.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceSelectedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.ui.views.TmfView;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.swtchart.Chart;
-import org.swtchart.IAxis;
-import org.swtchart.ISeries;
 import org.swtchart.ISeries.SeriesType;
 import org.swtchart.Range;
 
 public class MyCpuView extends TmfView {
 
+	private static final String SERIES_NAME = "Series";
+	private static final String FIELD = "foo";
+	private static final String Y_AXIS_TITLE = "Signal";
+	private static final String X_AXIS_TITLE = "Time";
+	private static final String VIEW_NAME = "Cpu view";
 	private Chart chart;
 
 	public MyCpuView() {
-		super("Cpu view");
+		super(VIEW_NAME);
 	}
 
 	@Override
 	public void createPartControl(Composite parent) {
 		chart = new Chart(parent, SWT.BORDER);
-		IAxis xAxis = chart.getAxisSet().getXAxis(0);
-		xAxis.getTitle().setText("Time");
-		IAxis yAxis = chart.getAxisSet().getYAxis(0);
-		yAxis.getTitle().setText("Signal");
-
-		ISeries createSeries = chart.getSeriesSet().createSeries(
-				SeriesType.LINE, "Series");
-		createSeries.getLabel().setVisible(false);
+		chart.getTitle().setVisible(false);
+		chart.getAxisSet().getXAxis(0).getTitle().setText(X_AXIS_TITLE);
+		chart.getAxisSet().getYAxis(0).getTitle().setText(Y_AXIS_TITLE);
+		chart.getSeriesSet().createSeries(SeriesType.LINE, SERIES_NAME);
+		
+        ITmfTrace trace = getActiveTrace();
+        if (trace != null) {
+            traceSelected(new TmfTraceSelectedSignal(this, trace));
+        }
 	}
 
 	@TmfSignalHandler
@@ -50,8 +55,8 @@ public class MyCpuView extends TmfView {
 				ExecutionType.BACKGROUND) {
 			ArrayList<Double> xValues = new ArrayList<Double>();
 			ArrayList<Double> yValues = new ArrayList<Double>();
-			private double maxFoo = -1;
-			private double minFoo = Double.MAX_VALUE;
+			private double maxFieldValue = -1;
+			private double minFieldValue = Double.MAX_VALUE;
 			private double maxX = -Double.MAX_VALUE;
 			private double minX = Double.MAX_VALUE;
 
@@ -60,14 +65,14 @@ public class MyCpuView extends TmfView {
 				super.handleData(data);
 				final CtfTmfEvent event = (CtfTmfEvent) data;
 				if (event != null) {
-					ITmfEventField field = data.getContent().getField("foo");
+					ITmfEventField field = data.getContent().getField(FIELD);
 					if (field != null) {
-						Double foo = (Double) field.getValue();
-						yValues.add(foo);
+						Double fieldValue = (Double) field.getValue();
+						yValues.add(fieldValue);
 						double xValue = (double) data.getTimestamp().getValue();
 						xValues.add(xValue);
-						minFoo = Math.min(minFoo, foo);
-						maxFoo = Math.max(maxFoo, foo);
+						minFieldValue = Math.min(minFieldValue, fieldValue);
+						maxFieldValue = Math.max(maxFieldValue, fieldValue);
 						minX = Math.min(minX, xValue);
 						maxX = Math.max(maxX, xValue);
 					}
@@ -76,11 +81,10 @@ public class MyCpuView extends TmfView {
 
 			@Override
 			public void handleSuccess() {
-				if (xValues.isEmpty() || yValues.isEmpty()) {
-					return;
-				}
-				
 				final double x[] = toArray(xValues);
+				for (int i = 0; i < x.length; ++i) {
+					x[i] -= minX;
+				}
 				final double y[] = toArray(yValues);
 
 				Display.getDefault().asyncExec(new Runnable() {
@@ -89,12 +93,13 @@ public class MyCpuView extends TmfView {
 					public void run() {
 						chart.getSeriesSet().getSeries()[0].setXSeries(x);
 						chart.getSeriesSet().getSeries()[0].setYSeries(y);
-						double test = (maxX - minX) / 1;
-						System.out.println("maxx: " + maxX + " minx: " + minX);
-						System.out.println("maxFoo: " + maxFoo + " minFoo: " + minFoo);
-						chart.getAxisSet().getXAxis(0).setRange(new Range(minX, maxX));
-						chart.getAxisSet().getYAxis(0).setRange(new Range(minFoo, maxFoo));
-						chart.getAxisSet().adjustRange();
+						if (!xValues.isEmpty() && !yValues.isEmpty()) {
+							System.out.println("maxx: " + maxX + " minx: " + minX);
+							System.out.println("maxFoo: " + maxFieldValue + " minFoo: " + minFieldValue);
+							chart.getAxisSet().getXAxis(0).setRange(new Range(0, x[x.length - 1]));
+							chart.getAxisSet().getYAxis(0).setRange(new Range(minFieldValue, maxFieldValue));
+							chart.getAxisSet().adjustRange();
+						}
 						chart.redraw();
 						clearValues();
 
@@ -116,7 +121,6 @@ public class MyCpuView extends TmfView {
 			@Override
 			public void handleFailure() {
 				super.handleFailure();
-
 				clearValues();
 			}
 
