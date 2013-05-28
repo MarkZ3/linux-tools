@@ -1,4 +1,4 @@
-package mytmfview;
+package org.eclipse.linuxtools.internal.signalview;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,16 +21,16 @@ import org.swtchart.Chart;
 import org.swtchart.ISeries.SeriesType;
 import org.swtchart.Range;
 
-public class MyCpuView extends TmfView {
+public class SignalView extends TmfView {
 
 	private static final String SERIES_NAME = "Series";
 	private static final String FIELD = "foo";
 	private static final String Y_AXIS_TITLE = "Signal";
 	private static final String X_AXIS_TITLE = "Time";
-	private static final String VIEW_NAME = "Cpu view";
+	private static final String VIEW_NAME = "Signal view";
 	private Chart chart;
 
-	public MyCpuView() {
+	public SignalView() {
 		super(VIEW_NAME);
 	}
 
@@ -135,7 +135,7 @@ public class MyCpuView extends TmfView {
 
 	@Override
 	public void setFocus() {
-		// chart.setFocus();
+		chart.setFocus();
 	}
 
 }
