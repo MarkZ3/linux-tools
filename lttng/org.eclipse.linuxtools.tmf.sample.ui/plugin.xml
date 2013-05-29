@@ -4,7 +4,7 @@
    <extension
          point="org.eclipse.ui.views">
       <view
-            class="org.eclipse.linuxtools.tmf.sample.ui.ViewPart1"
+            class="org.eclipse.linuxtools.tmf.sample.ui.SampleView"
             id="org.eclipse.linuxtools.tmf.sample.ui.view"
             name="Sample View"
             restorable="true">

@@ -7,6 +7,7 @@ Bundle-Activator: org.eclipse.linuxtools.tmf.sample.ui.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.linuxtools.tmf.ui,
- org.swtchart
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+ org.swtchart,
+ org.eclipse.linuxtools.tmf.core
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy

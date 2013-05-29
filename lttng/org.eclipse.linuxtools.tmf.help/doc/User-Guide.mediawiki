@@ -1044,16 +1044,87 @@ To create a new project with name org.eclipse.linuxtools.tmf.sample.ui select ''
 To open the plug-in manifest, double-click on the MANIFEST.MF file. <br>
 [[Image:images/SelectManifest.png]]<br>
 
-Change to the Dependencies tab and select '''Add...''' of the ''Required Plug-ins'' section. A new dialog box will open. Next find plug-in ''org.eclipse.linuxtools.tmf.ui'' and press '''OK'''<br>
-Repeat the same process and add the ''org.swtchart'' plug-in.<br> 
+Change to the Dependencies tab and select '''Add...''' of the ''Required Plug-ins'' section. A new dialog box will open. Next find plug-in ''org.eclipse.linuxtools.tmf.core'' and press '''OK'''<br>
+Following the same steps, add ''org.eclipse.linuxtools.tmf.ui'' and ''org.swtchart''.<br> 
 [[Image:images/AddDependencyTmfUi.png]]<br>
 
 Change to the Extensions tab and select '''Add...''' of the ''All Extension'' section. A new dialog box will open. Find the view extension ''org.eclipse.ui.views'' and press '''Finish'''.<br> 
 [[Image:images/AddViewExtension1.png]]<br>
  
-To create a Sequence Diagram View, click the right mouse button. Then select '''New -> view'''<br>
+To create a view, click the right mouse button. Then select '''New -> view'''<br>
 [[Image:images/AddViewExtension2.png]]<br>
 
-A new view entry has been created. Fill in the fields ''id'' and ''name''. For ''class'' click on the class hyperlink and it will show the New Java Class dialog. Enter the name ''SampleView'' and click Finish. This will fill the ''class'' field.<br>
+A new view entry has been created. Fill in the fields ''id'' and ''name''. For ''class'' click on the class hyperlink and it will show the New Java Class dialog. Enter the name ''SampleView'', change the superclass to ''TmfView'' and click Finish. This will fill the ''class'' field.<br>
 [[Image:images/FillSampleViewExtension.png]]<br>
 
+This will generate the following code:
+
+<pre>
+package org.eclipse.linuxtools.tmf.sample.ui;
+
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.ui.part.ViewPart;
+
+public class SampleView extends ViewPart {
+
+	public SampleView() {
+		// TODO Auto-generated constructor stub
+	}
+
+	@Override
+	public void createPartControl(Composite parent) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void setFocus() {
+		// TODO Auto-generated method stub
+
+	}
+
+}
+</pre>
+
+First, we can add an empty chart to the view and initialize some of its components.
+
+<pre>
+	private static final String SERIES_NAME = "Series";
+	private static final String Y_AXIS_TITLE = "Signal";
+	private static final String X_AXIS_TITLE = "Time";
+	private static final String VIEW_ID = "org.eclipse.linuxtools.tmf.sample.ui.view";
+	private Chart chart;
+	
+	public SampleView() {
+		super(VIEW_ID);
+	}
+
+	@Override
+	public void createPartControl(Composite parent) {
+		chart = new Chart(parent, SWT.BORDER);
+		chart.getTitle().setVisible(false);
+		chart.getAxisSet().getXAxis(0).getTitle().setText(X_AXIS_TITLE);
+		chart.getAxisSet().getYAxis(0).getTitle().setText(Y_AXIS_TITLE);
+		chart.getSeriesSet().createSeries(SeriesType.LINE, SERIES_NAME);
+	}
+</pre>
+
+The view is prepared. Run the Example. To launch the an Eclipse Application select the ''Overview'' tab and click on '''Launch an Eclipse Application'''<br>
+[[Image:images/RunEclipseApplication.png]]<br>
+
+A new Eclipse application window will show. In the new window go to '''Windows -> Show View -> Other... -> Other -> Sample View'''.<br>
+[[Image:images/ShowViewOther.png]]<br>
+
+You should now see a view containing an empty chart<br>
+[[Image:images/EmptySampleView.png]]<br>
+
+We would like to populate the view when a trace is selected. To achieve this, we can use a signal hander which is specified with the '''@TmfSignalHandler''' annotation.
+
+<pre>
+	@TmfSignalHandler
+	public void traceSelected(final TmfTraceSelectedSignal signal) {
+		
+	}
+</pre>
+
+Then we need to actually gather data from the trace. This is done 
