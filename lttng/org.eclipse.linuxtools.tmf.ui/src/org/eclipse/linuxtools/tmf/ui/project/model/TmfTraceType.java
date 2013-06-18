@@ -28,7 +28,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.parsers.custom.CustomTxtTrace;
 import org.eclipse.linuxtools.internal.tmf.ui.parsers.custom.CustomTxtTraceDefinition;
+import org.eclipse.linuxtools.internal.tmf.ui.parsers.custom.CustomXmlTrace;
 import org.eclipse.linuxtools.internal.tmf.ui.parsers.custom.CustomXmlTraceDefinition;
 import org.eclipse.linuxtools.tmf.core.TmfCommonConstants;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
@@ -529,4 +531,45 @@ public final class TmfTraceType {
         }
         return null;
     }
+
+    /**
+     * Is the trace a custom (user-defined) trace type. These are the traces
+     * like : text and xml defined by the custom trace wizard.
+     *
+     * @param traceType
+     *            the trace type in human form (category:name)
+     * @return true if the trace is a custom type
+     * @since 2.1
+     */
+    public static boolean isCustomTrace(String traceType) {
+        final boolean startsWithTxt = traceType.startsWith(TmfTraceType.CUSTOM_TXT_CATEGORY);
+        final boolean startsWithXML = traceType.startsWith(TmfTraceType.CUSTOM_XML_CATEGORY);
+        return (startsWithTxt || startsWithXML);
+    }
+
+    /**
+     * Gets the custom trace type ID from the custom trace name
+     *
+     * @param traceType
+     *            The trace type in human form (category:name)
+     * @return the trace type ID or null if the trace is not a custom one
+     * @since 2.1
+     */
+    public static String getCustomTraceTypeId(String traceType) {
+        String traceTypeId = null;
+
+        // do custom trace stuff here
+        String traceTypeToken[] = traceType.split(":", 2); //$NON-NLS-1$
+        if (traceTypeToken.length == 2) {
+            final boolean startsWithTxt = traceType.startsWith(TmfTraceType.CUSTOM_TXT_CATEGORY);
+            final boolean startsWithXML = traceType.startsWith(TmfTraceType.CUSTOM_XML_CATEGORY);
+            if (startsWithTxt) {
+                traceTypeId = CustomTxtTrace.class.getCanonicalName() + SEPARATOR + traceTypeToken[1];
+            } else if (startsWithXML) {
+                traceTypeId = CustomXmlTrace.class.getCanonicalName() + SEPARATOR + traceTypeToken[1];
+            }
+        }
+        return traceTypeId;
+    }
+
 }

@@ -31,6 +31,24 @@ public class Messages extends NLS {
     public static String Application_WorkspaceRootNotExistError;
     /** Error message if workspace root is write protected */
     public static String Application_WorkspaceRootPermissionError;
+    /** Malformed command */
+    public static String CliParser_MalformedCommand;
+    /** Unkown command */
+    public static String CliParser_UnknownCommand;
+    /** Select trace type title */
+    public static String OpenDirHandler_SelectTraceType;
+    /** Error opening a trace */
+    public static String OpenTraceHelper_ErrorOpeningTrace;
+    /** Could not link trace */
+    public static String OpenTraceHelper_LinkFailed;
+    /** No trace type match */
+    public static String OpenTraceHelper_NoTraceTypeMatch;
+    /** Open Error */
+    public static String OpenTraceHelper_OpenError;
+    /** Open Error */
+    public static String OpenTraceHelper_OpenTraceError;
+    /** Select trace file */
+    public static String OpenFileHandler_SelectTraceFile;
 
     static {
         // initialize resource bundle

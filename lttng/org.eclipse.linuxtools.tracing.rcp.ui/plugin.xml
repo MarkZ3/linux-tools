@@ -45,16 +45,34 @@
             </property>
       </product>
    </extension>
-   
-   -->
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            categoryId="org.eclipse.ui.category.file"
+            defaultHandler="org.eclipse.linuxtools.internal.tracing.rcp.ui.commands.OpenFileHandler"
+            description="%command.OpenFile.description"
+            id="org.eclipse.linuxtools.lttng2.rcp.ui.openFile"
+            name="%command.OpenFile.name">
+      </command>
+      <command
+            categoryId="org.eclipse.ui.category.file"
+            defaultHandler="org.eclipse.linuxtools.internal.tracing.rcp.ui.commands.OpenDirHandler"
+            description="%command.OpenDirectory.description"
+            id="org.eclipse.linuxtools.lttng2.rcp.ui.openDir"
+            name="%command.OpenDirectory.name">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+   </extension>
    <extension point="org.eclipse.ui.activities">
-      <activity name="Tracine RCP"                    id="org.eclipse.linuxtools.internal.tracing.rcp.ui"      description="Tracing RCP" />
-      <activity name="Unwanted Java Perspective"      id="org.eclipse.unwantedJavaPerspective"     description="" />
-      <activity name="Unwanted Team Perspective"      id="org.eclipse.unwantedTeamPerspective"     description="" />
-      <activity name="Unwanted Debug Perspective"     id="org.eclipse.unwantedDebugPerspective"    description="" />
-      <activity name="Unwanted PluginDev Perspective" id="org.eclipse.unwantedPluginDevPerspective" description="" />      
-      <activity name="Unwanted Resource Perspective"  id="org.eclipse.unwantedResourcePerspective"  description="" />
-      <activity name="Unwanted Search Perspective"  id="org.eclipse.unwantedSearch"  description="" />
+      <activity name="%activity.name"                    id="org.eclipse.linuxtools.internal.tracing.rcp.ui"      description="%activity.description" />
+      <activity name="%activity.name.0"      id="org.eclipse.unwantedJavaPerspective"     description="%activity.description.0" />
+      <activity name="%activity.name.1"      id="org.eclipse.unwantedTeamPerspective"     description="%activity.description.1" />
+      <activity name="%activity.name.2"     id="org.eclipse.unwantedDebugPerspective"    description="%activity.description.2" />
+      <activity name="%activity.name.3" id="org.eclipse.unwantedPluginDevPerspective" description="%activity.description.3" />
+      <activity name="%activity.name.4"  id="org.eclipse.unwantedResourcePerspective"  description="%activity.description.4" />
+      <activity name="%activity.name.5"  id="org.eclipse.unwantedSearch"  description="%activity.description.5" />
       <activityPatternBinding activityId="org.eclipse.linuxtools.internal.tracing.rcp.ui"      pattern="org\.eclipse\.linuxtools.*" />
       <activityPatternBinding activityId="org.eclipse.unwantedJavaPerspective"     pattern="org\.eclipse\.jdt.*" />
       <activityPatternBinding activityId="org.eclipse.unwantedTeamPerspective"     pattern="org\.eclipse\.team.*" />
@@ -71,7 +89,20 @@
          <menu
                id="org.eclipse.linuxtools.tracing.rcp.ui.menuFile"
                label="%menu.main.file"
-               mnemonic="F">
+               mnemonic="%menu.mnemonic">
+            <menu
+                  label="%menu.label">
+               <command
+                     commandId="org.eclipse.linuxtools.lttng2.rcp.ui.openFile"
+                     label="%command.OpenFile.label"
+                     style="push">
+               </command>
+               <command
+                     commandId="org.eclipse.linuxtools.lttng2.rcp.ui.openDir"
+                     label="%command.OpenDirectory.label"
+                     style="push">
+               </command>
+            </menu>
             <command
                   commandId="org.eclipse.ui.file.restartWorkbench"
                   style="push">
@@ -128,7 +159,7 @@
          <menu
                id="org.eclipse.linuxtools.tracing.rcp.ui.menuhelp"
                label="%menu.main.help"
-               mnemonic="H">
+               mnemonic="%menu.mnemonic.0">
             <command
                   commandId="org.eclipse.ui.help.helpContents"
                   style="push">
