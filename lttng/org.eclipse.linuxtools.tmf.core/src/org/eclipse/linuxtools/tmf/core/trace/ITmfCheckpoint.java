@@ -13,6 +13,10 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 
 /**
@@ -48,5 +52,17 @@ public interface ITmfCheckpoint extends Comparable<ITmfCheckpoint> {
 
     @Override
     int compareTo(ITmfCheckpoint checkpoint);
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    void serialize(OutputStream stream) throws IOException;
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    void serialize(InputStream stream) throws IOException;
 
 }

@@ -12,6 +12,9 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.TmfLocation;
 
@@ -119,6 +122,24 @@ public final class CtfLocation extends TmfLocation {
             return getClass().getSimpleName() + " [INVALID]"; //$NON-NLS-1$
         }
         return super.toString();
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void serialize(OutputStream stream) {
+        // TODO Auto-generated method stub
+
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void serialize(InputStream stream) {
+        // TODO Auto-generated method stub
+
     }
 
 }

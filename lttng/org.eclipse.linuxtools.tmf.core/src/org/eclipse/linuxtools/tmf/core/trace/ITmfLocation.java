@@ -13,6 +13,9 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * The generic trace location in TMF.
  * <p>
@@ -38,5 +41,14 @@ public interface ITmfLocation {
      * @since 2.0
      */
     Comparable<?> getLocationInfo();
+
+    /**
+     * @since 3.0
+     */
+    void serialize(OutputStream stream);
+    /**
+     * @since 3.0
+     */
+    void serialize(InputStream stream);
 
 }

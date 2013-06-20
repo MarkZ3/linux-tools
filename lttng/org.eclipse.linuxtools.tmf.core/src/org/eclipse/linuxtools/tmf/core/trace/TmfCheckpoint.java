@@ -14,6 +14,10 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 
 /**
@@ -166,6 +170,26 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     @SuppressWarnings("nls")
     public String toString() {
         return getClass().getSimpleName() + " [fLocation=" + fLocation + ", fTimestamp=" + fTimestamp + "]";
+    }
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    @Override
+    public void serialize(OutputStream stream) throws IOException {
+        fLocation.serialize(stream);
+        fTimestamp.serialize(stream);
+    }
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    @Override
+    public void serialize(InputStream stream) throws IOException {
+        fLocation.serialize(stream);
+        fTimestamp.serialize(stream);
     }
 
 }

@@ -12,6 +12,9 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * A concrete implementation of TmfLocation based on Long:s
  *
@@ -41,6 +44,24 @@ public final class TmfLongLocation extends TmfLocation {
     @Override
     public Long getLocationInfo() {
         return (Long) super.getLocationInfo();
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void serialize(OutputStream stream) {
+        // TODO Auto-generated method stub
+
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void serialize(InputStream stream) {
+        // TODO Auto-generated method stub
+
     }
 
 }

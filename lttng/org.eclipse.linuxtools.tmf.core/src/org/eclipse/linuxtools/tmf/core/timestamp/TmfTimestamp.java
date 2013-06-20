@@ -15,6 +15,10 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * A generic timestamp implementation. The timestamp is represented by the
  * tuple { value, scale, precision }. By default, timestamps are scaled in
@@ -65,17 +69,17 @@ public class TmfTimestamp implements ITmfTimestamp {
     /**
      * The timestamp raw value (mantissa)
      */
-    private final long fValue;
+    private long fValue;
 
     /**
      * The timestamp scale (magnitude)
      */
-    private final int fScale;
+    private int fScale;
 
     /**
      * The value precision (tolerance)
      */
-    private final int fPrecision;
+    private int fPrecision;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -335,6 +339,45 @@ public class TmfTimestamp implements ITmfTimestamp {
         catch (ArithmeticException e) {
             return format.format(0);
         }
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void serialize(OutputStream stream) throws IOException {
+        stream.write((byte) (fValue >> 56 ));
+        stream.write((byte) (fValue >> 48 ));
+        stream.write((byte) (fValue >> 40 ));
+        stream.write((byte) (fValue >> 32 ));
+        stream.write((byte) (fValue >> 24 ));
+        stream.write((byte) (fValue >> 16 ));
+        stream.write((byte) (fValue >> 8 ));
+        stream.write((byte) fValue);
+
+        stream.write((byte) fScale);
+        stream.write((byte) fPrecision);
+    }
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    @Override
+    public void serialize(InputStream stream) throws IOException {
+        byte arr[] = new byte[8];
+        stream.read(arr);
+        int idx = 0;
+        fValue = ((((long) arr[idx] & 0xff) << 56) |
+                (((long) arr[++idx] & 0xff) << 48) |
+                (((long) arr[++idx] & 0xff) << 40) |
+                (((long) arr[++idx] & 0xff) << 32) |
+                (((long) arr[++idx] & 0xff) << 24) |
+                (((long) arr[++idx] & 0xff) << 16) |
+                (((long) arr[++idx] & 0xff) <<  8) |
+                (((long) arr[++idx] & 0xff) <<  0));
+        // TODO Auto-generated method stub
+
     }
 
 }
