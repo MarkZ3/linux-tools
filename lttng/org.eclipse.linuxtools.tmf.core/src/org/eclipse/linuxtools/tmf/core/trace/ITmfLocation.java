@@ -13,6 +13,7 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -43,12 +44,15 @@ public interface ITmfLocation {
     Comparable<?> getLocationInfo();
 
     /**
+     * @throws IOException
      * @since 3.0
      */
-    void serialize(OutputStream stream);
+    void serialize(OutputStream stream) throws IOException;
     /**
+     * @param stream
+     * @throws IOException
      * @since 3.0
      */
-    void serialize(InputStream stream);
+    void serialize(InputStream stream) throws IOException;
 
 }

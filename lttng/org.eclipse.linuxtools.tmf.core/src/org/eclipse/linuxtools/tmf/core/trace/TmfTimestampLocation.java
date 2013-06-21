@@ -12,6 +12,7 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -49,21 +50,22 @@ public final class TmfTimestampLocation extends TmfLocation {
     }
 
     /**
+     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) {
-        // TODO Auto-generated method stub
+    public void serialize(OutputStream stream) throws IOException {
+        getLocationInfo().serialize(stream);
 
     }
 
     /**
+     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) {
-        // TODO Auto-generated method stub
-
+    public void serialize(InputStream stream) throws IOException {
+        getLocationInfo().serialize(stream);
     }
 
 }

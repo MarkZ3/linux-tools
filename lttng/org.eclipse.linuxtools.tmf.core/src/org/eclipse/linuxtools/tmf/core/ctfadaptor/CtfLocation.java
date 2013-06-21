@@ -12,10 +12,12 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
 import org.eclipse.linuxtools.tmf.core.trace.TmfLocation;
 
 /**
@@ -50,6 +52,10 @@ public final class CtfLocation extends TmfLocation {
      */
     public CtfLocation(final ITmfTimestamp timestamp) {
         this(timestamp.getValue(), 0);
+    }
+
+    private CtfLocation() {
+        this(Long.valueOf(0), Long.valueOf(0));
     }
 
     /**
@@ -128,8 +134,8 @@ public final class CtfLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) {
-        // TODO Auto-generated method stub
+    public void serialize(OutputStream stream) throws IOException {
+        getLocationInfo().serialize(stream);
 
     }
 
@@ -137,9 +143,18 @@ public final class CtfLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) {
-        // TODO Auto-generated method stub
-
+    public void serialize(InputStream stream) throws IOException {
+        getLocationInfo().serialize(stream);
     }
+
+    /**
+     * @since 3.0
+     */
+    public static ITmfLocation newAndserialize(InputStream stream) throws IOException {
+        CtfLocation c = new CtfLocation();
+        c.serialize(stream);
+        return c;
+    }
+
 
 }

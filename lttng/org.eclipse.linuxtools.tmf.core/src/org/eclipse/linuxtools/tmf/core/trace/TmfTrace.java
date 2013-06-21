@@ -155,7 +155,7 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
         super();
         fCacheSize = (cacheSize > 0) ? cacheSize : ITmfTrace.DEFAULT_TRACE_CACHE_SIZE;
         fStreamingInterval = interval;
-        fIndexer = (indexer != null) ? indexer : new TmfCheckpointIndexer(this, fCacheSize);
+        fIndexer = (indexer != null) ? indexer : new TmfPersistentIndexer(this, fCacheSize);
         fParser = parser;
         initialize(resource, path, type);
     }
@@ -173,7 +173,7 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
         }
         fCacheSize = trace.getCacheSize();
         fStreamingInterval = trace.getStreamingInterval();
-        fIndexer = new TmfCheckpointIndexer(this);
+        fIndexer = new TmfPersistentIndexer(this);
         fParser = trace.fParser;
         initialize(trace.getResource(), trace.getPath(), trace.getEventType());
     }
@@ -184,7 +184,7 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
 
     @Override
     public void initTrace(final IResource resource, final String path, final Class<? extends ITmfEvent> type) throws TmfTraceException {
-        fIndexer = new TmfCheckpointIndexer(this, fCacheSize);
+        fIndexer = new TmfPersistentIndexer(this, fCacheSize);
         initialize(resource, path, type);
     }
 

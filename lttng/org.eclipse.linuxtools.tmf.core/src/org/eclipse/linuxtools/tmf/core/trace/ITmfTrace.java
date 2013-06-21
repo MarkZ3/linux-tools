@@ -13,6 +13,8 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
@@ -339,4 +341,10 @@ public interface ITmfTrace extends ITmfDataProvider {
      * @since 2.0
      */
     ITmfTimestamp getInitialRangeOffset();
+    
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException;
 }

@@ -15,6 +15,7 @@ package org.eclipse.linuxtools.tmf.tests.stubs.trace;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,6 +28,7 @@ import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfEventParser;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
@@ -372,6 +374,12 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
             return Status.OK_STATUS;
         }
         return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "File does not exist: " + path);
+    }
+
+    @Override
+    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

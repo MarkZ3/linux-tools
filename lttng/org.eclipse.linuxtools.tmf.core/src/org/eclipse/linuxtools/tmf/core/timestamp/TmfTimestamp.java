@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
+
 /**
  * A generic timestamp implementation. The timestamp is represented by the
  * tuple { value, scale, precision }. By default, timestamps are scaled in
@@ -346,17 +348,10 @@ public class TmfTimestamp implements ITmfTimestamp {
      */
     @Override
     public void serialize(OutputStream stream) throws IOException {
-        stream.write((byte) (fValue >> 56 ));
-        stream.write((byte) (fValue >> 48 ));
-        stream.write((byte) (fValue >> 40 ));
-        stream.write((byte) (fValue >> 32 ));
-        stream.write((byte) (fValue >> 24 ));
-        stream.write((byte) (fValue >> 16 ));
-        stream.write((byte) (fValue >> 8 ));
-        stream.write((byte) fValue);
+        IndexHelper.writeLong(stream, fValue);
 
-        stream.write((byte) fScale);
-        stream.write((byte) fPrecision);
+        IndexHelper.writeInt(stream, fScale);
+        IndexHelper.writeInt(stream, fPrecision);
     }
 
     /**
@@ -365,18 +360,9 @@ public class TmfTimestamp implements ITmfTimestamp {
      */
     @Override
     public void serialize(InputStream stream) throws IOException {
-        byte arr[] = new byte[8];
-        stream.read(arr);
-        int idx = 0;
-        fValue = ((((long) arr[idx] & 0xff) << 56) |
-                (((long) arr[++idx] & 0xff) << 48) |
-                (((long) arr[++idx] & 0xff) << 40) |
-                (((long) arr[++idx] & 0xff) << 32) |
-                (((long) arr[++idx] & 0xff) << 24) |
-                (((long) arr[++idx] & 0xff) << 16) |
-                (((long) arr[++idx] & 0xff) <<  8) |
-                (((long) arr[++idx] & 0xff) <<  0));
-        // TODO Auto-generated method stub
+        fValue = IndexHelper.readLong(stream);
+        fScale = IndexHelper.readInt(stream);
+        fPrecision = IndexHelper.readInt(stream);
 
     }
 
