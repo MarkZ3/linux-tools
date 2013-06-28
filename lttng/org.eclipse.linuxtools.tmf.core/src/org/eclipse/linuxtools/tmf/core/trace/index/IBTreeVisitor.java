@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
  * @author Doug Schaefer
  *
  * The visitor visits all records where compare returns 0.
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
 public interface IBTreeVisitor {

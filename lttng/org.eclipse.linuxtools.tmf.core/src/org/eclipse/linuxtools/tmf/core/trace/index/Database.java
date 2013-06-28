@@ -371,7 +371,7 @@ public class Database {
 			 * the max size is exceeded, there are lots of errors.
 			 */
 			if (address >= MAX_DB_SIZE) {
-				Object bindings[] = { this.getLocation().getAbsolutePath(), MAX_DB_SIZE };
+//				Object bindings[] = { this.getLocation().getAbsolutePath(), MAX_DB_SIZE };
 //				throw new CoreException(new Status(IStatus.ERROR, CCorePlugin.PLUGIN_ID,
 //						CCorePlugin.STATUS_PDOM_TOO_LARGE, NLS.bind(
 //								CCorePlugin.getResourceString("pdom.DatabaseTooLarge"), bindings), null)); //$NON-NLS-1$
@@ -550,11 +550,11 @@ public class Database {
 		getChunk(offset).get(offset, data, dataPos, len);
 	}
 
-	public IString newString(String string) throws CoreException {
+	public IIndexString newString(String string) throws CoreException {
 		return newString(string.toCharArray());
 	}
 
-	public IString newString(char[] chars) throws CoreException {
+	public IIndexString newString(char[] chars) throws CoreException {
 		int len= chars.length;
 		int bytelen;
 		final boolean useBytes = useBytes(chars);
@@ -580,7 +580,7 @@ public class Database {
 		return true;
 	}
 
-	public IString getString(long offset) throws CoreException {
+	public IIndexString getString(long offset) throws CoreException {
 		final int l = getInt(offset);
 		int bytelen= l < 0 ? -l : 2 * l;
 		if (bytelen > ShortString.MAX_BYTE_LENGTH) {

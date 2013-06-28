@@ -19,9 +19,10 @@ import org.eclipse.core.runtime.CoreException;
  * format. This interface hides that fact.
  *
  * @author Doug Schaefer
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
-public interface IString {
+public interface IIndexString {
 	/**
 	 * Get the offset of this IString record in the PDOM
 	 */
@@ -38,7 +39,7 @@ public interface IString {
 	 * </ul>
 	 * @throws CoreException
 	 */
-	public int compare(IString string, boolean caseSensitive) throws CoreException;
+	public int compare(IIndexString string, boolean caseSensitive) throws CoreException;
 
 	/**
 	 * Compare this IString record and the specified String object
@@ -74,7 +75,7 @@ public interface IString {
 	 * </ul>
 	 * @throws CoreException
 	 */
-	public int compareCompatibleWithIgnoreCase(IString string) throws CoreException;
+	public int compareCompatibleWithIgnoreCase(IIndexString string) throws CoreException;
 
 	/**
 	 * Compare this IString record and the specified char array in a case sensitive manner

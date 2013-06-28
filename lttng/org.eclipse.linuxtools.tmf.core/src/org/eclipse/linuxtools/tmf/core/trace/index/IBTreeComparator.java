@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.CoreException;
 
 /**
  * @author Doug Schaefer
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
 public interface IBTreeComparator {

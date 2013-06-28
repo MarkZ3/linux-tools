@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
+
 /**
  * The generic trace location in TMF.
  * <p>
@@ -44,15 +47,17 @@ public interface ITmfLocation {
     Comparable<?> getLocationInfo();
 
     /**
-     * @throws IOException
+     * @param db
+     * @return the record where the location lives
+     * @throws CoreException
      * @since 3.0
      */
-    void serialize(OutputStream stream) throws IOException;
+    long serialize(Database db) throws CoreException;
     /**
      * @param stream
      * @throws IOException
      * @since 3.0
      */
-    void serialize(InputStream stream) throws IOException;
+    void serialize(Database db, long rec) throws CoreException;
 
 }

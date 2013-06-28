@@ -22,6 +22,7 @@ import java.util.Map;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.linuxtools.tmf.core.component.TmfDataProvider;
 import org.eclipse.linuxtools.tmf.core.component.TmfEventProvider;
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
@@ -155,9 +156,13 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
         super();
         fCacheSize = (cacheSize > 0) ? cacheSize : ITmfTrace.DEFAULT_TRACE_CACHE_SIZE;
         fStreamingInterval = interval;
-        fIndexer = (indexer != null) ? indexer : new TmfPersistentIndexer(this, fCacheSize);
         fParser = parser;
         initialize(resource, path, type);
+        fIndexer = (indexer != null) ? indexer : createIndexer(fCacheSize);
+    }
+
+    private ITmfTraceIndexer createIndexer(int cacheSize) {
+        return new TmfPersistentIndexer(this, cacheSize);
     }
 
     /**
@@ -173,9 +178,9 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
         }
         fCacheSize = trace.getCacheSize();
         fStreamingInterval = trace.getStreamingInterval();
-        fIndexer = new TmfPersistentIndexer(this);
         fParser = trace.fParser;
         initialize(trace.getResource(), trace.getPath(), trace.getEventType());
+        fIndexer = createIndexer(TmfDataProvider.DEFAULT_BLOCK_SIZE);
     }
 
     // ------------------------------------------------------------------------
@@ -184,8 +189,8 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
 
     @Override
     public void initTrace(final IResource resource, final String path, final Class<? extends ITmfEvent> type) throws TmfTraceException {
-        fIndexer = new TmfPersistentIndexer(this, fCacheSize);
         initialize(resource, path, type);
+        fIndexer = createIndexer(fCacheSize);
     }
 
     /**

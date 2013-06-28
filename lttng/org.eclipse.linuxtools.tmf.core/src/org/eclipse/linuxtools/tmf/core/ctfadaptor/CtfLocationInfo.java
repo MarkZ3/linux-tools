@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The data object to go in a {@link CtfLocation}.
@@ -26,6 +28,10 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
 
     private long timestamp;
     private long index;
+
+    private static final int TIMESTAMP_REC_OFFSET     = 0;
+    private static final int INDEX_REC_OFFSET     = 8;
+    private static final int RECORD_SIZE     = 16;
 
     /**
      * @param ts
@@ -114,14 +120,17 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
     }
 
     /**
-     * @param stream
-     * @throws IOException
+     * @param db
+     * @return
+     * @throws CoreException
      * @since 3.0
      */
-    public void serialize(OutputStream stream) throws IOException {
-        IndexHelper.writeLong(stream, timestamp);
-        IndexHelper.writeLong(stream, index);
+    public long serialize(Database db) throws CoreException {
+        long record = db.malloc(RECORD_SIZE);
+        db.putLong(record + TIMESTAMP_REC_OFFSET, timestamp);
+        db.putLong(record + INDEX_REC_OFFSET, index);
 
+        return record;
     }
 
     /**
@@ -129,9 +138,8 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
      * @throws IOException
      * @since 3.0
      */
-    public void serialize(InputStream stream) throws IOException {
-        timestamp = IndexHelper.readLong(stream);
-        index = IndexHelper.readLong(stream);
-
+    public void serialize(Database db, long rec) throws CoreException {
+        timestamp = db.getLong(TIMESTAMP_REC_OFFSET);
+        index = db.getLong(INDEX_REC_OFFSET);
     }
 }

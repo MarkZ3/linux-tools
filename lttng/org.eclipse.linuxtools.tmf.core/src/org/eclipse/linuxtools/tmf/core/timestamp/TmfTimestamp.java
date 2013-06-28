@@ -16,10 +16,9 @@
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * A generic timestamp implementation. The timestamp is represented by the
@@ -82,6 +81,11 @@ public class TmfTimestamp implements ITmfTimestamp {
      * The value precision (tolerance)
      */
     private int fPrecision;
+
+    private static final int VALUE_REC_OFFSET     = 0;
+    private static final int SCALE__REC_OFFSET    = 8;
+    private static final int PRECISION_REC_OFFSET   = 12;
+    private static final int RECORD_SIZE   = 16;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -344,26 +348,28 @@ public class TmfTimestamp implements ITmfTimestamp {
     }
 
     /**
+     * @param rec
+     * @throws CoreException
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) throws IOException {
-        IndexHelper.writeLong(stream, fValue);
+    public long serialize(Database db) throws CoreException {
+        long record = db.malloc(RECORD_SIZE);
+        db.putLong(record + VALUE_REC_OFFSET, fValue);
 
-        IndexHelper.writeInt(stream, fScale);
-        IndexHelper.writeInt(stream, fPrecision);
+        db.putInt(record + SCALE__REC_OFFSET, fScale);
+        db.putInt(record + PRECISION_REC_OFFSET, fPrecision);
+        return record;
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) throws IOException {
-        fValue = IndexHelper.readLong(stream);
-        fScale = IndexHelper.readInt(stream);
-        fPrecision = IndexHelper.readInt(stream);
-
+    public void serialize(Database db, long rec) throws CoreException {
+        fValue = db.getLong(rec + VALUE_REC_OFFSET);
+        fScale = db.getInt(rec + SCALE__REC_OFFSET);
+        fPrecision = db.getInt(rec + PRECISION_REC_OFFSET);
     }
 
 }

@@ -13,9 +13,12 @@ package org.eclipse.linuxtools.tmf.core.trace.index;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+/**
+ * @since 3.0
+ */
 @SuppressWarnings("javadoc")
 public class Messages {
-	private static final String BUNDLE_NAME = "org.eclipse.cdt.internal.core.pdom.db.messages"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "org.eclipse.linuxtools.tmf.core.trace.index.messages"; //$NON-NLS-1$
 
 	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME);
 

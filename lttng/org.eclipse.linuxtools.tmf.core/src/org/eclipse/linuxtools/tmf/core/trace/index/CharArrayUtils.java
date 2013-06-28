@@ -18,6 +18,7 @@ import java.util.Arrays;
 /**
  * A static utility class for char arrays
  * @author dschaefe
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
 public class CharArrayUtils {

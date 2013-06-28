@@ -44,9 +44,8 @@ public class DBProperties {
 	 * of the specified database.
 	 * @param db
 	 * @param record
-	 * @throws CoreException
 	 */
-	public DBProperties(Database db, long record) throws CoreException {
+	public DBProperties(Database db, long record) {
 		this.record= record;
 		this.index= new BTree(db, record + PROP_INDEX, DBProperty.getComparator(db));
 		this.db= db;
@@ -133,11 +132,11 @@ public class DBProperties {
 	public void clear() throws CoreException {
 		index.accept(new IBTreeVisitor(){
 			@Override
-			public int compare(long record) throws CoreException {
+			public int compare(long pRecord) throws CoreException {
 				return 0;
 			}
 			@Override
-			public boolean visit(long record) throws CoreException {
+			public boolean visit(long pRecord) throws CoreException {
 				new DBProperty(db, record).delete();
 				return false; // there should never be duplicates
 			}
@@ -183,8 +182,8 @@ public class DBProperties {
 		DBProperty(Database db, String key, String value) throws CoreException {
 			assert key != null;
 			assert value != null;
-			IString dbkey= db.newString(key);
-			IString dbvalue= db.newString(value);
+			IIndexString dbkey= db.newString(key);
+			IIndexString dbvalue= db.newString(value);
 			this.record= db.malloc(RECORD_SIZE);
 			db.putRecPtr(record + KEY, dbkey.getRecord());
 			db.putRecPtr(record + VALUE, dbvalue.getRecord());
@@ -202,11 +201,11 @@ public class DBProperties {
 			this.db= db;
 		}
 
-		public IString getKey() throws CoreException {
+		public IIndexString getKey() throws CoreException {
 			return db.getString(db.getRecPtr(record + KEY));
 		}
 
-		public IString getValue() throws CoreException {
+		public IIndexString getValue() throws CoreException {
 			return db.getString(db.getRecPtr(record + VALUE));
 		}
 
@@ -214,8 +213,8 @@ public class DBProperties {
 			return new IBTreeComparator() {
 				@Override
 				public int compare(long record1, long record2) throws CoreException {
-					IString left= db.getString(db.getRecPtr(record1 + KEY));
-					IString right= db.getString(db.getRecPtr(record2 + KEY));
+					IIndexString left= db.getString(db.getRecPtr(record1 + KEY));
+					IIndexString right= db.getString(db.getRecPtr(record2 + KEY));
 					return left.compare(right, true);
 				}
 			};

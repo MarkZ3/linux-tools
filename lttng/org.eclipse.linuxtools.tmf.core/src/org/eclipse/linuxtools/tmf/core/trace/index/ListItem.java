@@ -18,6 +18,7 @@ import org.eclipse.core.runtime.CoreException;
  * as well as a pointer to the item.
  *
  * @author Doug Schaefer
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
 public class ListItem {

@@ -23,6 +23,7 @@ import org.eclipse.linuxtools.internal.tmf.core.Activator;
 
 /**
  * @author Doug Schaefer
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
 public class BTree {
@@ -75,11 +76,11 @@ public class BTree {
 		return db.getRecPtr(rootPointer);
 	}
 
-	protected final void putRecord(Chunk chunk, long node, int index, long record) {
+	protected final static void putRecord(Chunk chunk, long node, int index, long record) {
 		chunk.putRecPtr(node + index * Database.INT_SIZE, record);
 	}
 
-	protected final long getRecord(Chunk chunk, long node, int index) {
+	protected final static long getRecord(Chunk chunk, long node, int index) {
 		return chunk.getRecPtr(node + index * Database.INT_SIZE);
 	}
 
@@ -110,7 +111,9 @@ public class BTree {
 		return insert(null, 0, 0, root, record);
 	}
 
-	private long insert(Chunk pChunk, long parent, int iParent, long node, long record) throws CoreException {
+	private long insert(Chunk pChunk, long pParent, int iParent, long pNode, long record) throws CoreException {
+	    long node = pNode;
+	    long parent = pParent;
 		Chunk chunk = db.getChunk(node);
 
 		// If this node is full (last record isn't null), split it.
@@ -119,47 +122,47 @@ public class BTree {
 			if (median == record) {
 				// Found it, never mind.
 				return median;
-			} else {
-				// Split it.
-				// Create the new node and move the larger records over.
-				long newnode = allocateNode();
-				Chunk newchunk = db.getChunk(newnode);
-				for (int i = 0; i < MEDIAN_RECORD; ++i) {
-					putRecord(newchunk, newnode, i, getRecord(chunk, node, MEDIAN_RECORD + 1 + i));
-					putRecord(chunk, node, MEDIAN_RECORD + 1 + i, 0);
-					putChild(newchunk, newnode, i, getChild(chunk, node, MEDIAN_RECORD + 1 + i));
-					putChild(chunk, node, MEDIAN_RECORD + 1 + i, 0);
-				}
-				putChild(newchunk, newnode, MEDIAN_RECORD, getChild(chunk, node, MAX_RECORDS));
-				putChild(chunk, node, MAX_RECORDS, 0);
-
-				if (parent == 0) {
-					// Create a new root
-					parent = allocateNode();
-					pChunk = db.getChunk(parent);
-					db.putRecPtr(rootPointer, parent);
-					putChild(pChunk, parent, 0, node);
-				} else {
-					// Insert the median into the parent.
-					for (int i = MAX_RECORDS - 2; i >= iParent; --i) {
-						long r = getRecord(pChunk, parent, i);
-						if (r != 0) {
-							putRecord(pChunk, parent, i + 1, r);
-							putChild(pChunk, parent, i + 2, getChild(pChunk, parent, i + 1));
-						}
-					}
-				}
-				putRecord(pChunk, parent, iParent, median);
-				putChild(pChunk, parent, iParent + 1, newnode);
-
-				putRecord(chunk, node, MEDIAN_RECORD, 0);
-
-				// Set the node to the correct one to follow.
-				if (cmp.compare(record, median) > 0) {
-					node = newnode;
-					chunk = newchunk;
-				}
 			}
+
+            // Split it.
+            // Create the new node and move the larger records over.
+            long newnode = allocateNode();
+            Chunk newchunk = db.getChunk(newnode);
+            for (int i = 0; i < MEDIAN_RECORD; ++i) {
+            	putRecord(newchunk, newnode, i, getRecord(chunk, node, MEDIAN_RECORD + 1 + i));
+            	putRecord(chunk, node, MEDIAN_RECORD + 1 + i, 0);
+            	putChild(newchunk, newnode, i, getChild(chunk, node, MEDIAN_RECORD + 1 + i));
+            	putChild(chunk, node, MEDIAN_RECORD + 1 + i, 0);
+            }
+            putChild(newchunk, newnode, MEDIAN_RECORD, getChild(chunk, node, MAX_RECORDS));
+            putChild(chunk, node, MAX_RECORDS, 0);
+
+            if (parent == 0) {
+            	// Create a new root
+            	parent = allocateNode();
+            	pChunk = db.getChunk(parent);
+            	db.putRecPtr(rootPointer, parent);
+            	putChild(pChunk, parent, 0, node);
+            } else {
+            	// Insert the median into the parent.
+            	for (int i = MAX_RECORDS - 2; i >= iParent; --i) {
+            		long r = getRecord(pChunk, parent, i);
+            		if (r != 0) {
+            			putRecord(pChunk, parent, i + 1, r);
+            			putChild(pChunk, parent, i + 2, getChild(pChunk, parent, i + 1));
+            		}
+            	}
+            }
+            putRecord(pChunk, parent, iParent, median);
+            putChild(pChunk, parent, iParent + 1, newnode);
+
+            putRecord(chunk, node, MEDIAN_RECORD, 0);
+
+            // Set the node to the correct one to follow.
+            if (cmp.compare(record, median) > 0) {
+            	node = newnode;
+            	chunk = newchunk;
+            }
 		}
 
 		// Binary search to find the insert point.
@@ -191,18 +194,18 @@ public class BTree {
 		if (child != 0) {
 			// Visit the children.
 			return insert(chunk, node, i, child, record);
-		} else {
-			// We are at the leaf, add us in.
-			// First copy everything after over one.
-			for (int j = MAX_RECORDS - 2; j >= i; --j) {
-				long r = getRecord(chunk, node, j);
-				if (r != 0) {
-                    putRecord(chunk, node, j + 1, r);
-                }
-			}
-			putRecord(chunk, node, i, record);
-			return record;
 		}
+
+        // We are at the leaf, add us in.
+        // First copy everything after over one.
+        for (int j = MAX_RECORDS - 2; j >= i; --j) {
+        	long r = getRecord(chunk, node, j);
+        	if (r != 0) {
+                putRecord(chunk, node, j + 1, r);
+            }
+        }
+        putRecord(chunk, node, i, record);
+        return record;
 	}
 
 	private void firstInsert(long record) throws CoreException {
@@ -312,116 +315,114 @@ public class BTree {
 			if (keyIndexInNode != -1) {
 				nodeContentDelete(node, keyIndexInNode, 1);
 				return key;
-			} else {
-				if (mode == DELMODE_DELETE_MINIMUM) {
-					long subst = getRecord(node.chunk, node.node, 0);
-					nodeContentDelete(node, 0, 1);
-					return subst;
-				} else if (mode == DELMODE_DELETE_MAXIMUM) {
-					long subst = getRecord(node.chunk, node.node, node.keyCount - 1);
-					nodeContentDelete(node, node.keyCount - 1, 1);
-					return subst;
-				}
-				throw new BTreeKeyNotFoundException(
-						MessageFormat.format(Messages.getString("BTree.DeletionOnAbsentKey"), //$NON-NLS-1$
-								new Object[] { new Long(key), new Integer(mode) }));
 			}
-		} else {
-			if (keyIndexInNode != -1) {
-				/* Case 2: non-leaf node which contains the key itself */
 
-				BTNode succ = node.getChild(keyIndexInNode + 1);
-				if (succ != null && succ.keyCount > MIN_RECORDS) {
-					/* Case 2a: Delete key by overwriting it with its successor (which occurs in a leaf node) */
-					long subst = deleteImp(-1, succ.node, DELMODE_DELETE_MINIMUM);
-					putRecord(node.chunk, node.node, keyIndexInNode, subst);
-					return key;
-				}
-
-				BTNode pred = node.getChild(keyIndexInNode);
-				if (pred != null && pred.keyCount > MIN_RECORDS) {
-					/* Case 2b: Delete key by overwriting it with its predecessor (which occurs in a leaf node) */
-					long subst = deleteImp(-1, pred.node, DELMODE_DELETE_MAXIMUM);
-					putRecord(node.chunk, node.node, keyIndexInNode, subst);
-					return key;
-				}
-
-				/* Case 2c: Merge successor and predecessor */
-				// assert(pred != null && succ != null);
-				if (pred != null) {
-					mergeNodes(succ, node, keyIndexInNode, pred);
-					return deleteImp(key, pred.node, mode);
-				}
-				return key;
-			} else {
-				/* Case 3: non-leaf node which does not itself contain the key */
-
-				/* Determine root of subtree that should contain the key */
-				int subtreeIndex;
-				switch(mode) {
-				case DELMODE_NORMAL:
-					subtreeIndex = node.keyCount;
-					for (int i= 0; i < node.keyCount; i++) {
-                        if (cmp.compare(getRecord(node.chunk, node.node, i), key)>0) {
-							subtreeIndex = i;
-							break;
-						}
-                    }
-					break;
-				case DELMODE_DELETE_MINIMUM: subtreeIndex = 0; break;
-				case DELMODE_DELETE_MAXIMUM: subtreeIndex = node.keyCount; break;
-				default: throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.OK, Messages.getString("BTree.UnknownMode"), null)); //$NON-NLS-1$
-				}
-
-				BTNode child = node.getChild(subtreeIndex);
-				if (child == null) {
-					throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.OK, Messages.getString("BTree.IntegrityError"), null)); //$NON-NLS-1$
-				}
-
-				if (child.keyCount > MIN_RECORDS) {
-					return deleteImp(key, child.node, mode);
-				} else {
-					BTNode sibR = node.getChild(subtreeIndex + 1);
-					if (sibR != null && sibR.keyCount > MIN_RECORDS) {
-						/* Case 3a (i): child will underflow upon deletion, take a key from rightSibling */
-						long rightKey = getRecord(node.chunk, node.node, subtreeIndex);
-						long leftmostRightSiblingKey = getRecord(sibR.chunk, sibR.node, 0);
-						append(child, rightKey, getChild(sibR.chunk, sibR.node, 0));
-						nodeContentDelete(sibR, 0, 1);
-						putRecord(node.chunk, node.node, subtreeIndex, leftmostRightSiblingKey);
-						return deleteImp(key, child.node, mode);
-					}
-
-					BTNode sibL = node.getChild(subtreeIndex - 1);
-					if (sibL != null && sibL.keyCount > MIN_RECORDS) {
-						/* Case 3a (ii): child will underflow upon deletion, take a key from leftSibling */
-						long leftKey = getRecord(node.chunk, node.node, subtreeIndex - 1);
-						prepend(child, leftKey, getChild(sibL.chunk, sibL.node, sibL.keyCount));
-						long rightmostLeftSiblingKey = getRecord(sibL.chunk, sibL.node, sibL.keyCount - 1);
-						putRecord(sibL.chunk, sibL.node, sibL.keyCount - 1, 0);
-						putChild(sibL.chunk, sibL.node, sibL.keyCount, 0);
-						putRecord(node.chunk, node.node, subtreeIndex - 1, rightmostLeftSiblingKey);
-						return deleteImp(key, child.node, mode);
-					}
-
-					/* Case 3b (i,ii): leftSibling, child, rightSibling all have minimum number of keys */
-
-					if (sibL != null) { // merge child into leftSibling
-						mergeNodes(child, node, subtreeIndex - 1, sibL);
-						return deleteImp(key, sibL.node, mode);
-					}
-
-					if (sibR != null) { // merge rightSibling into child
-						mergeNodes(sibR, node, subtreeIndex, child);
-						return deleteImp(key, child.node, mode);
-					}
-
-					throw new BTreeKeyNotFoundException(
-							MessageFormat.format(Messages.getString("BTree.DeletionOnAbsentKey"), //$NON-NLS-1$
-									new Object[]{new Long(key), new Integer(mode)}));
-				}
-			}
+            if (mode == DELMODE_DELETE_MINIMUM) {
+            	long subst = getRecord(node.chunk, node.node, 0);
+            	nodeContentDelete(node, 0, 1);
+            	return subst;
+            } else if (mode == DELMODE_DELETE_MAXIMUM) {
+            	long subst = getRecord(node.chunk, node.node, node.keyCount - 1);
+            	nodeContentDelete(node, node.keyCount - 1, 1);
+            	return subst;
+            }
+            throw new BTreeKeyNotFoundException(
+            		MessageFormat.format(Messages.getString("BTree.DeletionOnAbsentKey"), //$NON-NLS-1$
+            				new Object[] { new Long(key), new Integer(mode) }));
 		}
+
+        if (keyIndexInNode != -1) {
+        	/* Case 2: non-leaf node which contains the key itself */
+
+        	BTNode succ = node.getChild(keyIndexInNode + 1);
+        	if (succ != null && succ.keyCount > MIN_RECORDS) {
+        		/* Case 2a: Delete key by overwriting it with its successor (which occurs in a leaf node) */
+        		long subst = deleteImp(-1, succ.node, DELMODE_DELETE_MINIMUM);
+        		putRecord(node.chunk, node.node, keyIndexInNode, subst);
+        		return key;
+        	}
+
+        	BTNode pred = node.getChild(keyIndexInNode);
+        	if (pred != null && pred.keyCount > MIN_RECORDS) {
+        		/* Case 2b: Delete key by overwriting it with its predecessor (which occurs in a leaf node) */
+        		long subst = deleteImp(-1, pred.node, DELMODE_DELETE_MAXIMUM);
+        		putRecord(node.chunk, node.node, keyIndexInNode, subst);
+        		return key;
+        	}
+
+        	/* Case 2c: Merge successor and predecessor */
+        	// assert(pred != null && succ != null);
+        	if (pred != null) {
+        		mergeNodes(succ, node, keyIndexInNode, pred);
+        		return deleteImp(key, pred.node, mode);
+        	}
+        	return key;
+        }
+
+        /* Determine root of subtree that should contain the key */
+        int subtreeIndex;
+        switch(mode) {
+        case DELMODE_NORMAL:
+        	subtreeIndex = node.keyCount;
+        	for (int i= 0; i < node.keyCount; i++) {
+                if (cmp.compare(getRecord(node.chunk, node.node, i), key)>0) {
+        			subtreeIndex = i;
+        			break;
+        		}
+            }
+        	break;
+        case DELMODE_DELETE_MINIMUM: subtreeIndex = 0; break;
+        case DELMODE_DELETE_MAXIMUM: subtreeIndex = node.keyCount; break;
+        default: throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.OK, Messages.getString("BTree.UnknownMode"), null)); //$NON-NLS-1$
+        }
+
+        BTNode child = node.getChild(subtreeIndex);
+        if (child == null) {
+        	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.OK, Messages.getString("BTree.IntegrityError"), null)); //$NON-NLS-1$
+        }
+
+        if (child.keyCount > MIN_RECORDS) {
+        	return deleteImp(key, child.node, mode);
+        }
+
+        BTNode sibR = node.getChild(subtreeIndex + 1);
+        if (sibR != null && sibR.keyCount > MIN_RECORDS) {
+        	/* Case 3a (i): child will underflow upon deletion, take a key from rightSibling */
+        	long rightKey = getRecord(node.chunk, node.node, subtreeIndex);
+        	long leftmostRightSiblingKey = getRecord(sibR.chunk, sibR.node, 0);
+        	append(child, rightKey, getChild(sibR.chunk, sibR.node, 0));
+        	nodeContentDelete(sibR, 0, 1);
+        	putRecord(node.chunk, node.node, subtreeIndex, leftmostRightSiblingKey);
+        	return deleteImp(key, child.node, mode);
+        }
+
+        BTNode sibL = node.getChild(subtreeIndex - 1);
+        if (sibL != null && sibL.keyCount > MIN_RECORDS) {
+        	/* Case 3a (ii): child will underflow upon deletion, take a key from leftSibling */
+        	long leftKey = getRecord(node.chunk, node.node, subtreeIndex - 1);
+        	prepend(child, leftKey, getChild(sibL.chunk, sibL.node, sibL.keyCount));
+        	long rightmostLeftSiblingKey = getRecord(sibL.chunk, sibL.node, sibL.keyCount - 1);
+        	putRecord(sibL.chunk, sibL.node, sibL.keyCount - 1, 0);
+        	putChild(sibL.chunk, sibL.node, sibL.keyCount, 0);
+        	putRecord(node.chunk, node.node, subtreeIndex - 1, rightmostLeftSiblingKey);
+        	return deleteImp(key, child.node, mode);
+        }
+
+        /* Case 3b (i,ii): leftSibling, child, rightSibling all have minimum number of keys */
+
+        if (sibL != null) { // merge child into leftSibling
+        	mergeNodes(child, node, subtreeIndex - 1, sibL);
+        	return deleteImp(key, sibL.node, mode);
+        }
+
+        if (sibR != null) { // merge rightSibling into child
+        	mergeNodes(sibR, node, subtreeIndex, child);
+        	return deleteImp(key, child.node, mode);
+        }
+
+        throw new BTreeKeyNotFoundException(
+        		MessageFormat.format(Messages.getString("BTree.DeletionOnAbsentKey"), //$NON-NLS-1$
+        				new Object[]{new Long(key), new Integer(mode)}));
 	}
 
 	/**

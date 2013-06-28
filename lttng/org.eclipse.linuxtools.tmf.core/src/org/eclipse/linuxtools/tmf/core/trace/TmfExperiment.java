@@ -15,12 +15,10 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.linuxtools.internal.tmf.core.trace.TmfExperimentContext;
@@ -36,6 +34,7 @@ import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * TmfExperiment presents a time-ordered, unified view of a set of ITmfTrace:s
@@ -517,12 +516,12 @@ public class TmfExperiment extends TmfTrace implements ITmfEventParser {
             initializeStreamingMonitor();
         }
     }
-    
+
     /**
      * @since 3.0
      */
     @Override
-    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+    public ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException {
         return null;
     }
 

@@ -18,6 +18,7 @@ import org.eclipse.linuxtools.internal.tmf.core.Activator;
 
 /**
  * @author Doug Schaefer
+ * @since 3.0
  */
 @SuppressWarnings("javadoc")
 public class DBStatus extends Status {

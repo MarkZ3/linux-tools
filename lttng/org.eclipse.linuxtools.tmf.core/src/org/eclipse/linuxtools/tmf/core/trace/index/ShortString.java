@@ -21,7 +21,7 @@ import org.eclipse.linuxtools.internal.tmf.core.Activator;
  * @author Doug Schaefer
  */
 @SuppressWarnings("javadoc")
-public class ShortString implements IString {
+public class ShortString implements IIndexString {
 	private final Database db;
 	private final long record;
 	private int hash;
@@ -165,7 +165,7 @@ public class ShortString implements IString {
 	}
 
 	@Override
-	public int compare(IString string, boolean caseSensitive) throws CoreException {
+	public int compare(IIndexString string, boolean caseSensitive) throws CoreException {
 		return compare(getChars(), string.getChars(), caseSensitive);
 	}
 
@@ -175,7 +175,7 @@ public class ShortString implements IString {
 	}
 
 	@Override
-	public int compareCompatibleWithIgnoreCase(IString string) throws CoreException {
+	public int compareCompatibleWithIgnoreCase(IIndexString string) throws CoreException {
 		return compareCompatibleWithIgnoreCase(string.getChars());
 	}
 

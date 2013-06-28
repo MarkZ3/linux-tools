@@ -14,11 +14,10 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfTmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * A basic implementation of ITmfCheckpoint. It simply maps an event timestamp
@@ -45,6 +44,12 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     // ------------------------------------------------------------------------
     // Constructors
     // ------------------------------------------------------------------------
+
+    private final static int NEXT_SIBLING_REC_OFFSET = 0;
+    private final static int TIMESTAMP_PTR_REC_OFFSET = NEXT_SIBLING_REC_OFFSET + Database.PTR_SIZE;
+    private final static int LOCATION_PTR_REC_OFFSET = TIMESTAMP_PTR_REC_OFFSET + Database.PTR_SIZE;
+
+    private final static int RECORD_SIZE = LOCATION_PTR_REC_OFFSET + Database.PTR_SIZE;
 
     /**
      * Full constructor
@@ -173,23 +178,47 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) throws IOException {
-        fLocation.serialize(stream);
-        fTimestamp.serialize(stream);
+    public long serialize(Database db) throws CoreException {
+        long record = db.malloc(RECORD_SIZE);
+        long locationRec = fLocation.serialize(db);
+        db.putRecPtr(record + LOCATION_PTR_REC_OFFSET, locationRec);
+        long timestampRec = fTimestamp.serialize(db);
+        db.putRecPtr(record + TIMESTAMP_PTR_REC_OFFSET, timestampRec);
+
+        return record;
+    }
+
+//    /**
+//     * @throws IOException
+//     * @since 3.0
+//     */
+//    @Override
+//    public void serialize(Database db, long rec) throws CoreException {
+//        fLocation.serialize(db, rec);
+//        fTimestamp.serialize(db, rec);
+//    }
+
+    /**
+     * @since 3.0
+     */
+    public static int getTimestampPtrRecOffset() {
+        return TIMESTAMP_PTR_REC_OFFSET;
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
-    @Override
-    public void serialize(InputStream stream) throws IOException {
-        fLocation.serialize(stream);
-        fTimestamp.serialize(stream);
+    public static int getLocationPtrRecOffset() {
+        return LOCATION_PTR_REC_OFFSET;
     }
 
+    /**
+     * @since 3.0
+     */
+    public static ITmfCheckpoint newAndSerialize(Database db, long rec, CtfTmfTimestamp timeStamp, ITmfLocation location) {
+        return null;
+    }
 }

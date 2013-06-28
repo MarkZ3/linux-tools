@@ -91,10 +91,11 @@ final class Chunk {
 	}
 
 	static final void putInt(final int value, final byte[] buffer, int idx) {
-		buffer[idx]=   (byte) (value >> 24);
-		buffer[++idx]= (byte) (value >> 16);
-		buffer[++idx]= (byte) (value >> 8);
-		buffer[++idx]= (byte) (value);
+	    int index = idx;
+		buffer[index]=   (byte) (value >> 24);
+		buffer[++index]= (byte) (value >> 16);
+		buffer[++index]= (byte) (value >> 8);
+		buffer[++index]= (byte) (value);
 	}
 
 	public int getInt(final long offset) {
@@ -102,10 +103,11 @@ final class Chunk {
 	}
 
 	static final int getInt(final byte[] buffer, int idx) {
-		return ((buffer[idx] & 0xff) << 24) |
-			((buffer[++idx] & 0xff) << 16) |
-			((buffer[++idx] & 0xff) <<  8) |
-			((buffer[++idx] & 0xff) <<  0);
+	    int index = idx;
+		return ((buffer[index] & 0xff) << 24) |
+			((buffer[++index] & 0xff) << 16) |
+			((buffer[++index] & 0xff) <<  8) |
+			((buffer[++index] & 0xff) <<  0);
 	}
 
 	/**

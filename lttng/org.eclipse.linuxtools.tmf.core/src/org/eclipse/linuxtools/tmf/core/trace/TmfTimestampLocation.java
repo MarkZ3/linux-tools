@@ -14,9 +14,10 @@ package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * A concrete implementation of TmfLocation based on ITmfTimestamp:s
@@ -50,12 +51,11 @@ public final class TmfTimestampLocation extends TmfLocation {
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) throws IOException {
-        getLocationInfo().serialize(stream);
+    public long serialize(Database db) throws CoreException {
+        return getLocationInfo().serialize(db);
 
     }
 
@@ -64,8 +64,8 @@ public final class TmfTimestampLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) throws IOException {
-        getLocationInfo().serialize(stream);
+    public void serialize(Database db, long rec) throws CoreException {
+        getLocationInfo().serialize(db, rec);
     }
 
 }

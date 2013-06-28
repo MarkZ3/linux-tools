@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The basic trace checkpoint structure in TMF. The purpose of the checkpoint is
@@ -54,15 +56,20 @@ public interface ITmfCheckpoint extends Comparable<ITmfCheckpoint> {
     int compareTo(ITmfCheckpoint checkpoint);
 
     /**
-     * @throws IOException
+     * @param db
+     * @return
+     * @throws CoreException
      * @since 3.0
      */
-    void serialize(OutputStream stream) throws IOException;
+    long serialize(Database db) throws CoreException;
 
     /**
-     * @throws IOException
-     * @since 3.0
-     */
-    void serialize(InputStream stream) throws IOException;
+//     * @param db
+//     * @param rec
+//     * @throws CoreException
+//     * @throws IOException
+//     * @since 3.0
+//     */
+//    void serialize(Database db, long rec) throws CoreException;
 
 }

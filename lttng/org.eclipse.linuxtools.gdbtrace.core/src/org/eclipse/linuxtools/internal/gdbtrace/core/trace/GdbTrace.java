@@ -38,6 +38,7 @@ import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
 import org.eclipse.linuxtools.tmf.core.trace.TmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTrace;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * GDB Tracepoint extension of TmfTrace. This class implements the necessary
@@ -200,7 +201,7 @@ public class GdbTrace extends TmfTrace implements ITmfEventParser {
     }
 
     @Override
-    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+    public ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException {
         // TODO Auto-generated method stub
         return null;
     }

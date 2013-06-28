@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.linuxtools.tmf.core.component.ITmfDataProvider;
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
@@ -28,6 +29,7 @@ import org.eclipse.linuxtools.tmf.core.statesystem.ITmfStateSystem;
 import org.eclipse.linuxtools.tmf.core.statistics.ITmfStatistics;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The event stream structure in TMF. In its basic form, a trace has:
@@ -341,10 +343,13 @@ public interface ITmfTrace extends ITmfDataProvider {
      * @since 2.0
      */
     ITmfTimestamp getInitialRangeOffset();
-    
+
     /**
-     * @throws IOException
+     * @param db
+     * @param rec
+     * @return
+     * @throws CoreException
      * @since 3.0
      */
-    ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException;
+    ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException;
 }

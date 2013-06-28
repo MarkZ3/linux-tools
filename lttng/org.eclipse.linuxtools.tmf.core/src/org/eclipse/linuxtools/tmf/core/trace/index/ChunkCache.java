@@ -10,6 +10,10 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.trace.index;
 
+
+/**
+ * @since 3.0
+ */
 @SuppressWarnings("javadoc")
 public final class ChunkCache {
 	private static ChunkCache sSharedInstance= new ChunkCache();
@@ -133,7 +137,7 @@ public final class ChunkCache {
 		}
 	}
 
-	private int computeLength(long maxSize) {
+	private static int computeLength(long maxSize) {
 		long maxLength= Math.min(maxSize/Database.CHUNK_SIZE, Integer.MAX_VALUE);
 		return Math.max(1, (int)maxLength);
 	}

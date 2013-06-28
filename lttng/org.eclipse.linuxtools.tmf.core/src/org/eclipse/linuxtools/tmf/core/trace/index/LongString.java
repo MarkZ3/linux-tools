@@ -23,7 +23,7 @@ import org.eclipse.linuxtools.internal.tmf.core.Activator;
  * @author Doug Schaefer
  */
 @SuppressWarnings("javadoc")
-public class LongString implements IString {
+public class LongString implements IIndexString {
 	private final Database db;
 	private final long record;
 	private int hash;
@@ -213,7 +213,7 @@ public class LongString implements IString {
 	}
 
 	@Override
-	public int compare(IString string, boolean caseSensitive) throws CoreException {
+	public int compare(IIndexString string, boolean caseSensitive) throws CoreException {
 		return ShortString.compare(getChars(), string.getChars(), caseSensitive);
 	}
 
@@ -228,7 +228,7 @@ public class LongString implements IString {
 	}
 
 	@Override
-	public int compareCompatibleWithIgnoreCase(IString string) throws CoreException {
+	public int compareCompatibleWithIgnoreCase(IIndexString string) throws CoreException {
 		return ShortString.compareCompatibleWithIgnoreCase(getChars(), string.getChars());
 	}
 
