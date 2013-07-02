@@ -355,7 +355,9 @@ public class TmfTimestamp implements ITmfTimestamp {
     @Override
     public long serialize(Database db) throws CoreException {
         long record = db.malloc(RECORD_SIZE);
-        db.putLong(record + VALUE_REC_OFFSET, fValue);
+        long offset = record + VALUE_REC_OFFSET;
+        System.out.println("put timestamp at record: " + offset + " value: " + fValue);
+        db.putLong(offset, fValue);
 
         db.putInt(record + SCALE__REC_OFFSET, fScale);
         db.putInt(record + PRECISION_REC_OFFSET, fPrecision);
@@ -367,7 +369,9 @@ public class TmfTimestamp implements ITmfTimestamp {
      */
     @Override
     public void serialize(Database db, long rec) throws CoreException {
-        fValue = db.getLong(rec + VALUE_REC_OFFSET);
+        long offset = rec + VALUE_REC_OFFSET;
+        fValue = db.getLong(offset);
+        System.out.println("read timestamp at record: " + offset + " value: " + fValue);
         fScale = db.getInt(rec + SCALE__REC_OFFSET);
         fPrecision = db.getInt(rec + PRECISION_REC_OFFSET);
     }

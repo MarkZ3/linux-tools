@@ -1,10 +1,14 @@
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.linuxtools.tmf.core.trace.index.BTree;
 import org.eclipse.linuxtools.tmf.core.trace.index.ChunkCache;
 import org.eclipse.linuxtools.tmf.core.trace.index.Database;
+import org.eclipse.linuxtools.tmf.core.trace.index.IBTreeComparator;
+import org.eclipse.linuxtools.tmf.core.trace.index.IBTreeVisitor;
 
 /**
  * @author emalape
@@ -14,6 +18,7 @@ import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 public class TmfPersistentIndex implements ITmfIndex {
 
     Database fDatabase;
+    BTree fCheckpointTree;
     ITmfTrace fTrace;
     int size = 0;
 
@@ -29,6 +34,8 @@ public class TmfPersistentIndex implements ITmfIndex {
      */
     public static final int FIRST_CHECKPOINT_OFFSET = VERSION_NUMBER_OFFSET + 4;
 
+    public static final int CHECKPOINT_TREE_OFFSET = FIRST_CHECKPOINT_OFFSET + 4;
+
     /**
      * @param trace
      *
@@ -38,9 +45,33 @@ public class TmfPersistentIndex implements ITmfIndex {
         createDatabase();
     }
 
+    /**
+     * @author emalape
+     *
+     */
+    public static class MacroBTreeComparator implements IBTreeComparator {
+        final private Database db;
+        final private ITmfTrace fTrace;
+
+        public MacroBTreeComparator(Database database, ITmfTrace trace) {
+            db= database;
+            fTrace = trace;
+        }
+        @Override
+        public int compare(long record1, long record2) throws CoreException {
+            ITmfCheckpoint aCheckpoint1 = fTrace.restoreCheckPoint(db, record1);
+            ITmfCheckpoint aCheckpoint2 = fTrace.restoreCheckPoint(db, record2);
+            return aCheckpoint1.compareTo(aCheckpoint2);
+        }
+    }
+
     private void createDatabase() {
         try {
-            fDatabase = new Database(getIndexFile(), new ChunkCache(), version, false);
+            File indexFile = getIndexFile();
+//            if (!indexFile.exists()) {
+//                indexFile.createNewFile();
+//            }
+            fDatabase = new Database(indexFile, new ChunkCache(), version, false);
             if (fDatabase.getVersion() != version) {
                 fDatabase.clear(version);
             } else {
@@ -52,6 +83,9 @@ public class TmfPersistentIndex implements ITmfIndex {
                         ++i;
                     }
                     size = i;
+                    if (fCheckpointTree == null) {
+                        fCheckpointTree= new BTree(fDatabase, CHECKPOINT_TREE_OFFSET, new MacroBTreeComparator(fDatabase, fTrace));
+                    }
                 } catch (CoreException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -89,6 +123,7 @@ public class TmfPersistentIndex implements ITmfIndex {
     public void add(ITmfCheckpoint checkpoint) {
         try {
             long record = checkpoint.serialize(fDatabase);
+            fCheckpointTree.insert(record);
             addToList(FIRST_CHECKPOINT_OFFSET, record);
             size++;
         } catch (CoreException e) {
@@ -120,8 +155,56 @@ public class TmfPersistentIndex implements ITmfIndex {
         //return fCheckpoints.get(checkpoint);
     }
 
+    class CheckPointTreeVisitor implements IBTreeVisitor {
+
+        ITmfCheckpoint fCheckpoint;
+        final private Database fDb;
+        final private ITmfTrace fTrace;
+        private boolean fFound = false;
+
+        public CheckPointTreeVisitor(ITmfCheckpoint checkpoint, Database db, ITmfTrace trace) {
+            fCheckpoint = checkpoint;
+            this.fDb = db;
+            fTrace = trace;
+        }
+
+        @Override
+        public int compare(long record) throws CoreException {
+            fTrace.restoreCheckPoint(fDb, record);
+            return 0;
+        }
+
+        @Override
+        public boolean visit(long record) throws CoreException {
+            if (record == 0) {
+                return true;
+            }
+
+            fFound = true;
+            return false;
+        }
+
+        boolean isFound() {
+            return fFound;
+        }
+
+    }
+
     @Override
     public int binarySearch(ITmfCheckpoint checkpoint) {
+        System.out.println("searching for: " + checkpoint);
+        CheckPointTreeVisitor visitor = new CheckPointTreeVisitor(checkpoint, fDatabase, fTrace);
+        try {
+            fCheckpointTree.accept(visitor);
+        } catch (CoreException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        if (visitor.isFound()) {
+            System.out.println("found!!");
+        }
+
         try {
             long rec= fDatabase.getRecPtr(FIRST_CHECKPOINT_OFFSET);
             int i = 0;

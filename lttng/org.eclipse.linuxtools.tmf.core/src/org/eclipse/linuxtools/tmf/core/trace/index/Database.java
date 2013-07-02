@@ -35,6 +35,7 @@ import org.eclipse.linuxtools.internal.tmf.core.Activator;
  * obtaining and releasing areas of storage (memory).
  *
  * @author Doug Schaefer
+ * @since 3.0
  */
 /*
  * The file encapsulated is divided into Chunks of size CHUNK_SIZE, and a table of contents

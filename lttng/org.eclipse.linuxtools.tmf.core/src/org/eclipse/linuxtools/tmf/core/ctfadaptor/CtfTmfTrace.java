@@ -416,8 +416,8 @@ public class CtfTmfTrace extends TmfTrace
      */
     @Override
     public ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException {
-        CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(db, rec + TmfCheckpoint.getTimestampPtrRecOffset());
-        ITmfLocation location = CtfLocation.newAndserialize(db, rec + TmfCheckpoint.getLocationPtrRecOffset());
+        CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(db, db.getRecPtr(rec + TmfCheckpoint.getTimestampPtrRecOffset()));
+        ITmfLocation location = CtfLocation.newAndserialize(db, db.getRecPtr(rec + TmfCheckpoint.getLocationPtrRecOffset()));
         TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
         System.out.println("restored: " + timeStamp);
 //        tmfCheckpoint.serialize(db, rec);

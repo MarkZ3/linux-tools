@@ -30,6 +30,14 @@ public class TmfPersistentIndexer extends TmfCheckpointIndexer {
         super(trace);
     }
 
+    /**
+     * @param trace
+     * @param interval
+     */
+    public TmfPersistentIndexer(ITmfTrace trace, int interval) {
+        super(trace, interval);
+    }
+
     @Override
     public void dispose() {
         super.dispose();
@@ -109,13 +117,5 @@ public class TmfPersistentIndexer extends TmfCheckpointIndexer {
 //            e.printStackTrace();
 //        }
 //        return false;
-    }
-
-    /**
-     * @param trace
-     * @param interval
-     */
-    public TmfPersistentIndexer(ITmfTrace trace, int interval) {
-        super(trace, interval);
     }
 }
