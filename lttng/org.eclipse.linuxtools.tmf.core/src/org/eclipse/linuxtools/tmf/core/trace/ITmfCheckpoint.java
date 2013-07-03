@@ -64,6 +64,16 @@ public interface ITmfCheckpoint extends Comparable<ITmfCheckpoint> {
     long serialize(Database db) throws CoreException;
 
     /**
+     * @since 3.0
+     */
+    void setRank(int rank);
+
+    /**
+     * @since 3.0
+     */
+    public int getRank();
+
+    /**
 //     * @param db
 //     * @param rec
 //     * @throws CoreException

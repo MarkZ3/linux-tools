@@ -17,13 +17,14 @@ import org.eclipse.linuxtools.tmf.core.trace.index.IBTreeVisitor;
  */
 public class TmfPersistentIndex implements ITmfIndex {
 
-    Database fDatabase;
-    BTree fCheckpointTree;
-    ITmfTrace fTrace;
-    int size = 0;
+    private Database fDatabase;
+    private BTree fCheckpointTree;
+    private BTree fCheckpointRankTree;
+    private ITmfTrace fTrace;
+    private int size = 0;
 
     private final String INDEX_FILE_NAME = "index.ht"; //$NON-NLS-1$
-    int version = 2;
+    private int version = 2;
 
     /**
      *
@@ -35,6 +36,7 @@ public class TmfPersistentIndex implements ITmfIndex {
     public static final int FIRST_CHECKPOINT_OFFSET = VERSION_NUMBER_OFFSET + 4;
 
     public static final int CHECKPOINT_TREE_OFFSET = FIRST_CHECKPOINT_OFFSET + 4;
+    public static final int CHECKPOINT_RANK_TREE_OFFSET = CHECKPOINT_TREE_OFFSET + 4;
 
     /**
      * @param trace
@@ -90,6 +92,10 @@ public class TmfPersistentIndex implements ITmfIndex {
                     if (fCheckpointTree == null) {
                         fCheckpointTree= new BTree(fDatabase, CHECKPOINT_TREE_OFFSET, new CheckpointBTreeComparator(fDatabase, fTrace));
                     }
+
+                    if (fCheckpointRankTree == null) {
+                        fCheckpointRankTree= new BTree(fDatabase, CHECKPOINT_RANK_TREE_OFFSET, new CheckpointBTreeComparator(fDatabase, fTrace));
+                    }
                 } catch (CoreException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -126,6 +132,7 @@ public class TmfPersistentIndex implements ITmfIndex {
     @Override
     public void add(ITmfCheckpoint checkpoint) {
         try {
+            checkpoint.setRank(size);
             long record = checkpoint.serialize(fDatabase);
             fCheckpointTree.insert(record);
             addToList(FIRST_CHECKPOINT_OFFSET, record);
@@ -139,6 +146,22 @@ public class TmfPersistentIndex implements ITmfIndex {
 
     @Override
     public ITmfCheckpoint get(int checkpoint) {
+
+        System.out.println("searching for no: " + checkpoint);
+        CheckPointRankTreeVisitor visitor = new CheckPointRankTreeVisitor(checkpoint, fDatabase, fTrace);
+        try {
+            fCheckpointRankTree.accept(visitor);
+        } catch (CoreException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        if (visitor.isFound()) {
+            System.out.println("found no "+ checkpoint + "!!");
+            return visitor.getCheckpoint();
+        }
+
+
         try {
             long rec= fDatabase.getRecPtr(FIRST_CHECKPOINT_OFFSET);
             int i = 0;
@@ -147,6 +170,7 @@ public class TmfPersistentIndex implements ITmfIndex {
                 ++i;
             }
 
+            fCheckpointRankTree.insert(rec);
             return fTrace.restoreCheckPoint(fDatabase, rec);
 
         } catch (CoreException e) {
@@ -161,13 +185,14 @@ public class TmfPersistentIndex implements ITmfIndex {
 
     class CheckPointTreeVisitor implements IBTreeVisitor {
 
-        ITmfCheckpoint fCheckpoint;
+        ITmfCheckpoint fCheckpointSearch;
+        ITmfCheckpoint fCheckpointResult;
         final private Database fDb;
         final private ITmfTrace fTrace;
         private boolean fFound = false;
 
         public CheckPointTreeVisitor(ITmfCheckpoint checkpoint, Database db, ITmfTrace trace) {
-            fCheckpoint = checkpoint;
+            fCheckpointSearch = checkpoint;
             this.fDb = db;
             fTrace = trace;
         }
@@ -175,7 +200,7 @@ public class TmfPersistentIndex implements ITmfIndex {
         @Override
         public int compare(long record) throws CoreException {
             ITmfCheckpoint restoreCheckPoint = fTrace.restoreCheckPoint(fDb, record);
-            return restoreCheckPoint.compareTo(fCheckpoint);
+            return restoreCheckPoint.compareTo(fCheckpointSearch);
         }
 
         @Override
@@ -185,7 +210,7 @@ public class TmfPersistentIndex implements ITmfIndex {
             }
 
             fFound = true;
-            fCheckpoint = fTrace.restoreCheckPoint(fDb, record);
+            fCheckpointResult = fTrace.restoreCheckPoint(fDb, record);
             return false;
         }
 
@@ -194,7 +219,48 @@ public class TmfPersistentIndex implements ITmfIndex {
         }
 
         ITmfCheckpoint getCheckpoint() {
-            return fCheckpoint;
+            return fCheckpointResult;
+        }
+
+    }
+
+    class CheckPointRankTreeVisitor implements IBTreeVisitor {
+
+        ITmfCheckpoint fCheckpointResult;
+        int fRank;
+        final private Database fDb;
+        final private ITmfTrace fTrace;
+        private boolean fFound = false;
+
+        public CheckPointRankTreeVisitor(int rank, Database db, ITmfTrace trace) {
+            fRank = rank;
+            this.fDb = db;
+            fTrace = trace;
+        }
+
+        @Override
+        public int compare(long record) throws CoreException {
+            ITmfCheckpoint restoreCheckPoint = fTrace.restoreCheckPoint(fDb, record);
+            return Integer.valueOf(restoreCheckPoint.getRank()).compareTo(Integer.valueOf(fRank));
+        }
+
+        @Override
+        public boolean visit(long record) throws CoreException {
+            if (record == 0) {
+                return true;
+            }
+
+            fFound = true;
+            fCheckpointResult = fTrace.restoreCheckPoint(fDb, record);
+            return false;
+        }
+
+        boolean isFound() {
+            return fFound;
+        }
+
+        ITmfCheckpoint getCheckpoint() {
+            return fCheckpointResult;
         }
 
     }
@@ -220,10 +286,10 @@ public class TmfPersistentIndex implements ITmfIndex {
             while (rec != 0) {
                 ITmfCheckpoint aCheckpoint = fTrace.restoreCheckPoint(fDatabase, rec);
                 if (aCheckpoint.compareTo(checkpoint) == 0) {
+                    fCheckpointTree.insert(rec);
                     return i;
                 }
                 rec= fDatabase.getRecPtr(rec);
-                ++i;
             }
         } catch (CoreException e) {
             e.printStackTrace();

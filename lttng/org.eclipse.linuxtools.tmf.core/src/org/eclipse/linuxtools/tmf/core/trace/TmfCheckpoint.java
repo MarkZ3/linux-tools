@@ -41,6 +41,8 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     // The checkpoint timestamp
     private final ITmfTimestamp fTimestamp;
 
+    private int fRank = 0;
+
     // ------------------------------------------------------------------------
     // Constructors
     // ------------------------------------------------------------------------
@@ -48,8 +50,9 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     private final static int NEXT_SIBLING_REC_OFFSET = 0;
     private final static int TIMESTAMP_PTR_REC_OFFSET = NEXT_SIBLING_REC_OFFSET + Database.PTR_SIZE;
     private final static int LOCATION_PTR_REC_OFFSET = TIMESTAMP_PTR_REC_OFFSET + Database.PTR_SIZE;
+    private final static int RANK_REC_OFFSET = LOCATION_PTR_REC_OFFSET + Database.PTR_SIZE;
 
-    private final static int RECORD_SIZE = LOCATION_PTR_REC_OFFSET + Database.PTR_SIZE;
+    private final static int RECORD_SIZE = LOCATION_PTR_REC_OFFSET + 4;
 
     /**
      * Full constructor
@@ -187,6 +190,7 @@ public class TmfCheckpoint implements ITmfCheckpoint {
         db.putRecPtr(record + LOCATION_PTR_REC_OFFSET, locationRec);
         long timestampRec = fTimestamp.serialize(db);
         db.putRecPtr(record + TIMESTAMP_PTR_REC_OFFSET, timestampRec);
+        db.putInt(RANK_REC_OFFSET, fRank);
 
         return record;
     }
@@ -220,5 +224,20 @@ public class TmfCheckpoint implements ITmfCheckpoint {
      */
     public static ITmfCheckpoint newAndSerialize(Database db, long rec, CtfTmfTimestamp timeStamp, ITmfLocation location) {
         return null;
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void setRank(int rank) {
+        fRank = rank;
+    }
+
+    /**
+     * @since 3.0
+     */
+    public int getRank() {
+        return fRank;
     }
 }
