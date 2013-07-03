@@ -551,45 +551,6 @@ public class Database {
 		getChunk(offset).get(offset, data, dataPos, len);
 	}
 
-	public IIndexString newString(String string) throws CoreException {
-		return newString(string.toCharArray());
-	}
-
-	public IIndexString newString(char[] chars) throws CoreException {
-		int len= chars.length;
-		int bytelen;
-		final boolean useBytes = useBytes(chars);
-		if (useBytes) {
-			bytelen= len;
-		} else {
-			bytelen= 2 * len;
-		}
-
-		if (bytelen > ShortString.MAX_BYTE_LENGTH) {
-			return new LongString(this, chars, useBytes);
-		}
-
-		return new ShortString(this, chars, useBytes);
-	}
-
-	private static boolean useBytes(char[] chars) {
-		for (char c : chars) {
-			if ((c & 0xff00) != 0) {
-                return false;
-            }
-		}
-		return true;
-	}
-
-	public IIndexString getString(long offset) throws CoreException {
-		final int l = getInt(offset);
-		int bytelen= l < 0 ? -l : 2 * l;
-		if (bytelen > ShortString.MAX_BYTE_LENGTH) {
-			return new LongString(this, offset);
-		}
-		return new ShortString(this, offset);
-	}
-
 	/**
 	 * For debugging purposes, only.
 	 */

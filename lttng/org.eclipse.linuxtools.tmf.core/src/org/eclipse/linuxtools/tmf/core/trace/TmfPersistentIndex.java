@@ -49,11 +49,15 @@ public class TmfPersistentIndex implements ITmfIndex {
      * @author emalape
      *
      */
-    public static class MacroBTreeComparator implements IBTreeComparator {
+    public static class CheckpointBTreeComparator implements IBTreeComparator {
         final private Database db;
         final private ITmfTrace fTrace;
 
-        public MacroBTreeComparator(Database database, ITmfTrace trace) {
+        /**
+         * @param database
+         * @param trace
+         */
+        public CheckpointBTreeComparator(Database database, ITmfTrace trace) {
             db= database;
             fTrace = trace;
         }
@@ -84,7 +88,7 @@ public class TmfPersistentIndex implements ITmfIndex {
                     }
                     size = i;
                     if (fCheckpointTree == null) {
-                        fCheckpointTree= new BTree(fDatabase, CHECKPOINT_TREE_OFFSET, new MacroBTreeComparator(fDatabase, fTrace));
+                        fCheckpointTree= new BTree(fDatabase, CHECKPOINT_TREE_OFFSET, new CheckpointBTreeComparator(fDatabase, fTrace));
                     }
                 } catch (CoreException e) {
                     // TODO Auto-generated catch block
@@ -170,8 +174,8 @@ public class TmfPersistentIndex implements ITmfIndex {
 
         @Override
         public int compare(long record) throws CoreException {
-            fTrace.restoreCheckPoint(fDb, record);
-            return 0;
+            ITmfCheckpoint restoreCheckPoint = fTrace.restoreCheckPoint(fDb, record);
+            return restoreCheckPoint.compareTo(fCheckpoint);
         }
 
         @Override
@@ -181,11 +185,16 @@ public class TmfPersistentIndex implements ITmfIndex {
             }
 
             fFound = true;
+            fCheckpoint = fTrace.restoreCheckPoint(fDb, record);
             return false;
         }
 
         boolean isFound() {
             return fFound;
+        }
+
+        ITmfCheckpoint getCheckpoint() {
+            return fCheckpoint;
         }
 
     }
