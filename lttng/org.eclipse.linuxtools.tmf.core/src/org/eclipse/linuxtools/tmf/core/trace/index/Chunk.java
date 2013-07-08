@@ -175,7 +175,9 @@ final class Chunk {
 		assert fLocked;
 		fDirty = true;
 		int idx = recPtrToIndex(offset);
-		putInt(compressFreeRecPtr(value), fBuffer, idx);
+		int compressedFreeRecPtr = compressFreeRecPtr(value);
+		System.out.println("putFreeRecPtr : " + offset + ", " + idx + " -> " + compressedFreeRecPtr);
+		putInt(compressedFreeRecPtr, fBuffer, idx);
 	}
 
 	public long getRecPtr(final long offset) {
@@ -186,6 +188,7 @@ final class Chunk {
 	public long getFreeRecPtr(final long offset) {
 		final int idx = recPtrToIndex(offset);
 		int value = getInt(fBuffer, idx);
+		System.out.println("getFreeRecPtr : " + offset + ", " + idx + " -> " + value);
 		return expandToFreeRecPtr(value);
 	}
 

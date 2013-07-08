@@ -309,6 +309,7 @@ public class Database {
 		for (useDeltas= needDeltas; useDeltas <= MAX_BLOCK_DELTAS; useDeltas++) {
 			freeblock = getFirstBlock(useDeltas * BLOCK_SIZE_DELTA);
 			if (freeblock != 0) {
+			    System.out.println();
                 break;
             }
 		}
@@ -340,7 +341,8 @@ public class Database {
 		chunk.clear(freeblock + BLOCK_HEADER_SIZE, usedSize - BLOCK_HEADER_SIZE);
 
 		malloced += usedSize;
-		return freeblock + BLOCK_HEADER_SIZE;
+		long rec = freeblock + BLOCK_HEADER_SIZE;
+        return rec;
 	}
 
 	private long createNewChunk() throws CoreException {
@@ -409,7 +411,9 @@ public class Database {
 
 	private long getFirstBlock(int blocksize) {
 		assert fLocked;
-		return fHeaderChunk.getFreeRecPtr((blocksize/BLOCK_SIZE_DELTA - MIN_BLOCK_DELTAS + 1) * INT_SIZE);
+		int offset = (blocksize/BLOCK_SIZE_DELTA - MIN_BLOCK_DELTAS + 1) * INT_SIZE;
+
+        return fHeaderChunk.getFreeRecPtr(offset);
 	}
 
 	private void setFirstBlock(int blocksize, long block) {
