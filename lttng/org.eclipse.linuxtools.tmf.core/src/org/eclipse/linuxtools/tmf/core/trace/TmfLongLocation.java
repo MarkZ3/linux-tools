@@ -13,7 +13,6 @@
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * A concrete implementation of TmfLocation based on Long:s
@@ -46,22 +45,22 @@ public final class TmfLongLocation extends TmfLocation {
         return (Long) super.getLocationInfo();
     }
 
-    /**
-     * @since 3.0
-     */
-    @Override
-    public long serialize(Database db) throws CoreException {
-        long record = db.malloc(8);
-        db.putLong(record, getLocationInfo().longValue());
-        return record;
-    }
-
-    /**
-     * @since 3.0
-     */
-    @Override
-    public void serialize(Database db, long rec) throws CoreException {
-
-    }
+//    /**
+//     * @since 3.0
+//     */
+//    @Override
+//    public long serialize(Database db) throws CoreException {
+//        long record = db.malloc(8);
+//        db.putLong(record, getLocationInfo().longValue());
+//        return record;
+//    }
+//
+//    /**
+//     * @since 3.0
+//     */
+//    @Override
+//    public void serialize(Database db, long rec) throws CoreException {
+//
+//    }
 
 }

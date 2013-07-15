@@ -12,15 +12,8 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
 import org.eclipse.linuxtools.tmf.core.trace.TmfLocation;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The nugget of information that is unique to a location in a CTF trace.
@@ -132,35 +125,35 @@ public final class CtfLocation extends TmfLocation {
         return super.toString();
     }
 
-    /**
-     * @since 3.0
-     */
-    @Override
-    public long serialize(Database db) throws CoreException {
-        return getLocationInfo().serialize(db);
-
-    }
-
-    /**
-     * @since 3.0
-     */
-    @Override
-    public void serialize(Database db, long rec) throws CoreException {
-        getLocationInfo().serialize(db, rec);
-    }
-
-    /**
-     * @param db
-     * @param rec
-     * @return
-     * @throws CoreException
-     * @since 3.0
-     */
-    public static ITmfLocation newAndserialize(Database db, long rec) throws CoreException {
-        CtfLocation c = new CtfLocation();
-        c.serialize(db, rec);
-        return c;
-    }
+//    /**
+//     * @since 3.0
+//     */
+//    @Override
+//    public long serialize(Database db) throws CoreException {
+//        return getLocationInfo().serialize(db);
+//
+//    }
+//
+//    /**
+//     * @since 3.0
+//     */
+//    @Override
+//    public void serialize(Database db, long rec) throws CoreException {
+//        getLocationInfo().serialize(db, rec);
+//    }
+//
+//    /**
+//     * @param db
+//     * @param rec
+//     * @return
+//     * @throws CoreException
+//     * @since 3.0
+//     */
+//    public static ITmfLocation newAndserialize(Database db, long rec) throws CoreException {
+//        CtfLocation c = new CtfLocation();
+//        c.serialize(db, rec);
+//        return c;
+//    }
 
 
 }

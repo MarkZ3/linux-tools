@@ -15,10 +15,6 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
-import java.io.IOException;
-
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * A generic timestamp implementation. The timestamp is represented by the
@@ -347,33 +343,33 @@ public class TmfTimestamp implements ITmfTimestamp {
         }
     }
 
-    /**
-     * @param rec
-     * @throws CoreException
-     * @since 3.0
-     */
-    @Override
-    public long serialize(Database db) throws CoreException {
-        long record = db.malloc(RECORD_SIZE);
-        long offset = record + VALUE_REC_OFFSET;
-        System.out.println("put timestamp at record: " + offset + " value: " + fValue);
-        db.putLong(offset, fValue);
-
-        db.putInt(record + SCALE__REC_OFFSET, fScale);
-        db.putInt(record + PRECISION_REC_OFFSET, fPrecision);
-        return record;
-    }
-
-    /**
-     * @since 3.0
-     */
-    @Override
-    public void serialize(Database db, long rec) throws CoreException {
-        long offset = rec + VALUE_REC_OFFSET;
-        fValue = db.getLong(offset);
-        System.out.println("read timestamp at record: " + offset + " value: " + fValue);
-        fScale = db.getInt(rec + SCALE__REC_OFFSET);
-        fPrecision = db.getInt(rec + PRECISION_REC_OFFSET);
-    }
+//    /**
+//     * @param rec
+//     * @throws CoreException
+//     * @since 3.0
+//     */
+//    @Override
+//    public long serialize(Database db) throws CoreException {
+//        long record = db.malloc(RECORD_SIZE);
+//        long offset = record + VALUE_REC_OFFSET;
+//        System.out.println("put timestamp at record: " + offset + " value: " + fValue);
+//        db.putLong(offset, fValue);
+//
+//        db.putInt(record + SCALE__REC_OFFSET, fScale);
+//        db.putInt(record + PRECISION_REC_OFFSET, fPrecision);
+//        return record;
+//    }
+//
+//    /**
+//     * @since 3.0
+//     */
+//    @Override
+//    public void serialize(Database db, long rec) throws CoreException {
+//        long offset = rec + VALUE_REC_OFFSET;
+//        fValue = db.getLong(offset);
+//        System.out.println("read timestamp at record: " + offset + " value: " + fValue);
+//        fScale = db.getInt(rec + SCALE__REC_OFFSET);
+//        fPrecision = db.getInt(rec + PRECISION_REC_OFFSET);
+//    }
 
 }

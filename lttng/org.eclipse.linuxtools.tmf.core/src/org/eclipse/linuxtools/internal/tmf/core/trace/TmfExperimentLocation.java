@@ -14,9 +14,7 @@
 
 package org.eclipse.linuxtools.internal.tmf.core.trace;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 
 /**
@@ -108,15 +106,15 @@ public final class TmfExperimentLocation implements ITmfLocation {
         return fLocation;
     }
 
-    @Override
-    public long serialize(Database db) throws CoreException {
-        // TODO Auto-generated method stub
-        return 0;
-
-    }
-
-    @Override
-    public void serialize(Database db, long rec) throws CoreException {
-    }
+//    @Override
+//    public long serialize(Database db) throws CoreException {
+//        // TODO Auto-generated method stub
+//        return 0;
+//
+//    }
+//
+//    @Override
+//    public void serialize(Database db, long rec) throws CoreException {
+//    }
 
 }

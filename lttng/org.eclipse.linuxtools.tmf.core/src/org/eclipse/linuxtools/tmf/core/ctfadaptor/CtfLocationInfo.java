@@ -10,13 +10,6 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The data object to go in a {@link CtfLocation}.
@@ -119,27 +112,27 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
         return 0;
     }
 
-    /**
-     * @param db
-     * @return
-     * @throws CoreException
-     * @since 3.0
-     */
-    public long serialize(Database db) throws CoreException {
-        long record = db.malloc(RECORD_SIZE);
-        db.putLong(record + TIMESTAMP_REC_OFFSET, timestamp);
-        db.putLong(record + INDEX_REC_OFFSET, index);
-
-        return record;
-    }
-
-    /**
-     * @param stream
-     * @throws IOException
-     * @since 3.0
-     */
-    public void serialize(Database db, long rec) throws CoreException {
-        timestamp = db.getLong(TIMESTAMP_REC_OFFSET);
-        index = db.getLong(INDEX_REC_OFFSET);
-    }
+//    /**
+//     * @param db
+//     * @return
+//     * @throws CoreException
+//     * @since 3.0
+//     */
+//    public long serialize(Database db) throws CoreException {
+//        long record = db.malloc(RECORD_SIZE);
+//        db.putLong(record + TIMESTAMP_REC_OFFSET, timestamp);
+//        db.putLong(record + INDEX_REC_OFFSET, index);
+//
+//        return record;
+//    }
+//
+//    /**
+//     * @param stream
+//     * @throws IOException
+//     * @since 3.0
+//     */
+//    public void serialize(Database db, long rec) throws CoreException {
+//        timestamp = db.getLong(TIMESTAMP_REC_OFFSET);
+//        index = db.getLong(INDEX_REC_OFFSET);
+//    }
 }

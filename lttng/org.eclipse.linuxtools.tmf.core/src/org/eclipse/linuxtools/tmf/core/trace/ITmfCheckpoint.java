@@ -13,13 +13,7 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The basic trace checkpoint structure in TMF. The purpose of the checkpoint is
@@ -55,13 +49,13 @@ public interface ITmfCheckpoint extends Comparable<ITmfCheckpoint> {
     @Override
     int compareTo(ITmfCheckpoint checkpoint);
 
-    /**
-     * @param db
-     * @return
-     * @throws CoreException
-     * @since 3.0
-     */
-    long serialize(Database db) throws CoreException;
+//    /**
+//     * @param db
+//     * @return
+//     * @throws CoreException
+//     * @since 3.0
+//     */
+//    long serialize(Database db) throws CoreException;
 
     /**
      * @since 3.0

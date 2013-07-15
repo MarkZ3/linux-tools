@@ -13,14 +13,11 @@
 
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.linuxtools.ctf.core.event.IEventDeclaration;
@@ -32,14 +29,11 @@ import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfEventParser;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceProperties;
-import org.eclipse.linuxtools.tmf.core.trace.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTrace;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The CTf trace handler
@@ -410,17 +404,17 @@ public class CtfTmfTrace extends TmfTrace
         return new CtfIterator(this);
     }
 
-    /**
-     * @throws IOException
-     * @since 3.0
-     */
-    @Override
-    public ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException {
-        CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(db, db.getRecPtr(rec + TmfCheckpoint.getTimestampPtrRecOffset()));
-        ITmfLocation location = CtfLocation.newAndserialize(db, db.getRecPtr(rec + TmfCheckpoint.getLocationPtrRecOffset()));
-        TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
-        System.out.println("restored: " + timeStamp);
-//        tmfCheckpoint.serialize(db, rec);
-        return tmfCheckpoint;
-    }
+//    /**
+//     * @throws IOException
+//     * @since 3.0
+//     */
+//    @Override
+//    public ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException {
+//        CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(db, db.getRecPtr(rec + TmfCheckpoint.getTimestampPtrRecOffset()));
+//        ITmfLocation location = CtfLocation.newAndserialize(db, db.getRecPtr(rec + TmfCheckpoint.getLocationPtrRecOffset()));
+//        TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
+//        System.out.println("restored: " + timeStamp);
+////        tmfCheckpoint.serialize(db, rec);
+//        return tmfCheckpoint;
+//    }
 }

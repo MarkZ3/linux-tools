@@ -39,7 +39,6 @@ import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndexer;
 import org.eclipse.linuxtools.tmf.core.trace.TmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTrace;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * Base class for custom plain text traces.
@@ -397,11 +396,5 @@ public class CustomTxtTrace extends TmfTrace implements ITmfEventParser {
             return Status.OK_STATUS;
         }
         return new Status(IStatus.ERROR, Activator.PLUGIN_ID ,Messages.CustomTrace_FileNotFound + ": " + path); //$NON-NLS-1$
-    }
-
-    @Override
-    public ITmfCheckpoint restoreCheckPoint(Database db, long rec) throws CoreException {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

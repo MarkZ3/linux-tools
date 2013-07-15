@@ -12,12 +12,8 @@
 
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
-
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.index.Database;
 
 /**
  * The CTF adapter for the TMF timestamp. It's basically the same as a
@@ -40,15 +36,15 @@ public final class CtfTmfTimestamp extends TmfTimestamp {
 
     private CtfTmfTimestamp() {
     }
-
-    /**
-     * @throws CoreException
-     * @since 3.0
-     */
-    public static CtfTmfTimestamp newAndSerialize(Database db, long rec) throws CoreException {
-        CtfTmfTimestamp c = new CtfTmfTimestamp();
-        c.serialize(db, rec);
-        return c;
-    }
+//
+//    /**
+//     * @throws CoreException
+//     * @since 3.0
+//     */
+//    public static CtfTmfTimestamp newAndSerialize(Database db, long rec) throws CoreException {
+//        CtfTmfTimestamp c = new CtfTmfTimestamp();
+//        c.serialize(db, rec);
+//        return c;
+//    }
 
 }
