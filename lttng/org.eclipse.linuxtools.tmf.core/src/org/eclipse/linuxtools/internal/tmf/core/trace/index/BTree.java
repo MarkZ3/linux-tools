@@ -18,9 +18,16 @@ import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
  */
 public class BTree {
 
-    static final int MAX_RECORDS = 10;
-    static final int MEDIAN_RECORD = MAX_RECORDS / 2;
-    static final int MAX_CHILDREN = MAX_RECORDS + 1;
+    final int DEGREE;
+    final int MAX_RECORDS;
+    final int MAX_CHILDREN;
+    final int MIN_RECORDS;
+    //final int OFFSET_CHILDREN;
+    final int MEDIAN_RECORD;
+
+//    static final int MAX_RECORDS = 10;
+//    static final int MEDIAN_RECORD = MAX_RECORDS / 2;
+//    static final int MAX_CHILDREN = MAX_RECORDS + 1;
     BTreeNode root;
 
 //    void accept(IBTreeVisitor visitor) {
@@ -29,12 +36,19 @@ public class BTree {
 //        }
 //    }
 
-    public BTree() {
+    public BTree(int degree) {
+        this.DEGREE = degree;
+        this.MIN_RECORDS = DEGREE - 1;
+        this.MAX_RECORDS = 2*DEGREE - 1;
+        this.MAX_CHILDREN = 2*DEGREE;
+        //this.OFFSET_CHILDREN = MAX_RECORDS * Database.INT_SIZE;
+        this.MEDIAN_RECORD = DEGREE - 1;
         root = new BTreeNode();
     }
 
     public void insert(ITmfCheckpoint checkpoint) {
 
+        System.out.println("inserting " + checkpoint.getTimestamp());
         insert(checkpoint, root, null, 0);
     }
 
@@ -67,6 +81,7 @@ public class BTree {
                 // Create a new root
                 parent = new BTreeNode();
                 parent.setChild(0, node);
+                root = parent;
             } else {
                 // Insert the median into the parent.
                 for (int i = MAX_RECORDS - 2; i >= iParent; --i) {
@@ -132,5 +147,105 @@ public class BTree {
         }
 
 //        root.accept(b);
+    }
+
+    public void accept(IBTreeVisitor treeVisitor) {
+        // TODO Auto-generated method stub
+        accept(root, treeVisitor);
+    }
+
+    private boolean accept(BTreeNode node, IBTreeVisitor visitor) {
+        // If found is false, we are still in search mode.
+        // Once found is true visit everything.
+        // Return false when ready to quit.
+
+        if (node == null) {
+            return true;
+        }
+
+        try {
+            //Chunk chunk = db.getChunk(node);
+
+            // Binary search to find first record greater or equal.
+            int lower= 0;
+            int upper= MAX_RECORDS - 1;
+            while (lower < upper && node.getKey(upper - 1) == null) {
+                upper--;
+            }
+            while (lower < upper) {
+                int middle= (lower + upper) / 2;
+                ITmfCheckpoint checkRec = node.getKey(middle);
+                if (checkRec == null) {
+                    upper= middle;
+                } else {
+                    int compare= visitor.compare(checkRec);
+                    if (compare >= 0) {
+                        upper= middle;
+                    } else {
+                        lower= middle + 1;
+                    }
+                }
+            }
+
+            // Start with first record greater or equal, reuse comparison results.
+            int i= lower;
+            for (; i < MAX_RECORDS; ++i) {
+                ITmfCheckpoint record = node.getKey(i);
+                if (record == null) {
+                    break;
+                }
+
+                int compare= visitor.compare(record);
+                if (compare > 0) {
+                    // Start point is to the left.
+                    return accept(node.getChild(i), visitor);
+                }  else if (compare == 0) {
+                    if (!accept(node.getChild(i), visitor)) {
+                        return false;
+                    }
+                    if (!visitor.visit(record)) {
+                        return false;
+                    }
+                }
+            }
+            return accept(node.getChild(i), visitor);
+        } finally {
+
+        }
+    }
+
+    /**
+     * @since 3.0
+     */
+    private class BTreeNode {
+        ITmfCheckpoint keys[];
+        BTreeNode children[];
+
+        public BTreeNode() {
+            keys = new ITmfCheckpoint[MAX_RECORDS];
+            children = new BTreeNode[MAX_CHILDREN];
+        }
+
+        public void accept(IBTreeVisitor visitor) {
+            for (ITmfCheckpoint key : keys) {
+                visitor.visit(key);
+            }
+        }
+
+        ITmfCheckpoint getKey(int i) {
+            return keys[i];
+        }
+
+        BTreeNode getChild(int i) {
+            return children[i];
+        }
+
+        public void setKey(int i, ITmfCheckpoint c) {
+            keys[i] = c;
+        }
+
+        public void setChild(int i, BTreeNode n) {
+            children[i] = n;
+        }
     }
 }

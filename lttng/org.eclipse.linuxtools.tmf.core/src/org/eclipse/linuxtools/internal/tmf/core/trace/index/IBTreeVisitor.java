@@ -13,7 +13,9 @@ public interface IBTreeVisitor {
      * @return <code>true</code> to continue the visit, <code>false</code> to abort it.
      * @throws CoreException
      */
-    public abstract boolean visit(BTreeKey key);
+//    public abstract boolean visit(BTreeKey key);
 
     public abstract boolean visit(ITmfCheckpoint key);
+
+    public abstract int compare(ITmfCheckpoint checkRec);
 }
