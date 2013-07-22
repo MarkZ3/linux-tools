@@ -11,6 +11,13 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.internal.tmf.core.trace.index;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.util.Arrays;
+
 import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
 
 /**
@@ -18,17 +25,50 @@ import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
  */
 public class BTree {
 
+    private static final int NULL_CHILD = -1;
+    private static final int VERSION = 0;
+    private static final int INT_SIZE = 4;
+    private static final int LONG_SIZE = 8;
+
     final int DEGREE;
     final int MAX_RECORDS;
     final int MAX_CHILDREN;
     final int MIN_RECORDS;
     //final int OFFSET_CHILDREN;
     final int MEDIAN_RECORD;
+    RandomAccessFile file;
+    static long cacheHits = 0;
+    private CacheHeader cacheHeader = null;
+    private BTreeNodeCache nodeCache;
+
+    class BTreeNodeCache {
+        BTreeNode[] cachedNodes;
+        long[]      cachedNodesOffsets;
+        BTreeNode getNode(long offset) {
+            BTreeNode node = null;
+            int index = Arrays.binarySearch(cachedNodesOffsets, offset);
+            if (index > 0) {
+                ++cacheHits;
+                return cachedNodes[index];
+            }
+            return node;
+        }
+    };
+
+    private class CacheHeader {
+        int version;
+        long root;
+        void serializeIn(FileChannel fileChannel) {
+
+        }
+
+        int SIZE = INT_SIZE + LONG_SIZE;
+    }
 
 //    static final int MAX_RECORDS = 10;
 //    static final int MEDIAN_RECORD = MAX_RECORDS / 2;
 //    static final int MAX_CHILDREN = MAX_RECORDS + 1;
-    BTreeNode root;
+//    long root;
 
 //    void accept(IBTreeVisitor visitor) {
 //        if (root != null) {
@@ -36,23 +76,38 @@ public class BTree {
 //        }
 //    }
 
-    public BTree(int degree) {
+    public BTree(int degree, File file) {
+        nodeCache = new BTreeNodeCache();
+        boolean exists = file.exists();
+        try {
+            this.file = new RandomAccessFile(file, "rw");
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         this.DEGREE = degree;
         this.MIN_RECORDS = DEGREE - 1;
         this.MAX_RECORDS = 2*DEGREE - 1;
         this.MAX_CHILDREN = 2*DEGREE;
         //this.OFFSET_CHILDREN = MAX_RECORDS * Database.INT_SIZE;
         this.MEDIAN_RECORD = DEGREE - 1;
-        root = new BTreeNode();
+
+        if (!exists) {
+            cacheHeader = new CacheHeader();
+            cacheHeader.root = 0;
+        }
+
+        cacheHeader.serializeIn(this.file.getChannel());
     }
 
     public void insert(ITmfCheckpoint checkpoint) {
 
         System.out.println("inserting " + checkpoint.getTimestamp());
-        insert(checkpoint, root, null, 0);
+        insert(checkpoint, cacheHeader.root, null, 0);
     }
 
-    private void insert(ITmfCheckpoint checkpoint, BTreeNode node, BTreeNode parent, int iParent) {
+    private void insert(ITmfCheckpoint checkpoint, long nodeOffset, BTreeNode parent, int iParent) {
+        BTreeNode node = nodeCache.getNode(nodeOffset);
 
      // If this node is full (last record isn't null), split it.
         if (node.getKey(MAX_RECORDS - 1) != null) {
@@ -65,6 +120,7 @@ public class BTree {
 
             // Split it.
             // Create the new node and move the larger records over.
+            long newNodeOffset = allocateNode();
             BTreeNode newnode = new BTreeNode();
 //                long newnode = allocateNode();
 //                Chunk newchunk = db.getChunk(newnode);
@@ -72,16 +128,16 @@ public class BTree {
                 newnode.setKey(i, node.getKey(MEDIAN_RECORD + 1 + i));
                 node.setKey(MEDIAN_RECORD + 1 + i, null);
                 newnode.setChild(i, node.getChild(MEDIAN_RECORD + 1 + i));
-                node.setChild(MEDIAN_RECORD + 1 + i, null);
+                node.setChild(MEDIAN_RECORD + 1 + i, NULL_CHILD);
             }
             newnode.setChild(MEDIAN_RECORD, node.getChild(MAX_RECORDS));
-            node.setChild(MAX_RECORDS, null);
+            node.setChild(MAX_RECORDS, NULL_CHILD);
 
             if (parent == null) {
-                // Create a new root
+                long newRootOffset = allocateNode();
                 parent = new BTreeNode();
-                parent.setChild(0, node);
-                root = parent;
+                parent.setChild(0, nodeOffset);
+                cacheHeader.root = newRootOffset;
             } else {
                 // Insert the median into the parent.
                 for (int i = MAX_RECORDS - 2; i >= iParent; --i) {
@@ -93,7 +149,7 @@ public class BTree {
                 }
             }
             parent.setKey(iParent, median);
-            parent.setChild(iParent + 1, newnode);
+            parent.setChild(iParent + 1, newNodeOffset);
 
             node.setKey(MEDIAN_RECORD, null);
 
@@ -129,8 +185,8 @@ public class BTree {
             }
         }
         final int i= lower;
-        BTreeNode child = node.getChild(i);
-        if (child != null) {
+        long child = node.getChild(i);
+        if (child != NULL_CHILD) {
             // Visit the children.
             insert(checkpoint, child, node, i);
         } else {
@@ -149,16 +205,28 @@ public class BTree {
 //        root.accept(b);
     }
 
-    public void accept(IBTreeVisitor treeVisitor) {
-        // TODO Auto-generated method stub
-        accept(root, treeVisitor);
+    private long allocateNode() {
+        try {
+            // TODO, cache this
+            return file.length();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return -1;
     }
 
-    private boolean accept(BTreeNode node, IBTreeVisitor visitor) {
+    public void accept(IBTreeVisitor treeVisitor) {
+        // TODO Auto-generated method stub
+        accept(cacheHeader.root, treeVisitor);
+    }
+
+    private boolean accept(long nodeOffset, IBTreeVisitor visitor) {
+
         // If found is false, we are still in search mode.
         // Once found is true visit everything.
         // Return false when ready to quit.
-
+        BTreeNode node = nodeCache.getNode(nodeOffset);
         if (node == null) {
             return true;
         }
@@ -219,11 +287,18 @@ public class BTree {
      */
     private class BTreeNode {
         ITmfCheckpoint keys[];
-        BTreeNode children[];
+//        BTreeNode children[];
+        Long children[];
+        int offset;
+        int size;
 
         public BTreeNode() {
+//            this.offset = offset;
+//            this.size = size;
             keys = new ITmfCheckpoint[MAX_RECORDS];
-            children = new BTreeNode[MAX_CHILDREN];
+//            children = new BTreeNode[MAX_CHILDREN];
+            children = new Long[MAX_CHILDREN];
+            Arrays.fill(children, NULL_CHILD);
         }
 
         public void accept(IBTreeVisitor visitor) {
@@ -236,7 +311,7 @@ public class BTree {
             return keys[i];
         }
 
-        BTreeNode getChild(int i) {
+        long getChild(int i) {
             return children[i];
         }
 
@@ -244,7 +319,7 @@ public class BTree {
             keys[i] = c;
         }
 
-        public void setChild(int i, BTreeNode n) {
+        public void setChild(int i, long n) {
             children[i] = n;
         }
     }
