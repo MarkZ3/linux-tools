@@ -61,6 +61,13 @@
             id="org.eclipse.linuxtools.lttng2.rcp.ui.openDir"
             name="%command.OpenDirectory.name">
       </command>
+      <command
+            categoryId="org.eclipse.ui.category.file"
+            defaultHandler="org.eclipse.linuxtools.internal.tracing.rcp.ui.commands.newtrace.NewTrace"
+            description="%command.NewTrace.description"
+            id="org.eclipse.linuxtools.lttng2.rcp.ui.newTrace"
+            name="%command.NewTrace.name">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -92,6 +99,11 @@
                mnemonic="%menu.mnemonic">
             <menu
                   label="%menu.label">
+               <command
+                     commandId="org.eclipse.linuxtools.lttng2.rcp.ui.newTrace"
+                     label="%command.NewTrace.label"
+                     style="push">
+               </command>
                <command
                      commandId="org.eclipse.linuxtools.lttng2.rcp.ui.openFile"
                      label="%command.OpenFile.label"
