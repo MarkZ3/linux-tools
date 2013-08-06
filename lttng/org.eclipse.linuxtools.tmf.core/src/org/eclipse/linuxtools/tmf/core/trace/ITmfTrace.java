@@ -13,12 +13,13 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.linuxtools.tmf.core.component.ITmfDataProvider;
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
@@ -340,13 +341,10 @@ public interface ITmfTrace extends ITmfDataProvider {
      * @since 2.0
      */
     ITmfTimestamp getInitialRangeOffset();
-
-//    /**
-//     * @param db
-//     * @param rec
-//     * @return
-//     * @throws CoreException
-//     * @since 3.0
-//     */
-//    ITmfCheckpoint restoreCheckPoint(ITmfIndex db, long rec) throws CoreException;
+    
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException;
 }

@@ -35,7 +35,7 @@ public class TmfPersistentIndex implements ITmfIndex {
     }
 
     private void createDatabase() {
-        fDatabase = new BTree(8);
+        fDatabase = new BTree(8, getIndexFile(), fTrace);
     }
 
     private File getIndexFile() {

@@ -12,6 +12,10 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 
 /**
@@ -139,19 +143,16 @@ public interface ITmfTimestamp extends Comparable<ITmfTimestamp> {
      */
     String toString(final TmfTimestampFormat format);
 
-//    /**
-//     * @return
-//     * @throws CoreException
-//     * @throws IOException
-//     * @since 3.0
-//     */
-//    long serialize(Database db) throws CoreException;
-//
-//    /**
-//     * @throws IOException
-//     * @throws CoreException
-//     * @since 3.0
-//     */
-//    void serialize(Database db, long rec) throws CoreException;
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    void serialize(OutputStream stream) throws IOException;
+
+    /**
+     * @throws IOException
+     * @since 3.0
+     */
+    void serialize(InputStream stream) throws IOException;
 
 }

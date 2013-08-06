@@ -14,6 +14,9 @@
 
 package org.eclipse.linuxtools.internal.tmf.core.trace;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
 
 
@@ -106,15 +109,16 @@ public final class TmfExperimentLocation implements ITmfLocation {
         return fLocation;
     }
 
-//    @Override
-//    public long serialize(Database db) throws CoreException {
-//        // TODO Auto-generated method stub
-//        return 0;
-//
-//    }
-//
-//    @Override
-//    public void serialize(Database db, long rec) throws CoreException {
-//    }
+    @Override
+    public void serialize(OutputStream stream) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void serialize(InputStream stream) {
+        // TODO Auto-generated method stub
+
+    }
 
 }
