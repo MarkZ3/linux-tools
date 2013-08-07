@@ -7,7 +7,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *   Marc-Andre Laperle - Initial API and implementation
+ *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 package org.eclipse.linuxtools.internal.tmf.core.trace.index;
 
@@ -22,6 +22,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
@@ -38,6 +40,7 @@ public class BTree {
     private static final int VERSION = 0;
     private static final int INT_SIZE = 4;
     private static final int LONG_SIZE = 8;
+    private static final int CACHE_SIZE = 20;
 
     ITmfTrace trace;
 
@@ -52,22 +55,34 @@ public class BTree {
     private CacheHeader cacheHeader = null;
     private BTreeNodeCache nodeCache;
 
+    public void dispose() {
+        nodeCache.flush();
+    }
+
     class BTreeNodeCache {
-        BTreeNode[] cachedNodes;
-        long[]      cachedNodesOffsets;
+        ArrayDeque<BTreeNode> cachedNodes = new ArrayDeque<BTree.BTreeNode>(CACHE_SIZE);
         BTreeNode getNode(long offset) {
-            BTreeNode node = null;
-            int index = Arrays.binarySearch(cachedNodesOffsets, offset);
-            if (index > 0) {
-                ++cacheHits;
-                return cachedNodes[index];
+            for (BTreeNode nodeSearch : cachedNodes) {
+                if (nodeSearch.getOffset() == offset) {
+                    ++cacheHits;
+                    return nodeSearch;
+                }
             }
 
-            node = new BTreeNode(offset);
+            BTreeNode node = new BTreeNode(offset);
             node.load();
-            // remove one from cache, add this new one
+            if (cachedNodes.size() == CACHE_SIZE) {
+                BTreeNode removed = cachedNodes.removeLast();
+                removed.flush();
+            }
+            cachedNodes.push(node);
 
             return node;
+        }
+        public void flush() {
+            for (BTreeNode nodeSearch : cachedNodes) {
+                nodeSearch.flush();
+            }
         }
     }
 
@@ -75,22 +90,16 @@ public class BTree {
         int version;
         long root;
         void serializeIn(FileChannel fileChannel) {
-
+            try {
+                root = file.readLong();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
 
         int SIZE = INT_SIZE + LONG_SIZE;
     }
-
-//    static final int MAX_RECORDS = 10;
-//    static final int MEDIAN_RECORD = MAX_RECORDS / 2;
-//    static final int MAX_CHILDREN = MAX_RECORDS + 1;
-//    long root;
-
-//    void accept(IBTreeVisitor visitor) {
-//        if (root != null) {
-//            root.accept(visitor);
-//        }
-//    }
 
     public BTree(int degree, File file, ITmfTrace trace) {
         this.trace = trace;
@@ -109,12 +118,13 @@ public class BTree {
         //this.OFFSET_CHILDREN = MAX_RECORDS * Database.INT_SIZE;
         this.MEDIAN_RECORD = DEGREE - 1;
 
-        if (!exists) {
-            cacheHeader = new CacheHeader();
-            cacheHeader.root = 0;
+        cacheHeader = new CacheHeader();
+        if (exists) {
+            cacheHeader.serializeIn(this.file.getChannel());
+        } else {
+            cacheHeader.root = allocateNode();
         }
 
-        cacheHeader.serializeIn(this.file.getChannel());
     }
 
     public void insert(ITmfCheckpoint checkpoint) {
@@ -222,10 +232,23 @@ public class BTree {
 //        root.accept(b);
     }
 
+    int btreeNodeSize = - 1;
+    int getSize() {
+        if (btreeNodeSize == -1) {
+            btreeNodeSize += LONG_SIZE; // offset
+            btreeNodeSize = trace.getCheckointSize() * MAX_RECORDS;
+            btreeNodeSize += LONG_SIZE * MAX_CHILDREN;
+        }
+
+        return btreeNodeSize;
+    }
+
     private long allocateNode() {
         try {
             // TODO, cache this
-            return file.length();
+            long offset = file.length();
+            file.setLength(offset + getSize());
+            return offset;
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -249,8 +272,6 @@ public class BTree {
         }
 
         try {
-            //Chunk chunk = db.getChunk(node);
-
             // Binary search to find first record greater or equal.
             int lower= 0;
             int upper= MAX_RECORDS - 1;
@@ -306,22 +327,38 @@ public class BTree {
      */
     private class BTreeNode {
         ITmfCheckpoint keys[];
-//        BTreeNode children[];
-        Long children[];
+        long children[];
         long offset;
         int numEntry = 0;
+        int size = -1;
 
         void flush() {
-            // Write entries, children and entries number
+            try {
+                file.seek(offset);
+                file.writeInt(numEntry);
+                for (int i = 0; i < numEntry; ++i) {
+                    OutputStream outputStream = Channels.newOutputStream(file.getChannel());
+                    keys[i].serialize(outputStream);
+                }
+
+                for (int i = 0; i < MAX_CHILDREN; ++i) {
+                    file.writeLong(children[i]);
+                }
+
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+
+        public long getOffset() {
+            return offset;
         }
 
         public BTreeNode(long offset) {
-
-//            this.offset = offset;
-//            this.size = size;
+            this.offset = offset;
             keys = new ITmfCheckpoint[MAX_RECORDS];
-//            children = new BTreeNode[MAX_CHILDREN];
-            children = new Long[MAX_CHILDREN];
+            children = new long[MAX_CHILDREN];
             Arrays.fill(children, NULL_CHILD);
         }
 
@@ -332,6 +369,10 @@ public class BTree {
                 for (int i = 0; i < numEntry; ++i) {
                     InputStream inputStream = Channels.newInputStream(file.getChannel());
                     keys[i] = trace.restoreCheckPoint(inputStream);
+                }
+
+                for (int i = 0; i < MAX_CHILDREN; ++i) {
+                    children[i] = file.readLong();
                 }
 
             } catch (IOException e) {

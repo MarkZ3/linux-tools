@@ -382,4 +382,10 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
         return null;
     }
 
+    @Override
+    public int getCheckointSize() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
 }

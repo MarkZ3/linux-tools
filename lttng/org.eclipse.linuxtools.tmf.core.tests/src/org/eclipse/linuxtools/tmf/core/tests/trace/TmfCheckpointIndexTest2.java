@@ -31,6 +31,7 @@ import org.eclipse.linuxtools.tmf.core.tests.TmfCoreTestPlugin;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfIndex;
 import org.eclipse.linuxtools.tmf.core.trace.TmfCheckpointIndexer;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfEmptyTraceStub;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
@@ -88,7 +89,7 @@ public class TmfCheckpointIndexTest2 {
         public TestIndexer(EmptyTestTrace testTrace) {
             super(testTrace, BLOCK_SIZE);
         }
-        public List<ITmfCheckpoint> getCheckpoints() {
+        public ITmfIndex getCheckpoints() {
             return getTraceIndex();
         }
     }
@@ -154,7 +155,7 @@ public class TmfCheckpointIndexTest2 {
         assertEquals("getStartTime",   1,          fTrace.getStartTime().getValue());
         assertEquals("getEndTime",     102,        fTrace.getEndTime().getValue());
 
-        List<ITmfCheckpoint> checkpoints = fTrace.getIndexer().getCheckpoints();
+        ITmfIndex checkpoints = fTrace.getIndexer().getCheckpoints();
         assertTrue("Checkpoints exist",  checkpoints != null);
         assertEquals("Checkpoints size", NB_EVENTS / BLOCK_SIZE + 1, checkpoints.size());
 

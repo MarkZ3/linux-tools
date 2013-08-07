@@ -13,6 +13,7 @@
 
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -407,7 +408,7 @@ public class CtfTmfTrace extends TmfTrace
     public CtfIterator createIterator() {
         return new CtfIterator(this);
     }
-    
+
     /**
      * @throws IOException
      * @since 3.0
@@ -415,5 +416,22 @@ public class CtfTmfTrace extends TmfTrace
     @Override
     public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
         return new TmfCheckpoint(CtfTmfTimestamp.newAndSerialize(stream), CtfLocation.newAndserialize(stream));
+    }
+
+    /**
+     * @since 3.0
+     */
+    public int getCheckointSize() {
+        TmfCheckpoint c = new TmfCheckpoint(new CtfTmfTimestamp(0), new CtfLocation(0, 0));
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try {
+            c.serialize(stream);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return stream.size();
     }
 }

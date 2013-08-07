@@ -517,13 +517,22 @@ public class TmfExperiment extends TmfTrace implements ITmfEventParser {
             initializeStreamingMonitor();
         }
     }
-    
+
     /**
      * @since 3.0
      */
     @Override
     public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
         return null;
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public int getCheckointSize() {
+        // TODO Auto-generated method stub
+        return 0;
     }
 
 }

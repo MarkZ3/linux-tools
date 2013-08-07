@@ -341,10 +341,15 @@ public interface ITmfTrace extends ITmfDataProvider {
      * @since 2.0
      */
     ITmfTimestamp getInitialRangeOffset();
-    
+
     /**
      * @throws IOException
      * @since 3.0
      */
     ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException;
+
+    /**
+     * @since 3.0
+     */
+    public int getCheckointSize();
 }

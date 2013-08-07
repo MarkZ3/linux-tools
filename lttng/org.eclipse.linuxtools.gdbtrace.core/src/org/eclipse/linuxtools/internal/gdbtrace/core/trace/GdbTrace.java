@@ -16,6 +16,8 @@
 package org.eclipse.linuxtools.internal.gdbtrace.core.trace;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -195,5 +197,17 @@ public class GdbTrace extends TmfTrace implements ITmfEventParser {
      */
     public void selectFrame(long rank) {
         fGdbTpRef.selectDataFrame(rank, true);
+    }
+
+    @Override
+    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public int getCheckointSize() {
+        // TODO Auto-generated method stub
+        return 0;
     }
 }
