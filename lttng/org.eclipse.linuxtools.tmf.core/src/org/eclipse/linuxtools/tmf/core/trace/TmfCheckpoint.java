@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 
 /**
@@ -182,6 +183,7 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     public void serialize(OutputStream stream) throws IOException {
         fLocation.serialize(stream);
         fTimestamp.serialize(stream);
+        IndexHelper.writeInt(stream, fRank);
     }
 
     /**
@@ -192,6 +194,7 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     public void serialize(InputStream stream) throws IOException {
         fLocation.serialize(stream);
         fTimestamp.serialize(stream);
+        fRank = IndexHelper.readInt(stream);
     }
 
     /**

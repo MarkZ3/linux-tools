@@ -45,14 +45,19 @@ public class TmfPersistentIndex implements ITmfIndex {
 
     @Override
     public void dispose() {
-
+        fDatabase.dispose();
     }
 
     @Override
     public void add(ITmfCheckpoint checkpoint) {
-        fDatabase.insert(checkpoint);
         checkpoint.setRank(size);
+        fDatabase.insert(checkpoint);
         size++;
+        fDatabase.dispose();
+        int binarySearch = binarySearch(checkpoint);
+        if (binarySearch < 0) {
+            throw new IllegalStateException(checkpoint.toString() + " failed to insert");
+        }
     }
 
     class RankVisitor implements IBTreeVisitor {
