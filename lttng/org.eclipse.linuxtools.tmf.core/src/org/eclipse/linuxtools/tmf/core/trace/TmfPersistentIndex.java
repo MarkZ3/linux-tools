@@ -16,30 +16,19 @@ public class TmfPersistentIndex implements ITmfIndex {
     static boolean sDEBUG_LOCKS= true; // initialized in the PDOMManager, because IBM needs PDOM independent of runtime plugin.
 
     private BTree fDatabase;
-//    private BTree fCheckpointTree;
-//    private BTree fCheckpointRankTree;
-    private ITmfTrace fTrace;
-    private int size = 0;
 
     private final String INDEX_FILE_NAME = "index.ht"; //$NON-NLS-1$
-    private int version = 2;
 
     /**
      * @param trace
      *
      */
     public TmfPersistentIndex(ITmfTrace trace) {
-
-        fTrace = trace;
-        createDatabase();
+        fDatabase = new BTree(8, getIndexFile(trace), trace);
     }
 
-    private void createDatabase() {
-        fDatabase = new BTree(8, getIndexFile(), fTrace);
-    }
-
-    private File getIndexFile() {
-        String directory = TmfTraceManager.getSupplementaryFileDir(fTrace);
+    private File getIndexFile(ITmfTrace trace) {
+        String directory = TmfTraceManager.getSupplementaryFileDir(trace);
         return new File(directory + INDEX_FILE_NAME);
     }
 
@@ -50,14 +39,9 @@ public class TmfPersistentIndex implements ITmfIndex {
 
     @Override
     public void add(ITmfCheckpoint checkpoint) {
-        checkpoint.setRank(size);
+        checkpoint.setRank(fDatabase.size());
         fDatabase.insert(checkpoint);
-        size++;
-        fDatabase.dispose();
-        int binarySearch = binarySearch(checkpoint);
-        if (binarySearch < 0) {
-            throw new IllegalStateException(checkpoint.toString() + " failed to insert");
-        }
+        fDatabase.setSize(fDatabase.size() + 1);
     }
 
     class RankVisitor implements IBTreeVisitor {
@@ -96,12 +80,12 @@ public class TmfPersistentIndex implements ITmfIndex {
         ITmfCheckpoint checkpoint2 = v.getCheckpoint();
         System.out.println("Found: " + checkpoint2.getTimestamp() + "(" + (System.currentTimeMillis() - oldTime) + ")");
         return checkpoint2;
-
     }
 
     class Visitor implements IBTreeVisitor {
         int rank = -1;
         private ITmfCheckpoint search;
+        boolean exactFound = false;
 
         public Visitor(ITmfCheckpoint search) {
             this.search = search;
@@ -118,8 +102,11 @@ public class TmfPersistentIndex implements ITmfIndex {
         @Override
         public int compare(ITmfCheckpoint checkRec) {
             int compareTo = checkRec.compareTo(search);
-            if (compareTo <= 0) {
+            if (compareTo <= 0 && !exactFound) {
                 rank = checkRec.getRank();
+                if (compareTo == 0) {
+                    exactFound = true;
+                }
             }
             return compareTo;
         }
@@ -147,7 +134,12 @@ public class TmfPersistentIndex implements ITmfIndex {
 
     @Override
     public int size() {
-        return size;
+        return fDatabase.size();
+    }
+
+    @Override
+    public boolean restore() {
+        return fDatabase.isExisted();
     }
 
 }

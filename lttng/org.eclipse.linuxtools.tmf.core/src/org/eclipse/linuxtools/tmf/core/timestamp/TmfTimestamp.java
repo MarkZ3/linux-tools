@@ -18,6 +18,7 @@ package org.eclipse.linuxtools.tmf.core.timestamp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.sql.Timestamp;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 
@@ -364,6 +365,18 @@ public class TmfTimestamp implements ITmfTimestamp {
         fScale = IndexHelper.readInt(stream);
         fPrecision = IndexHelper.readInt(stream);
 
+    }
+
+    /**
+     * @param stream
+     * @return
+     * @throws IOException
+     * @since 3.0
+     */
+    public static TmfTimestamp newAndSerialize(InputStream stream) throws IOException {
+        TmfTimestamp t = new TmfTimestamp();
+        t.serialize(stream);
+        return t;
     }
 
 }

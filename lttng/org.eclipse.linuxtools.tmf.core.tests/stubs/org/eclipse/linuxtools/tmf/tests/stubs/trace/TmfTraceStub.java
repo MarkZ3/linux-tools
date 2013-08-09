@@ -13,6 +13,7 @@
 
 package org.eclipse.linuxtools.tmf.tests.stubs.trace;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,16 +25,20 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.linuxtools.internal.tmf.core.Activator;
+import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfLocation;
+import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfTmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfEventParser;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfLocation;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndexer;
+import org.eclipse.linuxtools.tmf.core.trace.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.TmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTrace;
@@ -378,14 +383,26 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
 
     @Override
     public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        ITmfLocation location = TmfLongLocation.newAndserialize(stream);
+        TmfTimestamp timeStamp = TmfTimestamp.newAndSerialize(stream);
+        TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
+        tmfCheckpoint.serialize(stream);
+        return tmfCheckpoint;
     }
 
     @Override
     public int getCheckointSize() {
-        // TODO Auto-generated method stub
-        return 0;
+        TmfCheckpoint c = new TmfCheckpoint(new TmfTimestamp(0), new TmfLongLocation(0L));
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try {
+            c.serialize(stream);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return stream.size();
     }
 
 }

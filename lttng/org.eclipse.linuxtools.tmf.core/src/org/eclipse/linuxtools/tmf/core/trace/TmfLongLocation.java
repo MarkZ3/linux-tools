@@ -60,11 +60,19 @@ public final class TmfLongLocation extends TmfLocation {
     }
 
     /**
+     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) {
+    public void serialize(InputStream stream) throws IOException {
+    }
 
+    /**
+     * @since 3.0
+     */
+    public static ITmfLocation newAndserialize(InputStream stream) throws IOException {
+        long longLocation = IndexHelper.readLong(stream);
+        return new TmfLongLocation(longLocation);
     }
 
 }

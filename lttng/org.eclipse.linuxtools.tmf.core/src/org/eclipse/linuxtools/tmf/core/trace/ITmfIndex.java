@@ -3,6 +3,7 @@ package org.eclipse.linuxtools.tmf.core.trace;
 /**
  * @since 3.0
  */
+@SuppressWarnings("javadoc")
 public interface ITmfIndex {
 
     /**
@@ -33,4 +34,6 @@ public interface ITmfIndex {
     int size();
 
     void dispose();
+
+    public boolean restore();
 }

@@ -7,6 +7,7 @@ import java.util.List;
 /**
  * @since 3.0
  */
+@SuppressWarnings("javadoc")
 public class TmfMemoryIndex implements ITmfIndex {
 
     List<ITmfCheckpoint> fCheckpoints;
@@ -47,5 +48,9 @@ public class TmfMemoryIndex implements ITmfIndex {
     @Override
     public int size() {
         return fCheckpoints.size();
+    }
+
+    public boolean restore() {
+        return false;
     }
 }

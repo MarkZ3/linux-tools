@@ -417,7 +417,9 @@ public class CtfTmfTrace extends TmfTrace
     public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
         ITmfLocation location = CtfLocation.newAndserialize(stream);
         CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(stream);
-        return new TmfCheckpoint(timeStamp, location);
+        TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
+        tmfCheckpoint.serialize(stream);
+        return tmfCheckpoint;
     }
 
     /**

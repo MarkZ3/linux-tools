@@ -144,6 +144,11 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
             fIsIndexing = true;
         }
 
+        // No need to build the index, it has been restored
+        if (fTraceIndex.restore()) {
+            return;
+        }
+
         // The monitoring job
         final Job job = new Job("Indexing " + fTrace.getName() + "...") { //$NON-NLS-1$ //$NON-NLS-2$
             @Override

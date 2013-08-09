@@ -192,8 +192,6 @@ public class TmfCheckpoint implements ITmfCheckpoint {
      */
     @Override
     public void serialize(InputStream stream) throws IOException {
-        fLocation.serialize(stream);
-        fTimestamp.serialize(stream);
         fRank = IndexHelper.readInt(stream);
     }
 
