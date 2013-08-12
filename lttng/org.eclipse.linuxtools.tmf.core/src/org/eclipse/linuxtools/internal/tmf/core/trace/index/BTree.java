@@ -34,7 +34,7 @@ public class BTree {
     private static final int VERSION = 0;
     private static final int INT_SIZE = 4;
     private static final int LONG_SIZE = 8;
-    private static final int CACHE_SIZE = 2000;
+    private static final int CACHE_SIZE = 5;
 
     ITmfTrace trace;
 
@@ -66,7 +66,9 @@ public class BTree {
                 if (nodeSearch.getOffset() == offset) {
                     ++cacheHits;
                     // This node is now the most recently used
-                    cachedNodes.push(cachedNodes.removeLast());
+                    cachedNodes.remove(nodeSearch);
+                    cachedNodes.push(nodeSearch);
+
                     return nodeSearch;
                 }
             }
@@ -397,36 +399,36 @@ public class BTree {
                 for (int i = 0; i < numEntry; ++i) {
                     OutputStream outputStream = Channels.newOutputStream(file.getChannel());
 
-                    long filePointer = file.getFilePointer();
+//                    long filePointer = file.getFilePointer();
                     ITmfCheckpoint key = keys[i];
                     key.serialize(outputStream);
-                    long cSize = file.getFilePointer() - filePointer;
-                    if (cSize > getCheckpointSize()) {
-                        throw new IllegalStateException("Oversize checkpoint (" + cSize + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$
-                    }
-                    file.getChannel().force(false);
-                    file.seek(filePointer);
-                    InputStream inputStream = Channels.newInputStream(file.getChannel());
-                    ITmfCheckpoint verifyKey = trace.restoreCheckPoint(inputStream);
-                    if (!verifyKey.getTimestamp().equals(key.getTimestamp())) {
-                        throw new IllegalStateException("timestamp not properly saved (" + key.getTimestamp() + " != " + verifyKey.getTimestamp() + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                    }
-
-                    if (verifyKey.getRank() != key.getRank()) {
-                        throw new IllegalStateException("timestamp not properly saved (" + key.getRank() + " != " + verifyKey.getRank() + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                    }
+//                    long cSize = file.getFilePointer() - filePointer;
+//                    if (cSize > getCheckpointSize()) {
+//                        throw new IllegalStateException("Oversize checkpoint (" + cSize + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$
+//                    }
+//                    file.getChannel().force(false);
+//                    file.seek(filePointer);
+//                    InputStream inputStream = Channels.newInputStream(file.getChannel());
+//                    ITmfCheckpoint verifyKey = trace.restoreCheckPoint(inputStream);
+//                    if (!verifyKey.getTimestamp().equals(key.getTimestamp())) {
+//                        throw new IllegalStateException("timestamp not properly saved (" + key.getTimestamp() + " != " + verifyKey.getTimestamp() + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+//                    }
+//
+//                    if (verifyKey.getRank() != key.getRank()) {
+//                        throw new IllegalStateException("timestamp not properly saved (" + key.getRank() + " != " + verifyKey.getRank() + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+//                    }
                 }
 
                 for (int i = 0; i < MAX_CHILDREN; ++i) {
                     file.writeLong(children[i]);
                 }
 
-                long filePointer = file.getFilePointer();
-                if (filePointer - offset > getNodeSize()) {
-                    throw new IllegalStateException(filePointer - offset + " > " + getNodeSize()); //$NON-NLS-1$
-                }
+//                long filePointer = file.getFilePointer();
+//                if (filePointer - offset > getNodeSize()) {
+//                    throw new IllegalStateException(filePointer - offset + " > " + getNodeSize()); //$NON-NLS-1$
+//                }
 
-                file.getChannel().force(false);
+                //file.getChannel().force(false);
 
             } catch (IOException e) {
                 // TODO Auto-generated catch block
