@@ -15,9 +15,8 @@ import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
-public class BTreeTest {
+public class BTreeBench {
 
     private TmfTraceStub fTrace;
     File file = new File("index.ht");
@@ -37,6 +36,14 @@ public class BTreeTest {
         if (file.exists()) {
             file.delete();
         }
+    }
+
+    public static void main(String[] args) {
+        BTreeBench b = new BTreeBench();
+        b.setUp();
+        b.testInsertAlot();
+        b.tearDown();
+
     }
 
     class Visitor implements IBTreeVisitor {
@@ -79,19 +86,6 @@ public class BTreeTest {
         }
     }
 
-//    @Test
-//    public void testInsert() {
-//        BTree bTree = new BTree(8, file, fTrace);
-//        TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345), new TmfLongLocation(123456L));
-//        bTree.insert(checkpoint);
-//
-//        Visitor treeVisitor = new Visitor(checkpoint);
-//        bTree.accept(treeVisitor);
-//        assertEquals(0, treeVisitor.getRank());
-//        bTree.dispose();
-//    }
-
-    @Test
     public void testInsertAlot() {
         BTree bTree = new BTree(8, file, fTrace);
         long old = System.currentTimeMillis();
@@ -121,7 +115,7 @@ public class BTreeTest {
             bTree.accept(treeVisitor);
             assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
             assertEquals(checkpoint, treeVisitor.getFound());
-            if (i % 1000 == 0) {
+            if (i % 10000 == 0) {
                 System.out.println("Progress: " + (float)i / TRIES * 100);
             }
         }
