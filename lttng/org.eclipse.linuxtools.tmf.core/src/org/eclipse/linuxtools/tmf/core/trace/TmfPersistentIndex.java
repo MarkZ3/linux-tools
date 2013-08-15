@@ -1,3 +1,14 @@
+/*******************************************************************************
+ * Copyright (c) 2013 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Marc-Andre Laperle - Initial API and implementation
+ *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.io.File;
@@ -8,7 +19,6 @@ import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
- * @author emalape
  * @since 3.0
  *
  */
@@ -18,20 +28,23 @@ public class TmfPersistentIndex implements ITmfIndex {
     static boolean sDEBUG_LOCKS= true; // initialized in the PDOMManager, because IBM needs PDOM independent of runtime plugin.
 
     private BTree fDatabase;
+    private FlatArray fRanks;
 
     private final String INDEX_FILE_NAME = "index.ht"; //$NON-NLS-1$
+    private final String RANKS_FILE_NAME = "ranks.ht"; //$NON-NLS-1$
 
     /**
      * @param trace
      *
      */
     public TmfPersistentIndex(ITmfTrace trace) {
-        fDatabase = new BTree(8, getIndexFile(trace), trace);
+        fDatabase = new BTree(8, getIndexFile(trace, INDEX_FILE_NAME), trace);
+        fRanks = new FlatArray(getIndexFile(trace, RANKS_FILE_NAME), trace);
     }
 
-    private File getIndexFile(ITmfTrace trace) {
+    private static File getIndexFile(ITmfTrace trace, String fileName) {
         String directory = TmfTraceManager.getSupplementaryFileDir(trace);
-        return new File(directory + INDEX_FILE_NAME);
+        return new File(directory + fileName);
     }
 
     @Override
@@ -43,6 +56,7 @@ public class TmfPersistentIndex implements ITmfIndex {
     public void add(ITmfCheckpoint checkpoint) {
         checkpoint.setRank(fDatabase.size());
         fDatabase.insert(checkpoint);
+        fRanks.insert(checkpoint);
         fDatabase.setSize(fDatabase.size() + 1);
     }
 
@@ -76,10 +90,8 @@ public class TmfPersistentIndex implements ITmfIndex {
     @Override
     public ITmfCheckpoint get(int checkpoint) {
         System.out.println("Searching for: " + checkpoint);
-        RankVisitor v = new RankVisitor(checkpoint);
         long oldTime = System.currentTimeMillis();
-        fDatabase.accept(v);
-        ITmfCheckpoint checkpoint2 = v.getCheckpoint();
+        ITmfCheckpoint checkpoint2 = fRanks.get(checkpoint);
         System.out.println("Found: " + checkpoint2.getTimestamp() + "(" + (System.currentTimeMillis() - oldTime) + ")");
         return checkpoint2;
     }
