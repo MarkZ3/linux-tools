@@ -61,11 +61,6 @@ public class BTree {
 
     public void dispose() {
 
-        System.out.println("ALWAYS_CACHE_ROOT: " + ALWAYS_CACHE_ROOT);
-        System.out.println("Cache size: " + CACHE_SIZE);
-        System.out.println("Cache misses: " + cacheMisses);
-        System.out.println("DEGREE: " + DEGREE);
-
         if (existed) {
             return;
         }
@@ -622,5 +617,9 @@ public class BTree {
 
     public long getNbEvents() {
         return cacheHeader.nbEvents;
+    }
+
+    public long getCacheMisses() {
+        return cacheMisses;
     }
 }

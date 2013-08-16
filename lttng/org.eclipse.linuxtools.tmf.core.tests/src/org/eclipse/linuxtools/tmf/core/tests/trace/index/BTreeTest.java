@@ -93,10 +93,10 @@ public class BTreeTest {
 
     @Test
     public void testInsertAlot() {
-        int degree = 45;
+        int degree = 15;
         BTree bTree = new BTree(degree, file, fTrace);
         long old = System.currentTimeMillis();
-        final int TRIES = 500000;
+        final int TRIES = 5000000;
         for (int i = 0; i < TRIES; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
             checkpoint.setRank(i);

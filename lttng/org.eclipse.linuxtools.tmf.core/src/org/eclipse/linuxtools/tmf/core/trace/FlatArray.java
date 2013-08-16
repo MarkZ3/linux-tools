@@ -122,7 +122,7 @@ public class FlatArray {
             file.seek(NUM_OFFSET);
             file.writeInt(numCheckpoints);
             file.close();
-            System.out.println("Cache misses: " + cacheMisses);
+//            System.out.println("Cache misses: " + cacheMisses);
         } catch (IOException e) {
             Activator.logError("Error closing ranks file", e);
         }
@@ -168,6 +168,10 @@ public class FlatArray {
             }
         }
         return lower;
+    }
+
+    public long getCacheMisses() {
+        return cacheMisses;
     }
 
 }

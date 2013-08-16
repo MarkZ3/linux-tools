@@ -48,18 +48,31 @@ public class FlatArrayBench {
     @Test
     public void testInsertAlot() {
         FlatArray farr = new FlatArray(file, fTrace);
-        long old = System.currentTimeMillis();
-        final int TRIES = 5000000;
-        for (int i = 0; i < TRIES; i++) {
-            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
-            checkpoint.setRank(i);
-            farr.insert(checkpoint);
+        final int TRIES = 50000;
+        {
+            int REPEAT = 10;
+            long time = 0;
+            for (int j = 0; j < REPEAT; j++) {
+                long old = System.currentTimeMillis();
+                farr = new FlatArray(file, fTrace);
+                for (int i = 0; i < TRIES; i++) {
+                    TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
+                    checkpoint.setRank(i);
+                    farr.insert(checkpoint);
+                }
+
+                time += (System.currentTimeMillis() - old);
+                farr.dispose();
+                if (j != REPEAT - 1) {
+                    file.delete();
+                }
+                System.out.println("Progress: " + (float) (j + 1) / REPEAT * 100);
+            }
+
+            System.out.println("Write time average: " + (float) time / REPEAT);
         }
 
-        farr.dispose();
-        System.out.println("Write time: " + (System.currentTimeMillis() - old));
-
-        boolean random = false;
+        boolean random = true;
         ArrayList<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < TRIES; i++) {
             if (random) {
@@ -73,7 +86,7 @@ public class FlatArrayBench {
         int REPEAT = 10;
         long time = 0;
         for (int j = 0; j < REPEAT; j++) {
-            old = System.currentTimeMillis();
+            long old = System.currentTimeMillis();
             farr = new FlatArray(file, fTrace);
             for (int i = 0; i < TRIES; i++) {
                 Integer randomCheckpoint = list.get(i);
