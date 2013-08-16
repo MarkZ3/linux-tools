@@ -93,9 +93,10 @@ public class BTreeTest {
 
     @Test
     public void testInsertAlot() {
-        BTree bTree = new BTree(8, file, fTrace);
+        int degree = 45;
+        BTree bTree = new BTree(degree, file, fTrace);
         long old = System.currentTimeMillis();
-        final int TRIES = 5000000;
+        final int TRIES = 500000;
         for (int i = 0; i < TRIES; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
             checkpoint.setRank(i);
@@ -105,14 +106,19 @@ public class BTreeTest {
         bTree.dispose();
         System.out.println("Write time: " + (System.currentTimeMillis() - old));
 
+        boolean random = false;
         ArrayList<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < TRIES; i++) {
-            Random rand = new Random();
-            list.add(rand.nextInt(TRIES));
+            if (random) {
+                Random rand = new Random();
+                list.add(rand.nextInt(TRIES));
+            } else {
+                list.add(i);
+            }
         }
 
         old = System.currentTimeMillis();
-        bTree = new BTree(8, file, fTrace);
+        bTree = new BTree(degree, file, fTrace);
 
         for (int i = 0; i < TRIES; i++) {
             Integer randomCheckpoint = list.get(i);
@@ -121,7 +127,7 @@ public class BTreeTest {
             bTree.accept(treeVisitor);
             assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
             //assertEquals(checkpoint, treeVisitor.getFound());
-            if (i % 1000 == 0) {
+            if (i % 10000 == 0) {
                 System.out.println("Progress: " + (float)i / TRIES * 100);
             }
         }

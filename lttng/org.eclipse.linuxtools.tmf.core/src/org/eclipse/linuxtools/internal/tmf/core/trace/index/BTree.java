@@ -11,13 +11,16 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.internal.tmf.core.trace.index;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 
@@ -36,7 +39,7 @@ public class BTree {
     //private static final int VERSION = 0;
     private static final int INT_SIZE = 4;
     private static final int LONG_SIZE = 8;
-    public static int CACHE_SIZE = 10;
+    public static int CACHE_SIZE = 5;
 
     ITmfTrace trace;
 
@@ -46,6 +49,7 @@ public class BTree {
     final int MIN_RECORDS;
     final int MEDIAN_RECORD;
     RandomAccessFile file;
+    FileChannel fileChannel;
     long cacheMisses = 0;
     private CacheHeader cacheHeader = null;
     private BTreeNodeCache nodeCache;
@@ -58,6 +62,7 @@ public class BTree {
         System.out.println("ALWAYS_CACHE_ROOT: " + ALWAYS_CACHE_ROOT);
         System.out.println("Cache size: " + CACHE_SIZE);
         System.out.println("Cache misses: " + cacheMisses);
+        System.out.println("DEGREE: " + DEGREE);
 
         if (existed) {
             return;
@@ -77,7 +82,7 @@ public class BTree {
 
     void serializeInTimeRange() throws IOException {
         file.seek(cacheHeader.timeStampOffset);
-        InputStream inputStream = Channels.newInputStream(file.getChannel());
+        InputStream inputStream = Channels.newInputStream(fileChannel);
         fTimeRange = new TmfTimeRange(TmfTimestamp.newAndSerialize(inputStream), TmfTimestamp.newAndSerialize(inputStream));
     }
 
@@ -85,7 +90,7 @@ public class BTree {
         try {
             cacheHeader.timeStampOffset = file.length();
             file.seek(cacheHeader.timeStampOffset);
-            OutputStream s = Channels.newOutputStream(file.getChannel());
+            OutputStream s = Channels.newOutputStream(fileChannel);
             fTimeRange.getStartTime().serialize(s);
             fTimeRange.getEndTime().serialize(s);
         } catch (IOException e) {
@@ -197,6 +202,7 @@ public class BTree {
         existed = file.exists();
         try {
             this.file = new RandomAccessFile(file, "rw"); //$NON-NLS-1$
+            fileChannel = this.file.getChannel();
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -473,9 +479,22 @@ public class BTree {
                 }
 
                 file.seek(offset);
+
+//                BufferedOutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel));
+//
+//                file.seek(offset);
+//                for (int i = 0; i < MAX_CHILDREN; ++i) {
+//                    IndexHelper.writeLong(outputStream, children[i]);
+//                }
+//                IndexHelper.writeInt(outputStream, numEntry);
+
+                for (int i = 0; i < MAX_CHILDREN; ++i) {
+                    file.writeLong(children[i]);
+                }
                 file.writeInt(numEntry);
+
                 for (int i = 0; i < numEntry; ++i) {
-                    OutputStream outputStream = Channels.newOutputStream(file.getChannel());
+                    OutputStream outputStream = Channels.newOutputStream(fileChannel);
 
 //                    long filePointer = file.getFilePointer();
                     ITmfCheckpoint key = keys[i];
@@ -484,9 +503,9 @@ public class BTree {
 //                    if (cSize > getCheckpointSize()) {
 //                        throw new IllegalStateException("Oversize checkpoint (" + cSize + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$
 //                    }
-//                    file.getChannel().force(false);
+//                    fileChannel.force(false);
 //                    file.seek(filePointer);
-//                    InputStream inputStream = Channels.newInputStream(file.getChannel());
+//                    InputStream inputStream = Channels.newInputStream(fileChannel);
 //                    ITmfCheckpoint verifyKey = trace.restoreCheckPoint(inputStream);
 //                    if (!verifyKey.getTimestamp().equals(key.getTimestamp())) {
 //                        throw new IllegalStateException("timestamp not properly saved (" + key.getTimestamp() + " != " + verifyKey.getTimestamp() + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -497,16 +516,12 @@ public class BTree {
 //                    }
                 }
 
-                for (int i = 0; i < MAX_CHILDREN; ++i) {
-                    file.writeLong(children[i]);
-                }
-
 //                long filePointer = file.getFilePointer();
 //                if (filePointer - offset > getNodeSize()) {
 //                    throw new IllegalStateException(filePointer - offset + " > " + getNodeSize()); //$NON-NLS-1$
 //                }
 
-                //file.getChannel().force(false);
+                //fileChannel.force(false);
                 dirty = false;
             } catch (IOException e) {
                 // TODO Auto-generated catch block
@@ -531,14 +546,18 @@ public class BTree {
                     throw new IllegalStateException("Misaligned loading node, offset: " + offset + " nodeSize: " + getNodeSize()); //$NON-NLS-1$ //$NON-NLS-2$
                 }
                 file.seek(offset);
-                numEntry = file.readInt();
-                for (int i = 0; i < numEntry; ++i) {
-                    InputStream inputStream = Channels.newInputStream(file.getChannel());
-                    keys[i] = trace.restoreCheckPoint(inputStream);
-                }
+                BufferedInputStream buffInputStream = new BufferedInputStream(Channels.newInputStream(fileChannel), getNodeSize());
 
+                byte arr[] = new byte[MAX_CHILDREN * LONG_SIZE + INT_SIZE];
+                buffInputStream.read(arr);
+                ByteBuffer wrap = ByteBuffer.wrap(arr);
                 for (int i = 0; i < MAX_CHILDREN; ++i) {
-                    children[i] = file.readLong();
+                    children[i] = wrap.getLong(i * LONG_SIZE);
+                }
+                numEntry = wrap.getInt(MAX_CHILDREN * LONG_SIZE);
+
+                for (int i = 0; i < numEntry; ++i) {
+                    keys[i] = trace.restoreCheckPoint(buffInputStream);
                 }
 
             } catch (IOException e) {

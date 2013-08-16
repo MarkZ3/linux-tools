@@ -20,6 +20,7 @@ public class BTreeBench {
 
     private TmfTraceStub fTrace;
     File file = new File("index.ht");
+    File dataFile = new File("data.ht");
 
     @Before
     public void setUp() {
@@ -87,7 +88,8 @@ public class BTreeBench {
     }
 
     public void testInsertAlot() {
-        BTree bTree = new BTree(8, file, fTrace);
+        int degree = 15;
+        BTree bTree = new BTree(degree, file, fTrace);
         long old = System.currentTimeMillis();
         final int TRIES = 500000;
         for (int i = 0; i < TRIES; i++) {
@@ -99,29 +101,42 @@ public class BTreeBench {
         bTree.dispose();
         System.out.println("Write time: " + (System.currentTimeMillis() - old));
 
+        boolean random = true;
         ArrayList<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < TRIES; i++) {
-            Random rand = new Random();
-            list.add(rand.nextInt(TRIES));
-        }
-
-        old = System.currentTimeMillis();
-        bTree = new BTree(8, file, fTrace);
-
-        for (int i = 0; i < TRIES; i++) {
-            Integer randomCheckpoint = list.get(i);
-            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
-            Visitor treeVisitor = new Visitor(checkpoint);
-            bTree.accept(treeVisitor);
-            assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
-            assertEquals(checkpoint, treeVisitor.getFound());
-            if (i % 10000 == 0) {
-                System.out.println("Progress: " + (float)i / TRIES * 100);
+            if (random) {
+                Random rand = new Random();
+                list.add(rand.nextInt(TRIES));
+            } else {
+                list.add(i);
             }
         }
-        System.out.println("Read time: " + (System.currentTimeMillis() - old));
 
-        bTree.dispose();
+//        if (random && !dataFile.exists()) {
+//            for (Integer i : list) {
+//
+//            }
+//        }
+
+        int REPEAT = 5;
+        long time = 0;
+        for (int j = 0; j < REPEAT; j++) {
+            old = System.currentTimeMillis();
+            bTree = new BTree(degree, file, fTrace);
+            for (int i = 0; i < TRIES; i++) {
+                Integer randomCheckpoint = list.get(i);
+                TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
+                Visitor treeVisitor = new Visitor(checkpoint);
+                bTree.accept(treeVisitor);
+                assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
+                // assertEquals(checkpoint, treeVisitor.getFound());
+            }
+            time += (System.currentTimeMillis() - old);
+            bTree.dispose();
+            System.out.println("Progress: " + (float) (j + 1) / REPEAT * 100);
+        }
+        System.out.println("Read time average: " + (float) time / REPEAT);
+
     }
 
 }

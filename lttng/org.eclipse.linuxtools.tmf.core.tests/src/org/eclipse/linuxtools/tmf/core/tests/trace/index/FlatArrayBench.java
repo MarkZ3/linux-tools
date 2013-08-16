@@ -8,7 +8,6 @@ import java.util.Random;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.FlatArray;
-import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
@@ -16,7 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class FlatArrayTest {
+public class FlatArrayBench {
 
     private TmfTraceStub fTrace;
     File file = new File("ranks.ht");
@@ -38,11 +37,19 @@ public class FlatArrayTest {
         }
     }
 
+    public static void main(String[] args) {
+        FlatArrayBench b = new FlatArrayBench();
+        b.setUp();
+        b.testInsertAlot();
+        b.tearDown();
+
+    }
+
     @Test
     public void testInsertAlot() {
         FlatArray farr = new FlatArray(file, fTrace);
         long old = System.currentTimeMillis();
-        final int TRIES = 500000;
+        final int TRIES = 5000000;
         for (int i = 0; i < TRIES; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
             checkpoint.setRank(i);
@@ -63,37 +70,25 @@ public class FlatArrayTest {
             }
         }
 
-        old = System.currentTimeMillis();
-        farr = new FlatArray(file, fTrace);
+        int REPEAT = 10;
+        long time = 0;
+        for (int j = 0; j < REPEAT; j++) {
+            old = System.currentTimeMillis();
+            farr = new FlatArray(file, fTrace);
+            for (int i = 0; i < TRIES; i++) {
+                Integer randomCheckpoint = list.get(i);
+                TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
 
-        for (int i = 0; i < TRIES; i++) {
-            Integer randomCheckpoint = list.get(i);
-            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
-
-            ITmfCheckpoint fileCheckpoint = farr.get(randomCheckpoint);
-//            assertEquals(randomCheckpoint.intValue(), fileCheckpoint.getRank());
-            assertEquals(checkpoint, fileCheckpoint);
-            if (i % 1000 == 0) {
-                System.out.println("Progress: " + (float)i / TRIES * 100);
+                int found = farr.binarySearch(checkpoint);
+                assertEquals(randomCheckpoint.intValue(), found);
+                //assertEquals(checkpoint, found);
             }
+            time += (System.currentTimeMillis() - old);
+            farr.dispose();
+            System.out.println("Progress: " + (float) j / REPEAT * 100);
         }
-        System.out.println("Rank read time: " + (System.currentTimeMillis() - old));
 
-
-        for (int i = 0; i < TRIES; i++) {
-            Integer randomCheckpoint = list.get(i);
-            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
-
-            int found = farr.binarySearch(checkpoint);
-            assertEquals(randomCheckpoint.intValue(), found);
-            //assertEquals(checkpoint, found);
-            if (i % 1000 == 0) {
-                System.out.println("Progress: " + (float)i / TRIES * 100);
-            }
-        }
-        System.out.println("Rank read time: " + (System.currentTimeMillis() - old));
-
-        farr.dispose();
+        System.out.println("Read time average: " + (float) time / REPEAT);
     }
 
 }

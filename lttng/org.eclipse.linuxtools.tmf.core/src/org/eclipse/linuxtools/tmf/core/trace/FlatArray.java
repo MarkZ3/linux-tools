@@ -11,13 +11,14 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.trace;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 
 import org.eclipse.linuxtools.internal.tmf.core.Activator;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
@@ -37,6 +38,8 @@ public class FlatArray {
     private int cacheMisses = 0;
 
     private RandomAccessFile file;
+
+    private FileChannel fileChannel;
     private final static int HEADER_SIZE = INT_SIZE + INT_SIZE + INT_SIZE;
     private final static int NUM_OFFSET = INT_SIZE + INT_SIZE;
 
@@ -72,6 +75,8 @@ public class FlatArray {
                 file.writeInt(numCheckpoints);
             }
 
+            fileChannel = file.getChannel();
+
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -90,7 +95,7 @@ public class FlatArray {
         try {
             ++numCheckpoints;
             file.seek(file.length());
-            OutputStream outputStream = Channels.newOutputStream(file.getChannel());
+            OutputStream outputStream = Channels.newOutputStream(fileChannel);
             checkpoint.serialize(outputStream);
         } catch (IOException e) {
             Activator.logError("Unable to write event to ranks file", e);
@@ -102,7 +107,7 @@ public class FlatArray {
         try {
             int pos = HEADER_SIZE + checkpointSize * rank;
             file.seek(pos);
-            InputStream inputStream = Channels.newInputStream(file.getChannel());
+            BufferedInputStream inputStream = new BufferedInputStream(Channels.newInputStream(fileChannel), checkpointSize);
             checkpoint = trace.restoreCheckPoint(inputStream);
         } catch (IOException e) {
             Activator.logError("Unable to read event from ranks file", e);
