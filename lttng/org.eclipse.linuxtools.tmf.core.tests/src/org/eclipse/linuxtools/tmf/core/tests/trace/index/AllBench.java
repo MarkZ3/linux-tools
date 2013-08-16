@@ -149,6 +149,8 @@ public class AllBench {
         readCheckpoints(checkpointsNum, list, false);
         readCheckpoints(checkpointsNum, list2, true);
 
+        file.delete();
+
         System.out.println();
     }
 
@@ -164,6 +166,8 @@ public class AllBench {
 
         readCheckpointsArray(checkpointsNum, list, false);
         readCheckpointsArray(checkpointsNum, list2, true);
+
+        file.delete();
 
         System.out.println();
     }
