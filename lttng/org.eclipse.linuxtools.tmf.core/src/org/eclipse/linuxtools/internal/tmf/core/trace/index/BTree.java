@@ -12,6 +12,7 @@
 package org.eclipse.linuxtools.internal.tmf.core.trace.index;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 
+import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
@@ -480,21 +482,20 @@ public class BTree {
 
                 file.seek(offset);
 
-//                BufferedOutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel));
-//
-//                file.seek(offset);
-//                for (int i = 0; i < MAX_CHILDREN; ++i) {
-//                    IndexHelper.writeLong(outputStream, children[i]);
-//                }
-//                IndexHelper.writeInt(outputStream, numEntry);
+                BufferedOutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel), getNodeSize());
 
+                file.seek(offset);
                 for (int i = 0; i < MAX_CHILDREN; ++i) {
-                    file.writeLong(children[i]);
+                    IndexHelper.writeLong(outputStream, children[i]);
                 }
-                file.writeInt(numEntry);
+                IndexHelper.writeInt(outputStream, numEntry);
+
+//                for (int i = 0; i < MAX_CHILDREN; ++i) {
+//                    file.writeLong(children[i]);
+//                }
+//                file.writeInt(numEntry);
 
                 for (int i = 0; i < numEntry; ++i) {
-                    OutputStream outputStream = Channels.newOutputStream(fileChannel);
 
 //                    long filePointer = file.getFilePointer();
                     ITmfCheckpoint key = keys[i];
@@ -522,6 +523,7 @@ public class BTree {
 //                }
 
                 //fileChannel.force(false);
+                outputStream.flush();
                 dirty = false;
             } catch (IOException e) {
                 // TODO Auto-generated catch block

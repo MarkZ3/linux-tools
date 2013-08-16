@@ -89,17 +89,30 @@ public class BTreeBench {
 
     public void testInsertAlot() {
         int degree = 15;
-        BTree bTree = new BTree(degree, file, fTrace);
-        long old = System.currentTimeMillis();
-        final int TRIES = 500000;
-        for (int i = 0; i < TRIES; i++) {
-            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
-            checkpoint.setRank(i);
-            bTree.insert(checkpoint);
-        }
+        BTree bTree;
+        final int TRIES = 50000;
+        {
+            int REPEAT = 10;
+            long time = 0;
+            for (int j = 0; j < REPEAT; j++) {
+                long old = System.currentTimeMillis();
+                bTree = new BTree(degree, file, fTrace);
+                for (int i = 0; i < TRIES; i++) {
+                    TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
+                    checkpoint.setRank(i);
+                    bTree.insert(checkpoint);
+                }
 
-        bTree.dispose();
-        System.out.println("Write time: " + (System.currentTimeMillis() - old));
+                time += (System.currentTimeMillis() - old);
+                bTree.dispose();
+                if (j != REPEAT - 1) {
+                    file.delete();
+                }
+                System.out.println("Progress: " + (float) (j + 1) / REPEAT * 100);
+            }
+
+            System.out.println("Write time average: " + (float) time / REPEAT);
+        }
 
         boolean random = true;
         ArrayList<Integer> list = new ArrayList<Integer>();
@@ -118,10 +131,10 @@ public class BTreeBench {
 //            }
 //        }
 
-        int REPEAT = 5;
+        int REPEAT = 10;
         long time = 0;
         for (int j = 0; j < REPEAT; j++) {
-            old = System.currentTimeMillis();
+            long old = System.currentTimeMillis();
             bTree = new BTree(degree, file, fTrace);
             for (int i = 0; i < TRIES; i++) {
                 Integer randomCheckpoint = list.get(i);
