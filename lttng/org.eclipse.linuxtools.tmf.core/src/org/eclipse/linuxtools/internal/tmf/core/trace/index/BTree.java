@@ -60,16 +60,14 @@ public class BTree {
     public static boolean ALWAYS_CACHE_ROOT = true;
 
     public void dispose() {
-
-        if (existed) {
-            return;
-        }
-
         try {
-            serializeOutTimeRange();
+            if (!existed) {
+                serializeOutTimeRange();
 
-            cacheHeader.serializeOut();
-            nodeCache.flush();
+                cacheHeader.serializeOut();
+                nodeCache.flush();
+            }
+
             file.close();
         } catch (IOException e) {
             // TODO Auto-generated catch block
