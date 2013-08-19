@@ -13,7 +13,6 @@
 
 package org.eclipse.linuxtools.tmf.core.trace.location;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -43,15 +42,19 @@ public interface ITmfLocation {
     Comparable<?> getLocationInfo();
 
     /**
-     * @throws IOException
+     * Write the location to the ByteBuffer so that it can be saved to disk.
+     * @param bufferOut the buffer to write to
+     *
      * @since 3.0
      */
-    void serializeOut(ByteBuffer bufferOut) throws IOException;
+    void serializeOut(ByteBuffer bufferOut);
+
     /**
-     * @param stream
-     * @throws IOException
+     * Read the location from the ByteBuffer. This typically happens when reading from disk.
+     * @param bufferIn the buffer to read from
+     *
      * @since 3.0
      */
-    void serializeIn(ByteBuffer bufferInt) throws IOException;
+    void serializeIn(ByteBuffer bufferIn);
 
 }

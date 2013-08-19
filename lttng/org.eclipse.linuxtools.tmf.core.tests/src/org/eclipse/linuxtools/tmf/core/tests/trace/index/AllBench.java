@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2013 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Marc-Andre Laperle - Initial API and implementation
+ *******************************************************************************/
+
 package org.eclipse.linuxtools.tmf.core.tests.trace.index;
 
 import static org.junit.Assert.assertEquals;
@@ -9,16 +21,18 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.IBTreeVisitor;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.FlatArray;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
-import org.junit.After;
-import org.junit.Before;
 
+/**
+ * A class to benchmark different algoritms for storing the
+ * checkpoint index on disk
+ */
 public class AllBench {
 
     private static final boolean reportProgress = true;
@@ -28,16 +42,14 @@ public class AllBench {
 
     static int BTREE_DEGREE = 15;
 
-    @Before
-    public void setUp() {
+    private void setUp() {
         fTrace = new TmfTraceStub();
         if (file.exists()) {
             file.delete();
         }
     }
 
-    @After
-    public void tearDown() {
+    private void tearDown() {
         fTrace.dispose();
         fTrace = null;
         if (file.exists()) {
@@ -45,7 +57,7 @@ public class AllBench {
         }
     }
 
-    public void generateDataFile(ArrayList<Integer> list, int checkpointsNums) throws IOException {
+    private static void generateDataFile(ArrayList<Integer> list, int checkpointsNums) throws IOException {
         File randomDataFile = new File("data" + checkpointsNums + ".ht");
         RandomAccessFile f = new RandomAccessFile(randomDataFile, "rw");
         if (randomDataFile.exists()) {
@@ -63,19 +75,21 @@ public class AllBench {
         f.close();
     }
 
+    /**
+     * @param args
+     * @throws IOException
+     */
     public static void main(String[] args) throws IOException {
-        int checkpointsNums [] = new int [] { 5000, 50000, 500000, 5000000 };
+        int checkpointsNums [] = new int [] { 5000, 50000, 500000, 1000000 };
         nums = new ArrayList<ArrayList<Integer>>(checkpointsNums.length);
 
         System.out.println("DEGREE: " + BTREE_DEGREE);
-        System.out.println("ALWAYS_CACHE_ROOT: " + BTree.ALWAYS_CACHE_ROOT);
-        System.out.println("Cache size: " + BTree.CACHE_SIZE + "\n");
 
         AllBench b = new AllBench();
         b.setUp();
         for (int i = 0; i < checkpointsNums.length; i++) {
             ArrayList<Integer> list = new ArrayList<Integer>();
-            b.generateDataFile(list, checkpointsNums[i]);
+            generateDataFile(list, checkpointsNums[i]);
             nums.add(list);
 
             System.out.println("*** " + checkpointsNums[i] + " checkpoints ***\n");
@@ -85,7 +99,7 @@ public class AllBench {
         b.tearDown();
     }
 
-    public void benchIt(ArrayList<Integer> list) {
+    private void benchIt(ArrayList<Integer> list) {
 
         System.out.println("Testing BTree\n");
 
@@ -136,7 +150,7 @@ public class AllBench {
         }
     }
 
-    public void testInsertAlot(ArrayList<Integer> list2) {
+    private void testInsertAlot(ArrayList<Integer> list2) {
         int checkpointsNum = list2.size();
 
         writeCheckpoints(checkpointsNum);
@@ -154,7 +168,7 @@ public class AllBench {
         System.out.println();
     }
 
-    public void testInsertAlotArray(ArrayList<Integer> list2) {
+    private void testInsertAlotArray(ArrayList<Integer> list2) {
         int checkpointsNum = list2.size();
 
         writeCheckpointsArray(checkpointsNum);

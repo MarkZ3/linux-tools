@@ -168,7 +168,7 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
     }
 
     private ITmfTraceIndexer createIndexer(int cacheSize) {
-        return new TmfPersistentIndexer(this, cacheSize);
+        return new TmfBTreeIndexer(this, cacheSize);
     }
 
     /**

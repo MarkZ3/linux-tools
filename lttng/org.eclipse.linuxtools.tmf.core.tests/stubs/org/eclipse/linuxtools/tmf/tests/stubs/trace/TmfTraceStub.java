@@ -354,7 +354,7 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
     @Override
     public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
         ITmfLocation location = TmfLongLocation.newAndserialize(bufferIn);
-        TmfTimestamp timeStamp = TmfTimestamp.newAndSerialize(bufferIn);
+        TmfTimestamp timeStamp = TmfTimestamp.newSerialized(bufferIn);
         TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
         tmfCheckpoint.serializeIn(bufferIn);
         return tmfCheckpoint;
@@ -362,18 +362,10 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
 
     @Override
     public int getCheckointSize() {
-        TmfCheckpoint c = new TmfCheckpoint(new TmfTimestamp(0), new TmfLongLocation(0L));
-        //ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        TmfCheckpoint c = new TmfCheckpoint(new TmfTimestamp(0L), new TmfLongLocation(0L));
         ByteBuffer b = ByteBuffer.allocate(1024);
+        c.serializeOut(b);
 
-        try {
-            c.serializeOut(b);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        //return stream.size();
         return b.position();
     }
 

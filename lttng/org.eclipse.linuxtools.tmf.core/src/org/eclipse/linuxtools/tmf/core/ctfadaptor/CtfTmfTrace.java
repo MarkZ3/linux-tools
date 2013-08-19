@@ -13,7 +13,6 @@
 
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -440,11 +439,10 @@ public class CtfTmfTrace extends TmfTrace
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) {
         ITmfLocation location = CtfLocation.newAndserialize(bufferIn);
         CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(bufferIn);
         TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
@@ -460,13 +458,7 @@ public class CtfTmfTrace extends TmfTrace
         TmfCheckpoint c = new TmfCheckpoint(new CtfTmfTimestamp(0), new CtfLocation(0, 0));
         ByteBuffer b = ByteBuffer.allocate(1024);
 
-        try {
-            c.serializeOut(b);
-            b.position();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        c.serializeOut(b);
 
         return b.position();
     }

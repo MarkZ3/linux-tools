@@ -9,7 +9,8 @@
  * Contributors:
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
-package org.eclipse.linuxtools.tmf.core.trace;
+
+package org.eclipse.linuxtools.internal.tmf.core.trace.index;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,8 +18,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.text.MessageFormat;
 
 import org.eclipse.linuxtools.internal.tmf.core.Activator;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
@@ -26,18 +29,19 @@ import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
  */
 public class FlatArray {
     private static final int INT_SIZE = 4;
-//    private static final int LONG_SIZE = 8;
 
     ITmfTrace trace;
 
     private static final int VERSION = 0;
-    private int checkpointSize = 0;
     private int numCheckpoints = 0;
     private int cacheMisses = 0;
 
     private RandomAccessFile file;
 
+    // Cached values
+    private int checkpointSize = 0;
     private FileChannel fileChannel;
+
     private final static int HEADER_SIZE = INT_SIZE + INT_SIZE + INT_SIZE;
     private final static int NUM_OFFSET = INT_SIZE + INT_SIZE;
 
@@ -87,7 +91,7 @@ public class FlatArray {
     /**
      * Insert a checkpoint into the file-backed array
      *
-     * @param checkpoint
+     * @param checkpoint the checkpoint to insert
      */
     public void insert(ITmfCheckpoint checkpoint) {
         try {
@@ -104,12 +108,17 @@ public class FlatArray {
         }
     }
 
+    /**
+     * Get a checkpoint from a rank
+     *
+     * @param rank the rank to search
+     * @return the checkpoint that has been found or null if not found
+     */
     public ITmfCheckpoint get(int rank) {
         ITmfCheckpoint checkpoint = null;
         try {
             int pos = HEADER_SIZE + checkpointSize * rank;
             file.seek(pos);
-            //BufferedInputStream inputStream = new BufferedInputStream(Channels.newInputStream(fileChannel), checkpointSize);
             ByteBuffer bb = ByteBuffer.allocate(checkpointSize);
             fileChannel.read(bb);
             bb.flip();
@@ -120,38 +129,25 @@ public class FlatArray {
         return checkpoint;
     }
 
+    /**
+     * Dispose the structure and its resources
+     */
     public void dispose() {
         try {
             file.seek(NUM_OFFSET);
             file.writeInt(numCheckpoints);
             file.close();
-//            System.out.println("Cache misses: " + cacheMisses);
         } catch (IOException e) {
-            Activator.logError("Error closing ranks file", e);
+            Activator.logError(MessageFormat.format("Error closing index. File: {0}", file, e));
         }
     }
 
-    public ITmfCheckpoint binarySearch2(ITmfCheckpoint checkpoint) {
-        int lower = 0;
-        int upper = numCheckpoints - 1;
-        while (lower < upper) {
-            int middle = (lower + upper) / 2;
-            ITmfCheckpoint found = get(middle);
-            ++cacheMisses;
-            int compare = checkpoint.compareTo(found);
-            if (compare == 0) {
-                return found;
-            }
-
-            if (compare < 0) {
-                upper= middle;
-            } else {
-                lower= middle + 1;
-            }
-        }
-        return get(lower);
-    }
-
+    /**
+     * Search for a checkpoint and return the rank.
+     *
+     * @param checkpoint
+     * @return
+     */
     public int binarySearch(ITmfCheckpoint checkpoint) {
         int lower = 0;
         int upper = numCheckpoints - 1;
@@ -173,6 +169,9 @@ public class FlatArray {
         return lower;
     }
 
+    /**
+     * @return
+     */
     public long getCacheMisses() {
         return cacheMisses;
     }

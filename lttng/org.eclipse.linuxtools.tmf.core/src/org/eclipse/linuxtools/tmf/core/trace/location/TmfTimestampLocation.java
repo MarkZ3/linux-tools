@@ -12,7 +12,6 @@
 
 package org.eclipse.linuxtools.tmf.core.trace.location;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
@@ -49,21 +48,19 @@ public final class TmfTimestampLocation extends TmfLocation {
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+    public void serializeOut(ByteBuffer bufferOut) {
         getLocationInfo().serializeOut(bufferOut);
 
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+    public void serializeIn(ByteBuffer bufferIn) {
         getLocationInfo().serializeIn(bufferIn);
     }
 

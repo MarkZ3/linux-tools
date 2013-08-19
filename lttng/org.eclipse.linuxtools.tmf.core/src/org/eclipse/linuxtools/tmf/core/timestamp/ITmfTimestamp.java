@@ -12,7 +12,6 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
@@ -143,15 +142,19 @@ public interface ITmfTimestamp extends Comparable<ITmfTimestamp> {
     String toString(final TmfTimestampFormat format);
 
     /**
-     * @throws IOException
+     * Write the time stamp to the ByteBuffer so that it can be saved to disk.
+     * @param bufferOut the buffer to write to
+     *
      * @since 3.0
      */
-    void serializeOut(ByteBuffer bufferOut) throws IOException;
+    void serializeOut(ByteBuffer bufferOut);
 
     /**
-     * @throws IOException
+     * Read the time stamp from the ByteBuffer. This typically happens when reading from disk.
+     * @param bufferIn the buffer to read from
+     *
      * @since 3.0
      */
-    void serializeIn(ByteBuffer bufferIn) throws IOException;
+    void serializeIn(ByteBuffer bufferIn);
 
 }

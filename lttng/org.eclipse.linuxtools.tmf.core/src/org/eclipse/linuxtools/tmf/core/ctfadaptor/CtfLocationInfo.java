@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
@@ -113,22 +112,24 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
     }
 
     /**
-     * @param stream
-     * @throws IOException
+     * Write the location to the ByteBuffer so that it can be saved to disk.
+     * @param bufferOut the buffer to write to
+     *
      * @since 3.0
      */
-    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+    public void serializeOut(ByteBuffer bufferOut) {
         IndexHelper.writeLong(bufferOut, timestamp);
         IndexHelper.writeLong(bufferOut, index);
 
     }
 
     /**
-     * @param stream
-     * @throws IOException
+     * Read the location from the ByteBuffer. This typically happens when reading from disk.
+     * @param bufferIn the buffer to read from
+     *
      * @since 3.0
      */
-    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+    public void serializeIn(ByteBuffer bufferIn) {
         timestamp = IndexHelper.readLong(bufferIn);
         index = IndexHelper.readLong(bufferIn);
 

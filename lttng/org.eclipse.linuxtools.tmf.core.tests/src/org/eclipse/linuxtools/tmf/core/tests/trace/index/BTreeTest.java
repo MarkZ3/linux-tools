@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2013 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Marc-Andre Laperle - Initial API and implementation
+ *******************************************************************************/
+
 package org.eclipse.linuxtools.tmf.core.tests.trace.index;
 
 import static org.junit.Assert.assertEquals;
@@ -17,11 +29,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * Tests for the BTree class
+ */
 public class BTreeTest {
 
+    private static final int CHECKPOINTS_INSERT_NUM = 50000;
     private TmfTraceStub fTrace;
-    File file = new File("index.ht");
+    private File file = new File("index.ht");
+    private final int DEGREE = 15;
 
+    /**
+     * Setup the test. Make sure the index is deleted.
+     */
     @Before
     public void setUp() {
         fTrace = new TmfTraceStub();
@@ -30,6 +50,9 @@ public class BTreeTest {
         }
     }
 
+    /**
+     * Tear down the test. Make sure the index is deleted.
+     */
     @After
     public void tearDown() {
         fTrace.dispose();
@@ -79,59 +102,57 @@ public class BTreeTest {
         }
     }
 
-//    @Test
-//    public void testInsert() {
-//        BTree bTree = new BTree(8, file, fTrace);
-//        TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345), new TmfLongLocation(123456L));
-//        bTree.insert(checkpoint);
-//
-//        Visitor treeVisitor = new Visitor(checkpoint);
-//        bTree.accept(treeVisitor);
-//        assertEquals(0, treeVisitor.getRank());
-//        bTree.dispose();
-//    }
+    /**
+     * Test a single insertion
+     */
+    @Test
+    public void testInsert() {
+        BTree bTree = new BTree(DEGREE, file, fTrace);
+        TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345), new TmfLongLocation(123456L));
+        bTree.insert(checkpoint);
 
+        Visitor treeVisitor = new Visitor(checkpoint);
+        bTree.accept(treeVisitor);
+        assertEquals(0, treeVisitor.getRank());
+        bTree.dispose();
+    }
+
+    /**
+     * Test many checkpoint insertions.
+     * Make sure they can be found after re-opening the file
+     */
     @Test
     public void testInsertAlot() {
-        int degree = 15;
-        BTree bTree = new BTree(degree, file, fTrace);
-        long old = System.currentTimeMillis();
-        final int TRIES = 500000;
-        for (int i = 0; i < TRIES; i++) {
+        BTree bTree = new BTree(DEGREE, file, fTrace);
+        for (int i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
             checkpoint.setRank(i);
             bTree.insert(checkpoint);
         }
 
         bTree.dispose();
-        System.out.println("Write time: " + (System.currentTimeMillis() - old));
 
-        boolean random = false;
+        boolean random = true;
         ArrayList<Integer> list = new ArrayList<Integer>();
-        for (int i = 0; i < TRIES; i++) {
+        for (int i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             if (random) {
                 Random rand = new Random();
-                list.add(rand.nextInt(TRIES));
+                list.add(rand.nextInt(CHECKPOINTS_INSERT_NUM));
             } else {
                 list.add(i);
             }
         }
 
-        old = System.currentTimeMillis();
-        bTree = new BTree(degree, file, fTrace);
+        bTree = new BTree(DEGREE, file, fTrace);
 
-        for (int i = 0; i < TRIES; i++) {
+        for (int i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             Integer randomCheckpoint = list.get(i);
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
             Visitor treeVisitor = new Visitor(checkpoint);
             bTree.accept(treeVisitor);
             assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
-            //assertEquals(checkpoint, treeVisitor.getFound());
-            if (i % 10000 == 0) {
-                System.out.println("Progress: " + (float)i / TRIES * 100);
-            }
+            assertEquals(checkpoint, treeVisitor.getFound());
         }
-        System.out.println("Read time: " + (System.currentTimeMillis() - old));
 
         bTree.dispose();
     }

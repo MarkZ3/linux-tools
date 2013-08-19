@@ -57,19 +57,19 @@ public final class IndexHelper {
     }
 
 
-    public static void writeLong(ByteBuffer buffer, long value) throws IOException {
+    public static void writeLong(ByteBuffer buffer, long value) {
         buffer.putLong(value);
     }
 
-    public static void writeInt(ByteBuffer buffer, int value) throws IOException {
+    public static void writeInt(ByteBuffer buffer, int value) {
         buffer.putInt(value);
     }
 
-    public static long readLong(ByteBuffer buffer) throws IOException {
+    public static long readLong(ByteBuffer buffer) {
         return buffer.getLong();
     }
 
-    public static int readInt(ByteBuffer buffer) throws IOException {
+    public static int readInt(ByteBuffer buffer) {
         return buffer.getInt();
     }
 

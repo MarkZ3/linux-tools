@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2013 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Marc-Andre Laperle - Initial API and implementation
+ *******************************************************************************/
+
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.util.ArrayList;
@@ -60,25 +72,19 @@ public class TmfMemoryIndex implements ITmfIndex {
 
     @Override
     public void setTimeRange(TmfTimeRange timeRange) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void setNbEvents(long nbEvents) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public TmfTimeRange getTimeRange() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public long getNbEvents() {
-        // TODO Auto-generated method stub
         return 0;
     }
 }

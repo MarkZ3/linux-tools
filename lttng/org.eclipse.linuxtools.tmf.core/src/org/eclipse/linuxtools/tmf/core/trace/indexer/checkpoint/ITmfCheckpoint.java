@@ -13,7 +13,6 @@
 
 package org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
@@ -54,25 +53,37 @@ public interface ITmfCheckpoint extends Comparable<ITmfCheckpoint> {
     int compareTo(ITmfCheckpoint checkpoint);
 
     /**
+     * Set the rank for this checkpoint. This is useful when storing checkpoint
+     * in data structures that are not linear
+     *
+     * @param rank the rank for this checkpoint
+     *
      * @since 3.0
      */
     void setRank(int rank);
 
     /**
+     * Returns the rank for this checkpoint
+     *
+     * @return the rank for this checkpoint
      * @since 3.0
      */
     public int getRank();
 
     /**
-     * @throws IOException
+     * Write the checkpoint to the ByteBuffer so that it can be saved to disk.
+     * @param bufferOut the buffer to write to
+     *
      * @since 3.0
      */
-    void serializeOut(ByteBuffer bufferOut) throws IOException;
+    void serializeOut(ByteBuffer bufferOut);
 
     /**
-     * @throws IOException
+     * Read the checkpoint from the ByteBuffer. This typically happens when reading from disk.
+     * @param bufferIn the buffer to read from
+     *
      * @since 3.0
      */
-    void serializeIn(ByteBuffer bufferIn) throws IOException;
+    void serializeIn(ByteBuffer bufferIn);
 
 }

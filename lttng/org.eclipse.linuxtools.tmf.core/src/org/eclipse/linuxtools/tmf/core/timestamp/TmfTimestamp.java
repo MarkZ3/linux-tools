@@ -15,7 +15,6 @@
 
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
@@ -346,7 +345,7 @@ public class TmfTimestamp implements ITmfTimestamp {
      * @since 3.0
      */
     @Override
-    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+    public void serializeOut(ByteBuffer bufferOut) {
         IndexHelper.writeLong(bufferOut, fValue);
 
         IndexHelper.writeInt(bufferOut, fScale);
@@ -354,11 +353,10 @@ public class TmfTimestamp implements ITmfTimestamp {
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+    public void serializeIn(ByteBuffer bufferIn) {
         fValue = IndexHelper.readLong(bufferIn);
         fScale = IndexHelper.readInt(bufferIn);
         fPrecision = IndexHelper.readInt(bufferIn);
@@ -366,12 +364,13 @@ public class TmfTimestamp implements ITmfTimestamp {
     }
 
     /**
-     * @param stream
-     * @return
-     * @throws IOException
+     * Create a new TmfTimestamp and serialize it in.
+     *
+     * @param bufferIn the buffer to read the time stamp from
+     * @return the created time stamp
      * @since 3.0
      */
-    public static TmfTimestamp newAndSerialize(ByteBuffer bufferIn) throws IOException {
+    public static TmfTimestamp newSerialized(ByteBuffer bufferIn) {
         TmfTimestamp t = new TmfTimestamp();
         t.serializeIn(bufferIn);
         return t;

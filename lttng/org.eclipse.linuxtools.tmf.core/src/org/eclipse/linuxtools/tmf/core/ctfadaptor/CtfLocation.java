@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
@@ -133,7 +132,7 @@ public final class CtfLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+    public void serializeOut(ByteBuffer bufferOut) {
         getLocationInfo().serializeOut(bufferOut);
 
     }
@@ -142,14 +141,18 @@ public final class CtfLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+    public void serializeIn(ByteBuffer bufferIn) {
         getLocationInfo().serializeIn(bufferIn);
     }
 
     /**
+     * Create a new CtfLocation and serialize it in.
+     *
+     * @param bufferIn the buffer to read the CtfLocation from
+     * @return the created CtfLocation
      * @since 3.0
      */
-    public static ITmfLocation newAndserialize(ByteBuffer bufferIn) throws IOException {
+    public static ITmfLocation newAndserialize(ByteBuffer bufferIn) {
         CtfLocation c = new CtfLocation();
         c.serializeIn(bufferIn);
         return c;

@@ -9,11 +9,13 @@
  * Contributors:
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
+
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.io.File;
 
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.IBTreeVisitor;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
@@ -22,10 +24,7 @@ import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
  * @since 3.0
  *
  */
-@SuppressWarnings("javadoc")
-public class TmfPersistentIndex implements ITmfIndex {
-
-    static boolean sDEBUG_LOCKS= true; // initialized in the PDOMManager, because IBM needs PDOM independent of runtime plugin.
+public class TmfBTreeIndex implements ITmfIndex {
 
     private BTree fDatabase;
     private FlatArray fRanks;
@@ -33,12 +32,14 @@ public class TmfPersistentIndex implements ITmfIndex {
     private final String INDEX_FILE_NAME = "index.ht"; //$NON-NLS-1$
     private final String RANKS_FILE_NAME = "ranks.ht"; //$NON-NLS-1$
 
+    private final int BTREE_DEGREE = 15;
+
     /**
      * @param trace
      *
      */
-    public TmfPersistentIndex(ITmfTrace trace) {
-        fDatabase = new BTree(8, getIndexFile(trace, INDEX_FILE_NAME), trace);
+    public TmfBTreeIndex(ITmfTrace trace) {
+        fDatabase = new BTree(BTREE_DEGREE, getIndexFile(trace, INDEX_FILE_NAME), trace);
         fRanks = new FlatArray(getIndexFile(trace, RANKS_FILE_NAME), trace);
     }
 
@@ -153,7 +154,7 @@ public class TmfPersistentIndex implements ITmfIndex {
 
     @Override
     public boolean restore() {
-        return fDatabase.isExisted();
+        return fDatabase.isCreatedFromScratch();
     }
 
     @Override

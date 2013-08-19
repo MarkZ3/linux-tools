@@ -13,7 +13,6 @@
 package org.eclipse.linuxtools.tmf.core.trace.location;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
@@ -44,35 +43,44 @@ public final class TmfLongLocation extends TmfLocation {
         super(other.getLocationInfo());
     }
 
+    /**
+     * Empty constructor. Useful for serialization.
+     */
+    protected TmfLongLocation() {
+    }
+
     @Override
     public Long getLocationInfo() {
         return (Long) super.getLocationInfo();
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+    public void serializeOut(ByteBuffer bufferOut) {
         IndexHelper.writeLong(bufferOut, getLocationInfo().longValue());
-
     }
 
     /**
-     * @throws IOException
      * @since 3.0
      */
     @Override
-    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+    public void serializeIn(ByteBuffer bufferIn) {
+        this.fLocationInfo = IndexHelper.readLong(bufferIn);
     }
 
     /**
+     * Create a new TmfLongLocation and serialize it in.
+     *
+     * @param bufferIn the buffer to read the TmfLongLocation from
+     * @return the created TmfLongLocation
      * @since 3.0
      */
-    public static ITmfLocation newAndserialize(ByteBuffer bufferIn) throws IOException {
-        long longLocation = IndexHelper.readLong(bufferIn);
-        return new TmfLongLocation(longLocation);
+    public static ITmfLocation newAndserialize(ByteBuffer bufferIn) {
+        TmfLongLocation location = new TmfLongLocation();
+        location.serializeIn(bufferIn);
+        return location;
     }
 
 }
