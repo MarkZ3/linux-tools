@@ -14,7 +14,7 @@
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 
@@ -382,7 +382,7 @@ public interface ITmfTrace extends ITmfDataProvider {
      * @throws IOException
      * @since 3.0
      */
-    ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException;
+    ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException;
 
     /**
      * @since 3.0

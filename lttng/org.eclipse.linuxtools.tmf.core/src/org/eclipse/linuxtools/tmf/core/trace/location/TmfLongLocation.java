@@ -14,8 +14,7 @@ package org.eclipse.linuxtools.tmf.core.trace.location;
 
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 
@@ -55,8 +54,8 @@ public final class TmfLongLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) throws IOException {
-        IndexHelper.writeLong(stream, getLocationInfo().longValue());
+    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+        IndexHelper.writeLong(bufferOut, getLocationInfo().longValue());
 
     }
 
@@ -65,14 +64,14 @@ public final class TmfLongLocation extends TmfLocation {
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) throws IOException {
+    public void serializeIn(ByteBuffer bufferIn) throws IOException {
     }
 
     /**
      * @since 3.0
      */
-    public static ITmfLocation newAndserialize(InputStream stream) throws IOException {
-        long longLocation = IndexHelper.readLong(stream);
+    public static ITmfLocation newAndserialize(ByteBuffer bufferIn) throws IOException {
+        long longLocation = IndexHelper.readLong(bufferIn);
         return new TmfLongLocation(longLocation);
     }
 

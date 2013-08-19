@@ -8,7 +8,6 @@ import java.util.Random;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.FlatArray;
-import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
@@ -52,7 +51,7 @@ public class FlatArrayTest {
         farr.dispose();
         System.out.println("Write time: " + (System.currentTimeMillis() - old));
 
-        boolean random = false;
+        boolean random = true;
         ArrayList<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < TRIES; i++) {
             if (random) {
@@ -66,18 +65,18 @@ public class FlatArrayTest {
         old = System.currentTimeMillis();
         farr = new FlatArray(file, fTrace);
 
-        for (int i = 0; i < TRIES; i++) {
-            Integer randomCheckpoint = list.get(i);
-            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
-
-            ITmfCheckpoint fileCheckpoint = farr.get(randomCheckpoint);
-//            assertEquals(randomCheckpoint.intValue(), fileCheckpoint.getRank());
-            assertEquals(checkpoint, fileCheckpoint);
-            if (i % 1000 == 0) {
-                System.out.println("Progress: " + (float)i / TRIES * 100);
-            }
-        }
-        System.out.println("Rank read time: " + (System.currentTimeMillis() - old));
+//        for (int i = 0; i < TRIES; i++) {
+//            Integer randomCheckpoint = list.get(i);
+//            TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
+//
+//            ITmfCheckpoint fileCheckpoint = farr.get(randomCheckpoint);
+////            assertEquals(randomCheckpoint.intValue(), fileCheckpoint.getRank());
+//            assertEquals(checkpoint, fileCheckpoint);
+//            if (i % 1000 == 0) {
+//                System.out.println("Progress: " + (float)i / TRIES * 100);
+//            }
+//        }
+//        System.out.println("Rank read time: " + (System.currentTimeMillis() - old));
 
 
         for (int i = 0; i < TRIES; i++) {
@@ -88,7 +87,7 @@ public class FlatArrayTest {
             assertEquals(randomCheckpoint.intValue(), found);
             //assertEquals(checkpoint, found);
             if (i % 1000 == 0) {
-                System.out.println("Progress: " + (float)i / TRIES * 100);
+                //System.out.println("Progress: " + (float)i / TRIES * 100);
             }
         }
         System.out.println("Rank read time: " + (System.currentTimeMillis() - old));

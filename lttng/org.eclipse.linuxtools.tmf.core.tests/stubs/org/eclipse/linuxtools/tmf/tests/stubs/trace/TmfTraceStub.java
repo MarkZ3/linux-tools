@@ -13,11 +13,10 @@
 
 package org.eclipse.linuxtools.tmf.tests.stubs.trace;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.core.resources.IProject;
@@ -353,27 +352,29 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
     }
 
     @Override
-    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
-        ITmfLocation location = TmfLongLocation.newAndserialize(stream);
-        TmfTimestamp timeStamp = TmfTimestamp.newAndSerialize(stream);
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
+        ITmfLocation location = TmfLongLocation.newAndserialize(bufferIn);
+        TmfTimestamp timeStamp = TmfTimestamp.newAndSerialize(bufferIn);
         TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
-        tmfCheckpoint.serialize(stream);
+        tmfCheckpoint.serializeIn(bufferIn);
         return tmfCheckpoint;
     }
 
     @Override
     public int getCheckointSize() {
         TmfCheckpoint c = new TmfCheckpoint(new TmfTimestamp(0), new TmfLongLocation(0L));
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        //ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        ByteBuffer b = ByteBuffer.allocate(1024);
 
         try {
-            c.serialize(stream);
+            c.serializeOut(b);
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
-        return stream.size();
+        //return stream.size();
+        return b.position();
     }
 
 }

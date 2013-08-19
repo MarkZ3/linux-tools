@@ -14,8 +14,7 @@
 package org.eclipse.linuxtools.tmf.core.trace.location;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * The generic trace location in TMF.
@@ -47,12 +46,12 @@ public interface ITmfLocation {
      * @throws IOException
      * @since 3.0
      */
-    void serialize(OutputStream stream) throws IOException;
+    void serializeOut(ByteBuffer bufferOut) throws IOException;
     /**
      * @param stream
      * @throws IOException
      * @since 3.0
      */
-    void serialize(InputStream stream) throws IOException;
+    void serializeIn(ByteBuffer bufferInt) throws IOException;
 
 }

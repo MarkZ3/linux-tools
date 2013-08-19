@@ -11,16 +11,11 @@
  *******************************************************************************/
 package org.eclipse.linuxtools.internal.tmf.core.trace.index;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -77,17 +72,23 @@ public class BTree {
 
     void serializeInTimeRange() throws IOException {
         file.seek(cacheHeader.timeStampOffset);
-        InputStream inputStream = Channels.newInputStream(fileChannel);
-        fTimeRange = new TmfTimeRange(TmfTimestamp.newAndSerialize(inputStream), TmfTimestamp.newAndSerialize(inputStream));
+        //InputStream inputStream = Channels.newInputStream(fileChannel);
+        ByteBuffer b = ByteBuffer.allocate(64);
+        fileChannel.read(b);
+        b.flip();
+        fTimeRange = new TmfTimeRange(TmfTimestamp.newAndSerialize(b), TmfTimestamp.newAndSerialize(b));
     }
 
     void serializeOutTimeRange() {
         try {
             cacheHeader.timeStampOffset = file.length();
             file.seek(cacheHeader.timeStampOffset);
-            OutputStream s = Channels.newOutputStream(fileChannel);
-            fTimeRange.getStartTime().serialize(s);
-            fTimeRange.getEndTime().serialize(s);
+            //OutputStream s = Channels.newOutputStream(fileChannel);
+            ByteBuffer b = ByteBuffer.allocate(64);
+            fTimeRange.getStartTime().serializeOut(b);
+            fTimeRange.getEndTime().serializeOut(b);
+            b.flip();
+            fileChannel.write(b);
         } catch (IOException e) {
          // TODO Auto-generated method stub
             e.printStackTrace();
@@ -475,13 +476,13 @@ public class BTree {
 
                 file.seek(offset);
 
-                BufferedOutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel), getNodeSize());
+                //BufferedOutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel), getNodeSize());
+                ByteBuffer bb = ByteBuffer.allocate(getNodeSize());
 
-                file.seek(offset);
                 for (int i = 0; i < MAX_CHILDREN; ++i) {
-                    IndexHelper.writeLong(outputStream, children[i]);
+                    IndexHelper.writeLong(bb, children[i]);
                 }
-                IndexHelper.writeInt(outputStream, numEntry);
+                IndexHelper.writeInt(bb, numEntry);
 
 //                for (int i = 0; i < MAX_CHILDREN; ++i) {
 //                    file.writeLong(children[i]);
@@ -490,13 +491,13 @@ public class BTree {
 
                 for (int i = 0; i < numEntry; ++i) {
 
-//                    long filePointer = file.getFilePointer();
+                    long filePointer = file.getFilePointer();
                     ITmfCheckpoint key = keys[i];
-                    key.serialize(outputStream);
-//                    long cSize = file.getFilePointer() - filePointer;
-//                    if (cSize > getCheckpointSize()) {
-//                        throw new IllegalStateException("Oversize checkpoint (" + cSize + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$
-//                    }
+                    key.serializeOut(bb);
+                    long cSize = file.getFilePointer() - filePointer;
+                    if (cSize > getCheckpointSize()) {
+                        throw new IllegalStateException("Oversize checkpoint (" + cSize + ") :  " + key); //$NON-NLS-1$ //$NON-NLS-2$
+                    }
 //                    fileChannel.force(false);
 //                    file.seek(filePointer);
 //                    InputStream inputStream = Channels.newInputStream(fileChannel);
@@ -510,13 +511,14 @@ public class BTree {
 //                    }
                 }
 
-//                long filePointer = file.getFilePointer();
-//                if (filePointer - offset > getNodeSize()) {
-//                    throw new IllegalStateException(filePointer - offset + " > " + getNodeSize()); //$NON-NLS-1$
-//                }
-
                 //fileChannel.force(false);
-                outputStream.flush();
+                bb.flip();
+                fileChannel.write(bb);
+                long filePointer = file.getFilePointer();
+                if (filePointer - offset > getNodeSize()) {
+                    throw new IllegalStateException(filePointer - offset + " > " + getNodeSize()); //$NON-NLS-1$
+                }
+
                 dirty = false;
             } catch (IOException e) {
                 // TODO Auto-generated catch block
@@ -541,18 +543,20 @@ public class BTree {
                     throw new IllegalStateException("Misaligned loading node, offset: " + offset + " nodeSize: " + getNodeSize()); //$NON-NLS-1$ //$NON-NLS-2$
                 }
                 file.seek(offset);
-                BufferedInputStream buffInputStream = new BufferedInputStream(Channels.newInputStream(fileChannel), getNodeSize());
-
-                byte arr[] = new byte[MAX_CHILDREN * LONG_SIZE + INT_SIZE];
-                buffInputStream.read(arr);
-                ByteBuffer wrap = ByteBuffer.wrap(arr);
-                for (int i = 0; i < MAX_CHILDREN; ++i) {
-                    children[i] = wrap.getLong(i * LONG_SIZE);
+                //BufferedInputStream buffInputStream = new BufferedInputStream(Channels.newInputStream(fileChannel), getNodeSize());
+                ByteBuffer bb = ByteBuffer.allocate(getNodeSize());
+                int read = fileChannel.read(bb);
+                bb.flip();
+                if (read != getNodeSize()) {
+                    throw new IllegalStateException("didn't read enough");
                 }
-                numEntry = wrap.getInt(MAX_CHILDREN * LONG_SIZE);
+                for (int i = 0; i < MAX_CHILDREN; ++i) {
+                    children[i] = bb.getLong(i * LONG_SIZE);
+                }
+                numEntry = bb.getInt(MAX_CHILDREN * LONG_SIZE);
 
                 for (int i = 0; i < numEntry; ++i) {
-                    keys[i] = trace.restoreCheckPoint(buffInputStream);
+                    keys[i] = trace.restoreCheckPoint(bb);
                 }
 
             } catch (IOException e) {

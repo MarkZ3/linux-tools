@@ -16,8 +16,7 @@
 package org.eclipse.linuxtools.tmf.core.timestamp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 
@@ -347,11 +346,11 @@ public class TmfTimestamp implements ITmfTimestamp {
      * @since 3.0
      */
     @Override
-    public void serialize(OutputStream stream) throws IOException {
-        IndexHelper.writeLong(stream, fValue);
+    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+        IndexHelper.writeLong(bufferOut, fValue);
 
-        IndexHelper.writeInt(stream, fScale);
-        IndexHelper.writeInt(stream, fPrecision);
+        IndexHelper.writeInt(bufferOut, fScale);
+        IndexHelper.writeInt(bufferOut, fPrecision);
     }
 
     /**
@@ -359,10 +358,10 @@ public class TmfTimestamp implements ITmfTimestamp {
      * @since 3.0
      */
     @Override
-    public void serialize(InputStream stream) throws IOException {
-        fValue = IndexHelper.readLong(stream);
-        fScale = IndexHelper.readInt(stream);
-        fPrecision = IndexHelper.readInt(stream);
+    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+        fValue = IndexHelper.readLong(bufferIn);
+        fScale = IndexHelper.readInt(bufferIn);
+        fPrecision = IndexHelper.readInt(bufferIn);
 
     }
 
@@ -372,9 +371,9 @@ public class TmfTimestamp implements ITmfTimestamp {
      * @throws IOException
      * @since 3.0
      */
-    public static TmfTimestamp newAndSerialize(InputStream stream) throws IOException {
+    public static TmfTimestamp newAndSerialize(ByteBuffer bufferIn) throws IOException {
         TmfTimestamp t = new TmfTimestamp();
-        t.serialize(stream);
+        t.serializeIn(bufferIn);
         return t;
     }
 

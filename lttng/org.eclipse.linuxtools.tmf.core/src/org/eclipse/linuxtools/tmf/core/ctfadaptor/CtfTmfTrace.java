@@ -13,10 +13,9 @@
 
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 
@@ -445,11 +444,11 @@ public class CtfTmfTrace extends TmfTrace
      * @since 3.0
      */
     @Override
-    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
-        ITmfLocation location = CtfLocation.newAndserialize(stream);
-        CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(stream);
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
+        ITmfLocation location = CtfLocation.newAndserialize(bufferIn);
+        CtfTmfTimestamp timeStamp = CtfTmfTimestamp.newAndSerialize(bufferIn);
         TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);
-        tmfCheckpoint.serialize(stream);
+        tmfCheckpoint.serializeIn(bufferIn);
         return tmfCheckpoint;
     }
 
@@ -459,15 +458,16 @@ public class CtfTmfTrace extends TmfTrace
     @Override
     public int getCheckointSize() {
         TmfCheckpoint c = new TmfCheckpoint(new CtfTmfTimestamp(0), new CtfLocation(0, 0));
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        ByteBuffer b = ByteBuffer.allocate(1024);
 
         try {
-            c.serialize(stream);
+            c.serializeOut(b);
+            b.position();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
-        return stream.size();
+        return b.position();
     }
 }

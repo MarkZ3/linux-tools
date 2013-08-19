@@ -16,7 +16,7 @@
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -534,7 +534,7 @@ public class TmfExperiment extends TmfTrace implements ITmfEventParser {
      * @since 3.0
      */
     @Override
-    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
         return null;
     }
 

@@ -56,5 +56,22 @@ public final class IndexHelper {
         stream.write(Charset.forName(CHARSET_NAME).encode(value).array());
     }
 
+
+    public static void writeLong(ByteBuffer buffer, long value) throws IOException {
+        buffer.putLong(value);
+    }
+
+    public static void writeInt(ByteBuffer buffer, int value) throws IOException {
+        buffer.putInt(value);
+    }
+
+    public static long readLong(ByteBuffer buffer) throws IOException {
+        return buffer.getLong();
+    }
+
+    public static int readInt(ByteBuffer buffer) throws IOException {
+        return buffer.getInt();
+    }
+
 }
 

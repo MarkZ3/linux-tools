@@ -96,7 +96,7 @@ public class BTreeTest {
         int degree = 15;
         BTree bTree = new BTree(degree, file, fTrace);
         long old = System.currentTimeMillis();
-        final int TRIES = 5000000;
+        final int TRIES = 500000;
         for (int i = 0; i < TRIES; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
             checkpoint.setRank(i);

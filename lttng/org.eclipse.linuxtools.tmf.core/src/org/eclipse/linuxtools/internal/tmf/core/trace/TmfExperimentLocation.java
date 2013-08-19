@@ -14,8 +14,7 @@
 
 package org.eclipse.linuxtools.internal.tmf.core.trace;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
@@ -110,13 +109,13 @@ public final class TmfExperimentLocation implements ITmfLocation {
     }
 
     @Override
-    public void serialize(OutputStream stream) {
+    public void serializeOut(ByteBuffer bufferOut) {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    public void serialize(InputStream stream) {
+    public void serializeIn(ByteBuffer bufferIn) {
         // TODO Auto-generated method stub
 
     }

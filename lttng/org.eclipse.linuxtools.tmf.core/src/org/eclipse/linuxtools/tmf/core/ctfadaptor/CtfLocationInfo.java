@@ -11,8 +11,7 @@
 package org.eclipse.linuxtools.tmf.core.ctfadaptor;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 
@@ -118,9 +117,9 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
      * @throws IOException
      * @since 3.0
      */
-    public void serialize(OutputStream stream) throws IOException {
-        IndexHelper.writeLong(stream, timestamp);
-        IndexHelper.writeLong(stream, index);
+    public void serializeOut(ByteBuffer bufferOut) throws IOException {
+        IndexHelper.writeLong(bufferOut, timestamp);
+        IndexHelper.writeLong(bufferOut, index);
 
     }
 
@@ -129,9 +128,9 @@ public class CtfLocationInfo implements Comparable<CtfLocationInfo> {
      * @throws IOException
      * @since 3.0
      */
-    public void serialize(InputStream stream) throws IOException {
-        timestamp = IndexHelper.readLong(stream);
-        index = IndexHelper.readLong(stream);
+    public void serializeIn(ByteBuffer bufferIn) throws IOException {
+        timestamp = IndexHelper.readLong(bufferIn);
+        index = IndexHelper.readLong(bufferIn);
 
     }
 }
