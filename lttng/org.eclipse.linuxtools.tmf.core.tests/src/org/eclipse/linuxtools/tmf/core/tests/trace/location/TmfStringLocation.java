@@ -48,8 +48,7 @@ public class TmfStringLocation extends TmfLocation {
      */
     @Override
     public void serializeOut(ByteBuffer bufferOut) {
-        // TODO Auto-generated method stub
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -57,8 +56,7 @@ public class TmfStringLocation extends TmfLocation {
      */
     @Override
     public void serializeIn(ByteBuffer bufferIn) {
-        // TODO Auto-generated method stub
-
+        throw new UnsupportedOperationException();
     }
 
 }

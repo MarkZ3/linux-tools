@@ -88,7 +88,7 @@ class BTreeNode {
             fTree.getFile().seek(fFileOffset);
 
             ByteBuffer bb = ByteBuffer.allocate(fTree.getNodeSize());
-            fTree.fFileChannel.read(bb);
+            fTree.getFileChannel().read(bb);
             bb.flip();
             for (int i = 0; i < fTree.getMaxNumChildren(); ++i) {
                 fChildrenFileOffsets[i] = bb.getLong();
@@ -123,7 +123,7 @@ class BTreeNode {
             }
 
             bb.flip();
-            fTree.fFileChannel.write(bb);
+            fTree.getFileChannel().write(bb);
 
             fIsDirty = false;
         } catch (IOException e) {

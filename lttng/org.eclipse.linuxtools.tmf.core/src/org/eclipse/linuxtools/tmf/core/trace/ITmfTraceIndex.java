@@ -57,7 +57,7 @@ public interface ITmfTraceIndex {
      *
      * @return true on success, false on failure
      */
-    public boolean restore();
+    public boolean isCreatedFromScratch();
 
     /**
      *

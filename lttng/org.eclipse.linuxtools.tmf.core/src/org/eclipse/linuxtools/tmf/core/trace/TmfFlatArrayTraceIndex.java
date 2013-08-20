@@ -12,81 +12,92 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.io.File;
 
+import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
- * A checkpoint index that store all checkpoints in memory.
+ * A checkpoint index that uses a FlatArray to store and search checkpoints by time stamps and by rank.
  *
  * @since 3.0
  */
-public class TmfMemoryIndex implements ITmfTraceIndex {
+public class TmfFlatArrayTraceIndex implements ITmfTraceIndex {
 
-    List<ITmfCheckpoint> fCheckpoints;
+    private FlatArray fDatabase;
+
+    private final String INDEX_FILE_NAME = "index.ht"; //$NON-NLS-1$
 
     /**
      * Creates an index for the given trace
      *
      * @param trace the trace
      */
-    public TmfMemoryIndex(ITmfTrace trace) {
-        fCheckpoints = new ArrayList<ITmfCheckpoint>();
+    public TmfFlatArrayTraceIndex(ITmfTrace trace) {
+        fDatabase = new FlatArray(getIndexFile(trace, INDEX_FILE_NAME), trace);
+    }
+
+    private static File getIndexFile(ITmfTrace trace, String fileName) {
+        String directory = TmfTraceManager.getSupplementaryFileDir(trace);
+        return new File(directory + fileName);
     }
 
     @Override
     public void dispose() {
-        fCheckpoints.clear();
+        fDatabase.dispose();
     }
 
     @Override
     public void add(ITmfCheckpoint checkpoint) {
-        fCheckpoints.add(checkpoint);
+        checkpoint.setRank(fDatabase.size());
+        fDatabase.insert(checkpoint);
+        fDatabase.setSize(fDatabase.size() + 1);
     }
 
     @Override
     public ITmfCheckpoint get(int checkpoint) {
-        return fCheckpoints.get(checkpoint);
+        return fDatabase.get(checkpoint);
     }
 
     @Override
     public int binarySearch(ITmfCheckpoint checkpoint) {
-        return Collections.binarySearch(fCheckpoints, checkpoint);
+        return fDatabase.binarySearch(checkpoint);
     }
 
     @Override
     public boolean isEmpty() {
-        return fCheckpoints.isEmpty();
+        return size() == 0;
     }
 
     @Override
     public int size() {
-        return fCheckpoints.size();
+        return fDatabase.size();
     }
 
     @Override
     public boolean isCreatedFromScratch() {
-        return false;
+        return !fDatabase.isCreatedFromScratch();
     }
 
     @Override
     public void setTimeRange(TmfTimeRange timeRange) {
+        fDatabase.setTimeRange(timeRange);
     }
 
     @Override
     public void setNbEvents(long nbEvents) {
+        fDatabase.setNbEvents(nbEvents);
     }
 
     @Override
     public TmfTimeRange getTimeRange() {
-        return null;
+        return fDatabase.getTimeRange();
     }
 
     @Override
     public long getNbEvents() {
-        return 0;
+        return fDatabase.getNbEvents();
     }
+
 }

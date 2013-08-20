@@ -17,6 +17,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -38,7 +40,7 @@ import org.junit.Test;
  */
 public class BTreeTest {
 
-    private static final int CHECKPOINTS_INSERT_NUM = 500;
+    private static final int CHECKPOINTS_INSERT_NUM = 50000;
     private TmfTraceStub fTrace;
     private File fFile = new File("index.ht");
     BTree fBTree = null;
@@ -256,4 +258,31 @@ public class BTreeTest {
         fBTree.dispose();
     }
 
+    /**
+     * Test delete
+     */
+    @Test
+    public void testDelete() {
+        fBTree = new BTree(DEGREE, fFile, fTrace);
+        assertTrue(fFile.exists());
+        fBTree.delete();
+        assertFalse(fFile.exists());
+    }
+
+    /**
+     * Test version change
+     * @throws IOException can throw this
+     */
+    @Test
+    public void testVersionChange() throws IOException {
+        fBTree = new BTree(DEGREE, fFile, fTrace);
+        fBTree.dispose();
+        RandomAccessFile f = new RandomAccessFile(fFile, "rw");
+        f.writeInt(-1);
+        f.close();
+
+        fBTree = new BTree(DEGREE, fFile, fTrace);
+        assertTrue(fBTree.isCreatedFromScratch());
+        fBTree.dispose();
+    }
 }

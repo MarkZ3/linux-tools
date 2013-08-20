@@ -21,13 +21,16 @@ import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
- * A checkpoint index that uses a BTree f
- * @since 3.0
+ * A checkpoint index that uses a BTree to store and search checkpoints by time stamps.
+ * It's possible to have the checkpoints time stamps in a different order than their ranks.
+ * Because of that, we use a separate structure FlatArray that is better suited for searching
+ * by rank (O(1)).
  *
+ * @since 3.0
  */
 public class TmfBTreeTraceIndex implements ITmfTraceIndex {
 
-    private BTree fDatabase;
+    private BTree fCheckpoints;
     private FlatArray fRanks;
 
     private final String INDEX_FILE_NAME = "index.ht"; //$NON-NLS-1$
@@ -36,13 +39,29 @@ public class TmfBTreeTraceIndex implements ITmfTraceIndex {
     private final int BTREE_DEGREE = 15;
 
     /**
-     * Creates a TmfBTreeIndex for the given trace
+     * Creates an index for the given trace
      *
-     * @param trace
+     * @param trace the trace
      */
     public TmfBTreeTraceIndex(ITmfTrace trace) {
-        fDatabase = new BTree(BTREE_DEGREE, getIndexFile(trace, INDEX_FILE_NAME), trace);
-        fRanks = new FlatArray(getIndexFile(trace, RANKS_FILE_NAME), trace);
+        fCheckpoints = createBTree(trace);
+        fRanks = createFlatArray(trace);
+
+        // If one of the files is created from scratch, make sure we rebuild the other one too
+        if (fCheckpoints.isCreatedFromScratch() != fRanks.isCreatedFromScratch()) {
+            fRanks.delete();
+            fCheckpoints.delete();
+            fCheckpoints = createBTree(trace);
+            fRanks = createFlatArray(trace);
+        }
+    }
+
+    private FlatArray createFlatArray(ITmfTrace trace) {
+        return new FlatArray(getIndexFile(trace, RANKS_FILE_NAME), trace);
+    }
+
+    private BTree createBTree(ITmfTrace trace) {
+        return new BTree(BTREE_DEGREE, getIndexFile(trace, INDEX_FILE_NAME), trace);
     }
 
     private static File getIndexFile(ITmfTrace trace, String fileName) {
@@ -52,15 +71,15 @@ public class TmfBTreeTraceIndex implements ITmfTraceIndex {
 
     @Override
     public void dispose() {
-        fDatabase.dispose();
+        fCheckpoints.dispose();
     }
 
     @Override
     public void add(ITmfCheckpoint checkpoint) {
-        checkpoint.setRank(fDatabase.size());
-        fDatabase.insert(checkpoint);
+        checkpoint.setRank(fCheckpoints.size());
+        fCheckpoints.insert(checkpoint);
         fRanks.insert(checkpoint);
-        fDatabase.setSize(fDatabase.size() + 1);
+        fCheckpoints.setSize(fCheckpoints.size() + 1);
     }
 
     @Override
@@ -71,7 +90,7 @@ public class TmfBTreeTraceIndex implements ITmfTraceIndex {
     @Override
     public int binarySearch(ITmfCheckpoint checkpoint) {
         BTreeCheckpointVisitor v = new BTreeCheckpointVisitor(checkpoint);
-        fDatabase.accept(v);
+        fCheckpoints.accept(v);
         return v.getRank();
     }
 
@@ -82,32 +101,32 @@ public class TmfBTreeTraceIndex implements ITmfTraceIndex {
 
     @Override
     public int size() {
-        return fDatabase.size();
+        return fCheckpoints.size();
     }
 
     @Override
-    public boolean restore() {
-        return fDatabase.isCreatedFromScratch();
+    public boolean isCreatedFromScratch() {
+        return fCheckpoints.isCreatedFromScratch();
     }
 
     @Override
     public void setTimeRange(TmfTimeRange timeRange) {
-        fDatabase.setTimeRange(timeRange);
+        fCheckpoints.setTimeRange(timeRange);
     }
 
     @Override
     public void setNbEvents(long nbEvents) {
-        fDatabase.setNbEvents(nbEvents);
+        fCheckpoints.setNbEvents(nbEvents);
     }
 
     @Override
     public TmfTimeRange getTimeRange() {
-        return fDatabase.getTimeRange();
+        return fCheckpoints.getTimeRange();
     }
 
     @Override
     public long getNbEvents() {
-        return fDatabase.getNbEvents();
+        return fCheckpoints.getNbEvents();
     }
 
 }

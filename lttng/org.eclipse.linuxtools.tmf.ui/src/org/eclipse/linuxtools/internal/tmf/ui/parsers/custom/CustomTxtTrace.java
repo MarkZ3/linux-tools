@@ -15,7 +15,7 @@ package org.eclipse.linuxtools.internal.tmf.ui.parsers.custom;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -401,7 +401,7 @@ public class CustomTxtTrace extends TmfTrace implements ITmfEventParser {
     }
 
     @Override
-    public ITmfCheckpoint restoreCheckPoint(InputStream stream) throws IOException {
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
         // TODO Auto-generated method stub
         return null;
     }

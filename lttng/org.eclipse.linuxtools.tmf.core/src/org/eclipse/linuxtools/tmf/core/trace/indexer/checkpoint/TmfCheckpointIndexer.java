@@ -151,7 +151,7 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
         }
 
         // No need to build the index, it has been restored
-        if (fTraceIndex.restore()) {
+        if (!fTraceIndex.isCreatedFromScratch()) {
             // Set some trace attributes that depends on indexing
             fTrace.setNbEvents(fTraceIndex.getNbEvents());
             fTrace.setTimeRange(fTraceIndex.getTimeRange());

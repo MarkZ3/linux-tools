@@ -40,6 +40,10 @@ public class BTreeCheckpointVisitor implements IBTreeVisitor {
             return compareTo;
         }
 
+        /**
+         *
+         * @return
+         */
         public int getRank() {
             return rank;
         }

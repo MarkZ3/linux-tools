@@ -17,7 +17,7 @@ import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointInd
 /**
  * @since 3.0
  */
-public class TmfBTreeIndexer extends TmfCheckpointIndexer {
+public class TmfBTreeTraceIndexer extends TmfCheckpointIndexer {
 
     /**
      * Full trace indexer
@@ -25,7 +25,7 @@ public class TmfBTreeIndexer extends TmfCheckpointIndexer {
      * @param trace the trace to index
      * @param interval the checkpoints interval
      */
-    public TmfBTreeIndexer(ITmfTrace trace, int interval) {
+    public TmfBTreeTraceIndexer(ITmfTrace trace, int interval) {
         super(trace, interval);
     }
 

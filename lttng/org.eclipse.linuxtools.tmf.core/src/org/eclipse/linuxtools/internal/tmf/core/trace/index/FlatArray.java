@@ -21,6 +21,7 @@ import java.nio.channels.FileChannel;
 import java.text.MessageFormat;
 
 import org.eclipse.linuxtools.internal.tmf.core.Activator;
+import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
@@ -35,12 +36,19 @@ public class FlatArray {
     private static final int VERSION = 0;
     private int numCheckpoints = 0;
     private int cacheMisses = 0;
+    private int fSize = 0;
+    private boolean fCreatedFromScratch;
 
-    private RandomAccessFile file;
+    private RandomAccessFile fRandomAccessFile;
+    private File fFile;
 
     // Cached values
     private int checkpointSize = 0;
     private FileChannel fileChannel;
+
+    private TmfTimeRange fTimeRange;
+
+    private long fNbEvents;
 
     private final static int HEADER_SIZE = INT_SIZE + INT_SIZE + INT_SIZE;
     private final static int NUM_OFFSET = INT_SIZE + INT_SIZE;
@@ -48,19 +56,20 @@ public class FlatArray {
     public FlatArray(File indexFile, ITmfTrace trace) {
         this.trace = trace;
         try {
-            boolean createdFromScratch = !indexFile.exists();
-            this.file = new RandomAccessFile(indexFile, "rw"); //$NON-NLS-1$
+            fFile = indexFile;
+            fCreatedFromScratch = !indexFile.exists();
+            this.fRandomAccessFile = new RandomAccessFile(indexFile, "rw"); //$NON-NLS-1$
             int traceCheckpointSize = trace.getCheckointSize();
-            if (!createdFromScratch) {
-                int version = file.readInt();
-                checkpointSize = file.readInt();
-                numCheckpoints = file.readInt();
+            if (!fCreatedFromScratch) {
+                int version = fRandomAccessFile.readInt();
+                checkpointSize = fRandomAccessFile.readInt();
+                numCheckpoints = fRandomAccessFile.readInt();
 
                 if (version != VERSION || checkpointSize != traceCheckpointSize) {
                     boolean delete = indexFile.delete();
                     if (delete) {
-                        this.file = new RandomAccessFile(indexFile, "rw"); //$NON-NLS-1$
-                        createdFromScratch = true;
+                        this.fRandomAccessFile = new RandomAccessFile(indexFile, "rw"); //$NON-NLS-1$
+                        fCreatedFromScratch = true;
                         numCheckpoints = 0;
                     } else {
                         Activator.logError("Unable to delete outdated ranks file, index will no work");
@@ -71,13 +80,13 @@ public class FlatArray {
 
             checkpointSize = traceCheckpointSize;
 
-            if (createdFromScratch) {
-                file.writeInt(VERSION);
-                file.writeInt(checkpointSize);
-                file.writeInt(numCheckpoints);
+            if (fCreatedFromScratch) {
+                fRandomAccessFile.writeInt(VERSION);
+                fRandomAccessFile.writeInt(checkpointSize);
+                fRandomAccessFile.writeInt(numCheckpoints);
             }
 
-            fileChannel = file.getChannel();
+            fileChannel = fRandomAccessFile.getChannel();
 
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
@@ -85,6 +94,23 @@ public class FlatArray {
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+        }
+    }
+
+//    /**
+//     * @return true if the FlatArray could be restored from disk, false otherwise
+//     */
+//    private boolean tryRestore() {
+//
+//    }
+
+    /**
+     * Dispose and delete the FlatArray
+     */
+    public void delete() {
+        dispose();
+        if (fFile.exists()) {
+            fFile.delete();
         }
     }
 
@@ -96,11 +122,9 @@ public class FlatArray {
     public void insert(ITmfCheckpoint checkpoint) {
         try {
             ++numCheckpoints;
-            file.seek(file.length());
-            //BufferedOutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel), checkpointSize);
+            fRandomAccessFile.seek(fRandomAccessFile.length());
             ByteBuffer bb = ByteBuffer.allocate(checkpointSize);
             checkpoint.serializeOut(bb);
-            //outputStream.flush();
             bb.flip();
             fileChannel.write(bb);
         } catch (IOException e) {
@@ -118,7 +142,7 @@ public class FlatArray {
         ITmfCheckpoint checkpoint = null;
         try {
             int pos = HEADER_SIZE + checkpointSize * rank;
-            file.seek(pos);
+            fRandomAccessFile.seek(pos);
             ByteBuffer bb = ByteBuffer.allocate(checkpointSize);
             fileChannel.read(bb);
             bb.flip();
@@ -134,25 +158,32 @@ public class FlatArray {
      */
     public void dispose() {
         try {
-            file.seek(NUM_OFFSET);
-            file.writeInt(numCheckpoints);
-            file.close();
+            fRandomAccessFile.seek(NUM_OFFSET);
+            fRandomAccessFile.writeInt(numCheckpoints);
+            fRandomAccessFile.close();
         } catch (IOException e) {
-            Activator.logError(MessageFormat.format("Error closing index. File: {0}", file, e));
+            Activator.logError(MessageFormat.format("Error closing index. File: {0}", fRandomAccessFile, e));
         }
     }
 
     /**
      * Search for a checkpoint and return the rank.
      *
-     * @param checkpoint
+     * @param checkpoint the checkpoint to search
      * @return
      */
     public int binarySearch(ITmfCheckpoint checkpoint) {
+        if (numCheckpoints == 1) {
+            return 0;
+        }
+
         int lower = 0;
         int upper = numCheckpoints - 1;
-        while (lower < upper) {
-            int middle = (lower + upper) / 2;
+        int lastMiddle = -1;
+        int middle = 0;
+        while (lower <= upper && lastMiddle != middle) {
+            lastMiddle = middle;
+            middle = (lower + upper) / 2;
             ITmfCheckpoint found = get(middle);
             ++cacheMisses;
             int compare = checkpoint.compareTo(found);
@@ -166,8 +197,16 @@ public class FlatArray {
                 lower= middle + 1;
             }
         }
-        return lower;
+        return lower -1;
     }
+
+    /**
+    *
+    * @return true if the FlatArray was created from scratch, false otherwise
+    */
+   public boolean isCreatedFromScratch() {
+       return fCreatedFromScratch;
+   }
 
     /**
      * @return
@@ -176,4 +215,57 @@ public class FlatArray {
         return cacheMisses;
     }
 
+    /**
+     * Returns the size of the FlatArray expressed as a number of checkpoints.
+     *
+     * @return the size of the FlatArray
+     */
+    public int size() {
+        return fSize;
+    }
+
+    /**
+     * Set the size of the FlatArray, expressed as a number of checkpoints
+     *
+     * @param size the size of the FlatArray
+     */
+    public void setSize(int size) {
+        fSize = size;
+    }
+
+    /**
+     * Set the trace time range
+     *
+     * @param timeRange the trace time range
+     */
+    public void setTimeRange(TmfTimeRange timeRange) {
+        fTimeRange = timeRange;
+    }
+
+    /**
+     * Get the trace time range
+     *
+     * @return the trace time range
+     */
+    public TmfTimeRange getTimeRange() {
+        return fTimeRange;
+    }
+
+    /**
+     * Set the number of events in the trace
+     *
+     * @param nbEvents the number of events in the trace
+     */
+    public void setNbEvents(long nbEvents) {
+        fNbEvents = nbEvents;
+    }
+
+    /**
+     * Get the number of events in the trace
+     *
+     * @return the number of events in the trace
+     */
+    public long getNbEvents() {
+        return fNbEvents;
+    }
 }

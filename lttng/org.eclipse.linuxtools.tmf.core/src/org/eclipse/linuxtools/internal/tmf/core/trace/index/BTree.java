@@ -33,7 +33,7 @@ import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
  */
 public class BTree {
 
-    //private static final int VERSION = 0;
+    private static final int VERSION = 4;
     private static final int INT_SIZE = 4;
     private static final int LONG_SIZE = 8;
     private static final boolean ALWAYS_CACHE_ROOT = true;
@@ -43,44 +43,47 @@ public class BTree {
     private final int fMaxNumEntries;
     private final int fMaxNumChildren;
     private final int fMedianRecord;
-    private RandomAccessFile fFile;
+    private final File fFile;
+    private RandomAccessFile fRandomAccessFile;
     private boolean fCreatedFromScratch;
 
     private BTreeHeader fBTreeHeader = null;
 
     // Cached values
-    int nodeSize = - 1;
-    int checkPointSize = -1;
-    FileChannel fFileChannel;
+    private int nodeSize = - 1;
+    private FileChannel fFileChannel;
     private BTreeNodeCache fNodeCache;
 
-    TmfTimeRange fTimeRange;
+    private TmfTimeRange fTimeRange;
 
     class BTreeHeader {
-        //int version;
+        int fVersion = 0;
         int fSize = 0;
         long fRoot;
         long fNbEvents = 0;
         long fTimeRangeOffset = 0;
 
         int SIZE = INT_SIZE +
+                INT_SIZE +
                 LONG_SIZE +
                 LONG_SIZE +
                 LONG_SIZE;
 
         void serializeIn() throws IOException {
-            fSize = fFile.readInt();
-            fRoot = fFile.readLong();
-            fNbEvents = fFile.readLong();
-            fTimeRangeOffset = fFile.readLong();
+            fVersion = fRandomAccessFile.readInt();
+            fSize = fRandomAccessFile.readInt();
+            fRoot = fRandomAccessFile.readLong();
+            fNbEvents = fRandomAccessFile.readLong();
+            fTimeRangeOffset = fRandomAccessFile.readLong();
         }
 
         void serializeOut() throws IOException {
-            fFile.seek(0);
-            fFile.writeInt(fSize);
-            fFile.writeLong(fRoot);
-            fFile.writeLong(fNbEvents);
-            fFile.writeLong(fTimeRangeOffset);
+            fRandomAccessFile.seek(0);
+            fRandomAccessFile.writeInt(VERSION);
+            fRandomAccessFile.writeInt(fSize);
+            fRandomAccessFile.writeLong(fRoot);
+            fRandomAccessFile.writeLong(fNbEvents);
+            fRandomAccessFile.writeLong(fTimeRangeOffset);
         }
     }
 
@@ -95,39 +98,86 @@ public class BTree {
      * @param trace the trace is
      */
     public BTree(int degree, File file, ITmfTrace trace) {
+        fFile = file;
         fTrace = trace;
-        fNodeCache = new BTreeNodeCache(this);
-        fCreatedFromScratch = !file.exists();
-        try {
-            this.fFile = new RandomAccessFile(file, "rw"); //$NON-NLS-1$
-            fFileChannel = this.fFile.getChannel();
-        } catch (FileNotFoundException e) {
-            Activator.logError(MessageFormat.format(Messages.BTree_ErrorOpeningIndex, file, e));
-        }
 
         fMaxNumEntries = 2 * degree - 1;
         fMaxNumChildren = 2 * degree;
         fMedianRecord = degree - 1;
 
-        fBTreeHeader = new BTreeHeader();
-        try {
-            BTreeNode rootNode;
-            if (fCreatedFromScratch) {
-                // Write initial header, seek to the start of nodes
-                fBTreeHeader.serializeOut();
-                rootNode = allocateNode();
-                fTimeRange = new TmfTimeRange(new TmfTimestamp(0), new TmfTimestamp(0));
-            } else {
-                fBTreeHeader.serializeIn();
-                serializeInTimeRange();
-                rootNode = fNodeCache.getNode(fBTreeHeader.fRoot);
+        fCreatedFromScratch = !fFile.exists();
+
+        fNodeCache = new BTreeNodeCache(this);
+
+        if (!fCreatedFromScratch) {
+            if (!tryRestore()) {
+                fFile.delete();
+                dispose();
             }
+        }
+
+        if (fCreatedFromScratch) {
+            initialize();
+        }
+    }
+
+    private void initialize() {
+        try {
+            this.fRandomAccessFile = new RandomAccessFile(fFile, "rw"); //$NON-NLS-1$
+            fFileChannel = this.fRandomAccessFile.getChannel();
+
+            // Reserve space for header
+            fBTreeHeader = new BTreeHeader();
+            fRandomAccessFile.setLength(fBTreeHeader.SIZE);
+
+            BTreeNode rootNode = allocateNode();
+            setRootNode(rootNode);
+
+            fTimeRange = new TmfTimeRange(new TmfTimestamp(0), new TmfTimestamp(0));
+        } catch (IOException e) {
+            Activator.logError(MessageFormat.format(Messages.BTree_ErrorOpeningIndex, fFile), e);
+        }
+    }
+
+    /**
+     * @return true if the BTree could be restored from disk, false otherwise
+     */
+    private boolean tryRestore() {
+        try {
+            this.fRandomAccessFile = new RandomAccessFile(this.fFile, "r"); //$NON-NLS-1$
+            fFileChannel = this.fRandomAccessFile.getChannel();
+        } catch (FileNotFoundException e) {
+            Activator.logError(MessageFormat.format(Messages.BTree_ErrorOpeningIndex, fRandomAccessFile, e));
+            return false;
+        }
+
+        try {
+            fBTreeHeader = new BTreeHeader();
+            fBTreeHeader.serializeIn();
+            if (fBTreeHeader.fVersion != VERSION) {
+                return false;
+            }
+
+            serializeInTimeRange();
+            BTreeNode rootNode = fNodeCache.getNode(fBTreeHeader.fRoot);
 
             setRootNode(rootNode);
         } catch (IOException e) {
-            Activator.logError(MessageFormat.format(Messages.BTree_IOErrorReadingHeader, file), e);
+            Activator.logError(MessageFormat.format(Messages.BTree_IOErrorReadingHeader, this.fRandomAccessFile), e);
+            return false;
         }
 
+        return true;
+    }
+
+    /**
+     * Dispose and delete the BTree
+     */
+    public void delete() {
+        dispose();
+        if (fFile.exists()) {
+            fFile.delete();
+        }
     }
 
     /**
@@ -143,14 +193,18 @@ public class BTree {
                 fNodeCache.serializeOut();
             }
 
-            fFile.close();
+            if (fRandomAccessFile != null) {
+                fRandomAccessFile.close();
+            }
+            fCreatedFromScratch = true;
+            fBTreeHeader = null;
         } catch (IOException e) {
-            Activator.logError(MessageFormat.format(Messages.BTree_IOErrorClosingIndex, fFile, e));
+            Activator.logError(MessageFormat.format(Messages.BTree_IOErrorClosingIndex, fRandomAccessFile, e));
         }
     }
 
     private void serializeInTimeRange() throws IOException {
-        fFile.seek(fBTreeHeader.fTimeRangeOffset);
+        fRandomAccessFile.seek(fBTreeHeader.fTimeRangeOffset);
         ByteBuffer b = ByteBuffer.allocate(64);
         fFileChannel.read(b);
         b.flip();
@@ -158,8 +212,8 @@ public class BTree {
     }
 
     private void serializeOutTimeRange() throws IOException {
-        fBTreeHeader.fTimeRangeOffset = fFile.length();
-        fFile.seek(fBTreeHeader.fTimeRangeOffset);
+        fBTreeHeader.fTimeRangeOffset = fRandomAccessFile.length();
+        fRandomAccessFile.seek(fBTreeHeader.fTimeRangeOffset);
         ByteBuffer b = ByteBuffer.allocate(64);
         fTimeRange.getStartTime().serializeOut(b);
         fTimeRange.getEndTime().serializeOut(b);
@@ -303,12 +357,12 @@ public class BTree {
 
     private BTreeNode allocateNode() {
         try {
-            long offset = fFile.length();
-            fFile.setLength(offset + getNodeSize());
+            long offset = fRandomAccessFile.length();
+            fRandomAccessFile.setLength(offset + getNodeSize());
             BTreeNode node = new BTreeNode(this, offset);
             return node;
         } catch (IOException e) {
-            Activator.logError(MessageFormat.format(Messages.BTree_IOErrorAllocatingNode, fFile), e);
+            Activator.logError(MessageFormat.format(Messages.BTree_IOErrorAllocatingNode, fRandomAccessFile), e);
         }
         return null;
     }
@@ -461,6 +515,10 @@ public class BTree {
     }
 
     RandomAccessFile getFile() {
-        return fFile;
+        return fRandomAccessFile;
+    }
+
+    FileChannel getFileChannel() {
+        return fRandomAccessFile.getChannel();
     }
 }
