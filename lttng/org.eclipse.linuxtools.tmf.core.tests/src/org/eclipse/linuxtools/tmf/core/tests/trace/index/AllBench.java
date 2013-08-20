@@ -21,10 +21,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTreeCheckpointVisitor;
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.IBTreeVisitor;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
 import org.eclipse.linuxtools.tmf.tests.stubs.trace.TmfTraceStub;
@@ -108,46 +107,6 @@ public class AllBench {
         System.out.println("Testing Array\n");
 
         testInsertAlotArray(list);
-    }
-
-    class Visitor implements IBTreeVisitor {
-        int rank = -1;
-        private ITmfCheckpoint search;
-        private ITmfCheckpoint found;
-        boolean exactFound = false;
-
-        public Visitor(ITmfCheckpoint search) {
-            this.search = search;
-        }
-
-        @Override
-        public boolean visit(ITmfCheckpoint key) {
-            if (key == null) {
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public int compare(ITmfCheckpoint checkRec) {
-            int compareTo = checkRec.compareTo(search);
-            if (compareTo <= 0 && !exactFound) {
-                rank = checkRec.getRank();
-                found = checkRec;
-                if (compareTo == 0) {
-                    exactFound = true;
-                }
-            }
-            return compareTo;
-        }
-
-        public int getRank() {
-            return rank;
-        }
-
-        public ITmfCheckpoint getFound() {
-            return found;
-        }
     }
 
     private void testInsertAlot(ArrayList<Integer> list2) {
@@ -254,7 +213,7 @@ public class AllBench {
             for (int i = 0; i < checkpointsNum; i++) {
                 Integer randomCheckpoint = list.get(i);
                 TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
-                Visitor treeVisitor = new Visitor(checkpoint);
+                BTreeCheckpointVisitor treeVisitor = new BTreeCheckpointVisitor(checkpoint);
                 bTree.accept(treeVisitor);
                 assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
             }

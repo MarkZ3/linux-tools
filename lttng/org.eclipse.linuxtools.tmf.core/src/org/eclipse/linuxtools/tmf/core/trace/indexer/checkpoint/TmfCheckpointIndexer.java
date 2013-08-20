@@ -27,7 +27,7 @@ import org.eclipse.linuxtools.tmf.core.signal.TmfTraceUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
-import org.eclipse.linuxtools.tmf.core.trace.ITmfIndex;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndex;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.TmfMemoryIndex;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.ITmfTraceIndexer;
@@ -71,7 +71,7 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
      * The trace index. It is composed of checkpoints taken at intervals of
      * fCheckpointInterval events.
      */
-    protected final ITmfIndex fTraceIndex;
+    protected final ITmfTraceIndex fTraceIndex;
 
     /**
      * The indexing request
@@ -110,7 +110,7 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
      * @return
      * @since 3.0
      */
-    protected ITmfIndex createIndex(final ITmfTrace trace) {
+    protected ITmfTraceIndex createIndex(final ITmfTrace trace) {
         return new TmfMemoryIndex(trace);
     }
 
@@ -337,7 +337,7 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
      * @return the trace index
      * @since 3.0
      */
-    protected ITmfIndex getTraceIndex() {
+    protected ITmfTraceIndex getTraceIndex() {
         return fTraceIndex;
     }
 

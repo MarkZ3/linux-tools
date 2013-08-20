@@ -28,7 +28,7 @@ import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.tests.TmfCoreTestPlugin;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.trace.ITmfIndex;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndex;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.TmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
@@ -86,7 +86,7 @@ public class TmfCheckpointIndexTest {
         public TestIndexer(EmptyTestTrace testTrace) {
             super(testTrace, BLOCK_SIZE);
         }
-        public ITmfIndex getCheckpoints() {
+        public ITmfTraceIndex getCheckpoints() {
             return getTraceIndex();
         }
     }
@@ -152,7 +152,7 @@ public class TmfCheckpointIndexTest {
         assertEquals("getStartTime",   1,          fTrace.getStartTime().getValue());
         assertEquals("getEndTime",     NB_EVENTS,  fTrace.getEndTime().getValue());
 
-        ITmfIndex checkpoints = fTrace.getIndexer().getCheckpoints();
+        ITmfTraceIndex checkpoints = fTrace.getIndexer().getCheckpoints();
         int pageSize = fTrace.getCacheSize();
         assertTrue("Checkpoints exist",  checkpoints != null);
         assertEquals("Checkpoints size", NB_EVENTS / BLOCK_SIZE, checkpoints.size());
@@ -176,7 +176,7 @@ public class TmfCheckpointIndexTest {
         assertEquals("getStartTime",   TmfTimestamp.BIG_BANG, fEmptyTrace.getStartTime());
         assertEquals("getEndTime",     TmfTimestamp.BIG_BANG, fEmptyTrace.getEndTime());
 
-        ITmfIndex checkpoints = fEmptyTrace.getIndexer().getCheckpoints();
+        ITmfTraceIndex checkpoints = fEmptyTrace.getIndexer().getCheckpoints();
         int pageSize = fEmptyTrace.getCacheSize();
         assertTrue("Checkpoints exist",  checkpoints != null);
         assertEquals("Checkpoints size", 0, checkpoints.size());

@@ -30,7 +30,7 @@ public class TmfBTreeIndexer extends TmfCheckpointIndexer {
     }
 
     @Override
-    protected ITmfIndex createIndex(ITmfTrace trace) {
-        return new TmfBTreeIndex(trace);
+    protected ITmfTraceIndex createIndex(ITmfTrace trace) {
+        return new TmfBTreeTraceIndex(trace);
     }
 }

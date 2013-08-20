@@ -36,21 +36,27 @@ public class BTree {
     //private static final int VERSION = 0;
     private static final int INT_SIZE = 4;
     private static final int LONG_SIZE = 8;
+    private static final boolean ALWAYS_CACHE_ROOT = true;
 
     ITmfTrace fTrace;
 
-    final int fMaxNumRecords;
-    final int fMaxNumChildren;
-    final int fMedianRecord;
-    RandomAccessFile fFile;
+    private final int fMaxNumEntries;
+    private final int fMaxNumChildren;
+    private final int fMedianRecord;
+    private RandomAccessFile fFile;
+    private boolean fCreatedFromScratch;
+
+    private BTreeHeader fBTreeHeader = null;
+
+    // Cached values
+    int nodeSize = - 1;
+    int checkPointSize = -1;
     FileChannel fFileChannel;
-    private CacheHeader fCacheHeader = null;
     private BTreeNodeCache fNodeCache;
 
     TmfTimeRange fTimeRange;
-    private final static boolean ALWAYS_CACHE_ROOT = true;
 
-    class CacheHeader {
+    class BTreeHeader {
         //int version;
         int fSize = 0;
         long fRoot;
@@ -99,22 +105,22 @@ public class BTree {
             Activator.logError(MessageFormat.format(Messages.BTree_ErrorOpeningIndex, file, e));
         }
 
-        fMaxNumRecords = 2 * degree - 1;
+        fMaxNumEntries = 2 * degree - 1;
         fMaxNumChildren = 2 * degree;
         fMedianRecord = degree - 1;
 
-        fCacheHeader = new CacheHeader();
+        fBTreeHeader = new BTreeHeader();
         try {
             BTreeNode rootNode;
             if (fCreatedFromScratch) {
                 // Write initial header, seek to the start of nodes
-                fCacheHeader.serializeOut();
+                fBTreeHeader.serializeOut();
                 rootNode = allocateNode();
                 fTimeRange = new TmfTimeRange(new TmfTimestamp(0), new TmfTimestamp(0));
             } else {
-                fCacheHeader.serializeIn();
+                fBTreeHeader.serializeIn();
                 serializeInTimeRange();
-                rootNode = fNodeCache.getNode(fCacheHeader.fRoot);
+                rootNode = fNodeCache.getNode(fBTreeHeader.fRoot);
             }
 
             setRootNode(rootNode);
@@ -133,7 +139,7 @@ public class BTree {
             if (fCreatedFromScratch) {
                 serializeOutTimeRange();
 
-                fCacheHeader.serializeOut();
+                fBTreeHeader.serializeOut();
                 fNodeCache.serializeOut();
             }
 
@@ -144,7 +150,7 @@ public class BTree {
     }
 
     private void serializeInTimeRange() throws IOException {
-        fFile.seek(fCacheHeader.fTimeRangeOffset);
+        fFile.seek(fBTreeHeader.fTimeRangeOffset);
         ByteBuffer b = ByteBuffer.allocate(64);
         fFileChannel.read(b);
         b.flip();
@@ -152,8 +158,8 @@ public class BTree {
     }
 
     private void serializeOutTimeRange() throws IOException {
-        fCacheHeader.fTimeRangeOffset = fFile.length();
-        fFile.seek(fCacheHeader.fTimeRangeOffset);
+        fBTreeHeader.fTimeRangeOffset = fFile.length();
+        fFile.seek(fBTreeHeader.fTimeRangeOffset);
         ByteBuffer b = ByteBuffer.allocate(64);
         fTimeRange.getStartTime().serializeOut(b);
         fTimeRange.getEndTime().serializeOut(b);
@@ -175,11 +181,11 @@ public class BTree {
      * @param checkpoint the checkpoint to insert
      */
     public void insert(ITmfCheckpoint checkpoint) {
-        insert(checkpoint, fCacheHeader.fRoot, null, 0);
+        insert(checkpoint, fBTreeHeader.fRoot, null, 0);
     }
 
     private void setRootNode(BTreeNode newRootNode) {
-        fCacheHeader.fRoot = newRootNode.getOffset();
+        fBTreeHeader.fRoot = newRootNode.getOffset();
         if (ALWAYS_CACHE_ROOT) {
             fNodeCache.setRootNode(newRootNode);
         } else {
@@ -192,7 +198,7 @@ public class BTree {
         BTreeNode node = fNodeCache.getNode(nodeOffset);
 
         // If this node is full (last record isn't null), split it
-        if (node.getEntry(fMaxNumRecords - 1) != null) {
+        if (node.getEntry(fMaxNumEntries - 1) != null) {
 
             ITmfCheckpoint median = node.getEntry(fMedianRecord);
             if (median.compareTo(checkpoint) == 0) {
@@ -211,8 +217,8 @@ public class BTree {
                 newnode.setChild(i, node.getChild(fMedianRecord + 1 + i));
                 node.setChild(fMedianRecord + 1 + i, BTreeNode.NULL_CHILD);
             }
-            newnode.setChild(fMedianRecord, node.getChild(fMaxNumRecords));
-            node.setChild(fMaxNumRecords, BTreeNode.NULL_CHILD);
+            newnode.setChild(fMedianRecord, node.getChild(fMaxNumEntries));
+            node.setChild(fMaxNumEntries, BTreeNode.NULL_CHILD);
 
             if (parent == null) {
                 parent = allocateNode();
@@ -220,7 +226,7 @@ public class BTree {
                 parent.setChild(0, nodeOffset);
             } else {
                 // Insert the median into the parent.
-                for (int i = fMaxNumRecords - 2; i >= iParent; --i) {
+                for (int i = fMaxNumEntries - 2; i >= iParent; --i) {
                     ITmfCheckpoint r = parent.getEntry(i);
                     if (r != null) {
                         parent.setEntry(i + 1, r);
@@ -244,7 +250,7 @@ public class BTree {
 
         // Binary search to find the insert point.
         int lower= 0;
-        int upper= fMaxNumRecords - 1;
+        int upper= fMaxNumEntries - 1;
         while (lower < upper && node.getEntry(upper - 1) == null) {
             upper--;
         }
@@ -274,7 +280,7 @@ public class BTree {
         } else {
             // We are at the leaf, add us in.
             // First copy everything after over one.
-            for (int j = fMaxNumRecords - 2; j >= i; --j) {
+            for (int j = fMaxNumEntries - 2; j >= i; --j) {
                 ITmfCheckpoint r = node.getEntry(j);
                 if (r != null) {
                     node.setEntry(j + 1, r);
@@ -285,20 +291,18 @@ public class BTree {
         }
     }
 
-    int btreeNodeSize = - 1;
     int getNodeSize() {
-        if (btreeNodeSize == -1) {
-            btreeNodeSize = INT_SIZE; // num entries
-            btreeNodeSize += fTrace.getCheckointSize() * fMaxNumRecords;
-            btreeNodeSize += LONG_SIZE * fMaxNumChildren;
+        if (nodeSize == -1) {
+            nodeSize = INT_SIZE; // num entries
+            nodeSize += fTrace.getCheckointSize() * fMaxNumEntries;
+            nodeSize += LONG_SIZE * fMaxNumChildren;
         }
 
-        return btreeNodeSize;
+        return nodeSize;
     }
 
     private BTreeNode allocateNode() {
         try {
-            // TODO, cache this
             long offset = fFile.length();
             fFile.setLength(offset + getNodeSize());
             BTreeNode node = new BTreeNode(this, offset);
@@ -316,7 +320,7 @@ public class BTree {
      * @param treeVisitor the visitor to accept
      */
     public void accept(IBTreeVisitor treeVisitor) {
-        accept(fCacheHeader.fRoot, treeVisitor);
+        accept(fBTreeHeader.fRoot, treeVisitor);
     }
 
     private boolean accept(long nodeOffset, IBTreeVisitor visitor) {
@@ -333,7 +337,7 @@ public class BTree {
         try {
             // Binary search to find first record greater or equal.
             int lower = 0;
-            int upper = fMaxNumRecords - 1;
+            int upper = fMaxNumEntries - 1;
             while (lower < upper && node.getEntry(upper - 1) == null) {
                 upper--;
             }
@@ -344,7 +348,9 @@ public class BTree {
                     upper = middle;
                 } else {
                     int compare = visitor.compare(checkRec);
-                    if (compare >= 0) {
+                    if (compare == 0) {
+                        return false;
+                    } else if (compare > 0) {
                         upper = middle;
                     } else {
                         lower = middle + 1;
@@ -355,7 +361,7 @@ public class BTree {
             // Start with first record greater or equal, reuse comparison
             // results.
             int i = lower;
-            for (; i < fMaxNumRecords; ++i) {
+            for (; i < fMaxNumEntries; ++i) {
                 ITmfCheckpoint record = node.getEntry(i);
                 if (record == null) {
                     break;
@@ -366,12 +372,7 @@ public class BTree {
                     // Start point is to the left.
                     return accept(node.getChild(i), visitor);
                 } else if (compare == 0) {
-                    if (!accept(node.getChild(i), visitor)) {
-                        return false;
-                    }
-                    if (!visitor.visit(record)) {
-                        return false;
-                    }
+                    return false;
                 }
             }
             return accept(node.getChild(i), visitor);
@@ -380,24 +381,13 @@ public class BTree {
         }
     }
 
-    static int checkPointSize = -1;
-    private boolean fCreatedFromScratch;
-
-    int getCheckpointSize() {
-        if (checkPointSize == -1) {
-            checkPointSize = fTrace.getCheckointSize();
-        }
-
-        return checkPointSize;
-    }
-
     /**
      * Returns the size of the BTree expressed as a number of checkpoints.
      *
      * @return the size of the BTree
      */
     public int size() {
-        return fCacheHeader.fSize;
+        return fBTreeHeader.fSize;
     }
 
     /**
@@ -406,34 +396,71 @@ public class BTree {
      * @param size the size of the BTree
      */
     public void setSize(int size) {
-        fCacheHeader.fSize = size;
+        fBTreeHeader.fSize = size;
     }
 
+    /**
+     * Set the trace time range
+     *
+     * @param timeRange the trace time range
+     */
     public void setTimeRange(TmfTimeRange timeRange) {
         fTimeRange = timeRange;
     }
 
-    public void setNbEvents(long nbEvents) {
-        fCacheHeader.fNbEvents = nbEvents;
-    }
-
+    /**
+     * Get the trace time range
+     *
+     * @return the trace time range
+     */
     public TmfTimeRange getTimeRange() {
         return fTimeRange;
     }
 
     /**
+     * Set the number of events in the trace
      *
+     * @param nbEvents the number of events in the trace
+     */
+    public void setNbEvents(long nbEvents) {
+        fBTreeHeader.fNbEvents = nbEvents;
+    }
+
+    /**
+     * Get the number of events in the trace
      *
      * @return the number of events in the trace
      */
     public long getNbEvents() {
-        return fCacheHeader.fNbEvents;
+        return fBTreeHeader.fNbEvents;
     }
 
     /**
-     * @see BTreeNodeCache
+     * @return the number of cache misses. @see BTreeNodeCache
      */
     public long getCacheMisses() {
         return fNodeCache.getCacheMisses();
+    }
+
+    /**
+     * Get the maximum number of entries in a node
+     *
+     * @return the maximum number of entries in a node
+     */
+    int getMaxNumEntries() {
+        return fMaxNumEntries;
+    }
+
+    /**
+     * Get the maximum number of children in a node
+     *
+     * @return the maximum number of children in a node
+     */
+    int getMaxNumChildren() {
+        return fMaxNumChildren;
+    }
+
+    RandomAccessFile getFile() {
+        return fFile;
     }
 }

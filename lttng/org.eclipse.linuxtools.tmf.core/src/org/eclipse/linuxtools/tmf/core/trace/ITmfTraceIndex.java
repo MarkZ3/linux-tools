@@ -8,7 +8,7 @@ import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
  *
  * @since 3.0
  */
-public interface ITmfIndex {
+public interface ITmfTraceIndex {
 
     /**
      * Add a checkpoint to the index

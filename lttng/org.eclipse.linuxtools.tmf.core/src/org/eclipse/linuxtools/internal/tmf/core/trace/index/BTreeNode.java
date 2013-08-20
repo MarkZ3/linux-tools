@@ -57,14 +57,25 @@ class BTreeNode {
     private boolean fIsDirty = false;
     private BTree fTree;
 
+    /**
+     * Construct a node for the specified tree for the specified file offset
+     *
+     * @param tree the BTree
+     * @param offset the file offset
+     */
     BTreeNode(BTree tree, long offset) {
         fTree = tree;
         this.fFileOffset = offset;
-        fEntries = new ITmfCheckpoint[fTree.fMaxNumRecords];
-        fChildrenFileOffsets = new long[fTree.fMaxNumChildren];
+        fEntries = new ITmfCheckpoint[fTree.getMaxNumEntries()];
+        fChildrenFileOffsets = new long[fTree.getMaxNumChildren()];
         Arrays.fill(fChildrenFileOffsets, NULL_CHILD);
     }
 
+    /**
+     * Get the file offset for this node
+     *
+     * @return the file offset
+     */
     long getOffset() {
         return fFileOffset;
     }
@@ -74,12 +85,12 @@ class BTreeNode {
      */
     void serializeIn() {
         try {
-            fTree.fFile.seek(fFileOffset);
+            fTree.getFile().seek(fFileOffset);
 
             ByteBuffer bb = ByteBuffer.allocate(fTree.getNodeSize());
             fTree.fFileChannel.read(bb);
             bb.flip();
-            for (int i = 0; i < fTree.fMaxNumChildren; ++i) {
+            for (int i = 0; i < fTree.getMaxNumChildren(); ++i) {
                 fChildrenFileOffsets[i] = bb.getLong();
             }
             fNumEntries = bb.getInt();
@@ -89,7 +100,7 @@ class BTreeNode {
             }
 
         } catch (IOException e) {
-            Activator.logError(MessageFormat.format(Messages.BTreeNode_IOErrorLoading, fFileOffset, fTree.fFile), e);
+            Activator.logError(MessageFormat.format(Messages.BTreeNode_IOErrorLoading, fFileOffset, fTree.getFile()), e);
         }
     }
 
@@ -98,10 +109,10 @@ class BTreeNode {
      */
     void serializeOut() {
         try {
-            fTree.fFile.seek(fFileOffset);
+            fTree.getFile().seek(fFileOffset);
 
             ByteBuffer bb = ByteBuffer.allocate(fTree.getNodeSize());
-            for (int i = 0; i < fTree.fMaxNumChildren; ++i) {
+            for (int i = 0; i < fTree.getMaxNumChildren(); ++i) {
                 IndexHelper.writeLong(bb, fChildrenFileOffsets[i]);
             }
             IndexHelper.writeInt(bb, fNumEntries);
@@ -116,7 +127,7 @@ class BTreeNode {
 
             fIsDirty = false;
         } catch (IOException e) {
-            Activator.logError(MessageFormat.format(Messages.BTreeNode_IOErrorWriting, fFileOffset, fTree.fFile), e);
+            Activator.logError(MessageFormat.format(Messages.BTreeNode_IOErrorWriting, fFileOffset, fTree.getFile()), e);
         }
     }
 
@@ -153,10 +164,10 @@ class BTreeNode {
     }
 
     /**
+     * Set the child file offset at the given index
      *
-     *
-     * @param index
-     * @param offset
+     * @param index the index where to set the child offset
+     * @param offset the child offset
      */
     void setChild(int index, long offset) {
         fIsDirty = true;

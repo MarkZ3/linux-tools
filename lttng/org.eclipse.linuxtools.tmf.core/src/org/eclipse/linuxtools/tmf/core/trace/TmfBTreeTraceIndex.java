@@ -15,16 +15,17 @@ package org.eclipse.linuxtools.tmf.core.trace;
 import java.io.File;
 
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTreeCheckpointVisitor;
 import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.IBTreeVisitor;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
+ * A checkpoint index that uses a BTree f
  * @since 3.0
  *
  */
-public class TmfBTreeIndex implements ITmfIndex {
+public class TmfBTreeTraceIndex implements ITmfTraceIndex {
 
     private BTree fDatabase;
     private FlatArray fRanks;
@@ -35,10 +36,11 @@ public class TmfBTreeIndex implements ITmfIndex {
     private final int BTREE_DEGREE = 15;
 
     /**
-     * @param trace
+     * Creates a TmfBTreeIndex for the given trace
      *
+     * @param trace
      */
-    public TmfBTreeIndex(ITmfTrace trace) {
+    public TmfBTreeTraceIndex(ITmfTrace trace) {
         fDatabase = new BTree(BTREE_DEGREE, getIndexFile(trace, INDEX_FILE_NAME), trace);
         fRanks = new FlatArray(getIndexFile(trace, RANKS_FILE_NAME), trace);
     }
@@ -61,85 +63,16 @@ public class TmfBTreeIndex implements ITmfIndex {
         fDatabase.setSize(fDatabase.size() + 1);
     }
 
-    class RankVisitor implements IBTreeVisitor {
-        ITmfCheckpoint found = null;
-        private int search;
-
-        public RankVisitor(int search) {
-            this.search = search;
-        }
-
-        @Override
-        public boolean visit(ITmfCheckpoint key) {
-            if (key == null) {
-                return true;
-            }
-            found = key;
-            return false;
-        }
-
-        @Override
-        public int compare(ITmfCheckpoint checkRec) {
-            return Integer.valueOf(checkRec.getRank()).compareTo(search);
-        }
-
-        public ITmfCheckpoint getCheckpoint() {
-            return found;
-        }
-    }
-
     @Override
     public ITmfCheckpoint get(int checkpoint) {
-        System.out.println("Searching for: " + checkpoint);
-        long oldTime = System.currentTimeMillis();
-        ITmfCheckpoint checkpoint2 = fRanks.get(checkpoint);
-        System.out.println("Found: " + checkpoint2.getTimestamp() + "(" + (System.currentTimeMillis() - oldTime) + ")");
-        return checkpoint2;
-    }
-
-    class Visitor implements IBTreeVisitor {
-        int rank = -1;
-        private ITmfCheckpoint search;
-        boolean exactFound = false;
-
-        public Visitor(ITmfCheckpoint search) {
-            this.search = search;
-        }
-
-        @Override
-        public boolean visit(ITmfCheckpoint key) {
-            if (key == null) {
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public int compare(ITmfCheckpoint checkRec) {
-            int compareTo = checkRec.compareTo(search);
-            if (compareTo <= 0 && !exactFound) {
-                rank = checkRec.getRank();
-                if (compareTo == 0) {
-                    exactFound = true;
-                }
-            }
-            return compareTo;
-        }
-
-        public int getRank() {
-            return rank;
-        }
+        return fRanks.get(checkpoint);
     }
 
     @Override
     public int binarySearch(ITmfCheckpoint checkpoint) {
-        System.out.println("Searching for: " + checkpoint.getTimestamp());
-        Visitor v = new Visitor(checkpoint);
-        long oldTime = System.currentTimeMillis();
+        BTreeCheckpointVisitor v = new BTreeCheckpointVisitor(checkpoint);
         fDatabase.accept(v);
-        int rank = v.getRank();
-        System.out.println("Found: " + rank + "(" + (System.currentTimeMillis() - oldTime) + ")");
-        return rank;
+        return v.getRank();
     }
 
     @Override

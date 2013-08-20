@@ -12,7 +12,7 @@
 
 package org.eclipse.linuxtools.tmf.tests.stubs.trace;
 
-import org.eclipse.linuxtools.tmf.core.trace.ITmfIndex;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndex;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointIndexer;
 
@@ -29,7 +29,7 @@ public class TmfIndexerStub extends TmfCheckpointIndexer {
         super(trace, blockSize);
     }
 
-    public ITmfIndex getCheckpoints() {
+    public ITmfTraceIndex getCheckpoints() {
         return getTraceIndex();
     }
 

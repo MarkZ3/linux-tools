@@ -22,8 +22,7 @@ import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 /**
  * @since 3.0
  */
-@SuppressWarnings("javadoc")
-public class TmfMemoryIndex implements ITmfIndex {
+public class TmfMemoryIndex implements ITmfTraceIndex {
 
     List<ITmfCheckpoint> fCheckpoints;
 
