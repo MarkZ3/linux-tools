@@ -27,6 +27,7 @@ public class TmfTraceUpdatedSignal extends TmfSignal {
 
     private final ITmfTrace fTrace;
     private final TmfTimeRange fTimeRange;
+    private final long fNbEvents;
 
     /**
      * Constructor
@@ -43,6 +44,26 @@ public class TmfTraceUpdatedSignal extends TmfSignal {
         super(source);
         fTrace = trace;
         fTimeRange = range;
+        fNbEvents = trace.getNbEvents();
+    }
+
+    /**
+     * Constructor
+     *
+     * @param source
+     *            Object sending this signal
+     * @param trace
+     *            The trace that was updated
+     * @param range
+     *            The new time range of the trace
+     * @param nbEvents
+     *            The number of events in the trace
+     */
+    public TmfTraceUpdatedSignal(Object source, ITmfTrace trace, TmfTimeRange range, long nbEvents) {
+        super(source);
+        fTrace = trace;
+        fTimeRange = range;
+        fNbEvents = nbEvents;
     }
 
     /**
@@ -58,6 +79,15 @@ public class TmfTraceUpdatedSignal extends TmfSignal {
      */
     public TmfTimeRange getRange() {
         return fTimeRange;
+    }
+
+    /**
+     * Returns the number of events indicated by this signal
+     *
+     * @return the number of events indicated by this signal
+     */
+    public long getNbEvents() {
+        return fNbEvents;
     }
 
     @Override
