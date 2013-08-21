@@ -20,6 +20,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    TmfBTreeIndexTest.class,
     TmfCheckpointIndexTest.class,
     TmfCheckpointIndexTest2.class,
     TmfCheckpointTest.class,

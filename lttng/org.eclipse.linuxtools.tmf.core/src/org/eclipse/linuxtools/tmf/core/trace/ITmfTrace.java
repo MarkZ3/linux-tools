@@ -13,7 +13,6 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
@@ -379,12 +378,18 @@ public interface ITmfTrace extends ITmfDataProvider {
    String getHostId();
 
     /**
-     * @throws IOException
+     * Instantiate a checkpoint from a ByteBuffer, typically from disk.
+     * @param bufferIn the buffer to read from
+     * @return the instantiated checkpoint
+     *
      * @since 3.0
      */
-    ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException;
+    ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn);
 
     /**
+     * Get the checkpoint size for this trace
+     * @return the checkpoint size
+     *
      * @since 3.0
      */
     public int getCheckointSize();

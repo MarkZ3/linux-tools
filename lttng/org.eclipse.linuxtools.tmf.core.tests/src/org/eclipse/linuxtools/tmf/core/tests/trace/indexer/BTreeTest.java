@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.tests.trace.index;
+package org.eclipse.linuxtools.tmf.core.tests.trace.indexer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -22,9 +22,9 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTreeCheckpointVisitor;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.IBTreeVisitor;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.BTreeCheckpointVisitor;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.IBTreeVisitor;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
@@ -121,7 +121,7 @@ public class BTreeTest {
 
         BTreeCheckpointVisitor treeVisitor = new BTreeCheckpointVisitor(checkpoint);
         fBTree.accept(treeVisitor);
-        assertEquals(0, treeVisitor.getRank());
+        assertEquals(0, treeVisitor.getCheckpoint().getRank());
         fBTree.dispose();
     }
 
@@ -158,7 +158,7 @@ public class BTreeTest {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
             BTreeCheckpointVisitor treeVisitor = new BTreeCheckpointVisitor(checkpoint);
             fBTree.accept(treeVisitor);
-            assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
+            assertEquals(randomCheckpoint.intValue(), treeVisitor.getCheckpoint().getRank());
             assertEquals(checkpoint, treeVisitor.getCheckpoint());
         }
 

@@ -10,27 +10,21 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.trace;
+package org.eclipse.linuxtools.internal.tmf.core.trace.indexer;
 
-import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointIndexer;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
- * @since 3.0
+ * A BTree visitor goes through the tree using a comparator for
+ * optimal searches.
  */
-public class TmfBTreeTraceIndexer extends TmfCheckpointIndexer {
+public interface IBTreeVisitor {
 
     /**
-     * Full trace indexer
+     * The current checkpoint being compared against an internally held key.
      *
-     * @param trace the trace to index
-     * @param interval the checkpoints interval
+     * @param checkpoint the current checkpoint
+     * @return -1 if checkpoint < key, 0 if checkpoint == key, 1 if checkpoint > key
      */
-    public TmfBTreeTraceIndexer(ITmfTrace trace, int interval) {
-        super(trace, interval);
-    }
-
-    @Override
-    protected ITmfTraceIndex createIndex(ITmfTrace trace) {
-        return new TmfBTreeTraceIndex(trace);
-    }
+    int compare(ITmfCheckpoint checkpoint);
 }

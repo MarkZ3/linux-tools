@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.internal.tmf.core.trace.index;
+package org.eclipse.linuxtools.internal.tmf.core.trace.indexer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,7 +18,6 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 
 import org.eclipse.linuxtools.internal.tmf.core.Activator;
-import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
@@ -113,9 +112,9 @@ class BTreeNode {
 
             ByteBuffer bb = ByteBuffer.allocate(fTree.getNodeSize());
             for (int i = 0; i < fTree.getMaxNumChildren(); ++i) {
-                IndexHelper.writeLong(bb, fChildrenFileOffsets[i]);
+                bb.putLong(fChildrenFileOffsets[i]);
             }
-            IndexHelper.writeInt(bb, fNumEntries);
+            bb.putInt(fNumEntries);
 
             for (int i = 0; i < fNumEntries; ++i) {
                 ITmfCheckpoint key = fEntries[i];

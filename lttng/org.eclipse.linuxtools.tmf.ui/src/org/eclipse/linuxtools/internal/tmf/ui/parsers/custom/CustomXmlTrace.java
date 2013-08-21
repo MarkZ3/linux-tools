@@ -549,14 +549,12 @@ public class CustomXmlTrace extends TmfTrace implements ITmfEventParser {
     }
 
     @Override
-    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int getCheckointSize() {
-        // TODO Auto-generated method stub
-        return 0;
+        throw new UnsupportedOperationException();
     }
 }

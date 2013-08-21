@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.tests.trace.index;
+package org.eclipse.linuxtools.tmf.core.tests.trace.indexer;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;

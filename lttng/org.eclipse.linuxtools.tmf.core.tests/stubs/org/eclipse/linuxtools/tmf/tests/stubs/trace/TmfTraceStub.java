@@ -352,7 +352,7 @@ public class TmfTraceStub extends TmfTrace implements ITmfEventParser {
     }
 
     @Override
-    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) {
         ITmfLocation location = TmfLongLocation.newAndserialize(bufferIn);
         TmfTimestamp timeStamp = TmfTimestamp.newSerialized(bufferIn);
         TmfCheckpoint tmfCheckpoint = new TmfCheckpoint(timeStamp, location);

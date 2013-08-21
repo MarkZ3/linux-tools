@@ -10,14 +10,17 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.trace;
+package org.eclipse.linuxtools.tmf.core.trace.indexer;
 
 import java.io.File;
 
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTreeCheckpointVisitor;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.BTreeCheckpointVisitor;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.FlatArray;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndex;
+import org.eclipse.linuxtools.tmf.core.trace.TmfTraceManager;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
@@ -66,12 +69,17 @@ public class TmfBTreeTraceIndex implements ITmfTraceIndex {
 
     private static File getIndexFile(ITmfTrace trace, String fileName) {
         String directory = TmfTraceManager.getSupplementaryFileDir(trace);
+        File dir = new File(directory);
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
         return new File(directory + fileName);
     }
 
     @Override
     public void dispose() {
         fCheckpoints.dispose();
+        fRanks.dispose();
     }
 
     @Override
@@ -91,7 +99,11 @@ public class TmfBTreeTraceIndex implements ITmfTraceIndex {
     public int binarySearch(ITmfCheckpoint checkpoint) {
         BTreeCheckpointVisitor v = new BTreeCheckpointVisitor(checkpoint);
         fCheckpoints.accept(v);
-        return v.getRank();
+        ITmfCheckpoint found = v.getCheckpoint();
+        if (found == null) {
+            return -1;
+        }
+        return found.getRank();
     }
 
     @Override

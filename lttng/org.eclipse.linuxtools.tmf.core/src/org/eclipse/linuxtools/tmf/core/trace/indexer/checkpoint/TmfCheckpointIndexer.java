@@ -29,8 +29,8 @@ import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfContext;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndex;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
-import org.eclipse.linuxtools.tmf.core.trace.TmfMemoryIndex;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.ITmfTraceIndexer;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.TmfMemoryIndex;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
 /**
@@ -106,8 +106,11 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
     }
 
     /**
-     * @param trace
-     * @return
+     * Creates the index instance. Classes extending this class
+     * can override this to provide a different index implementation.
+     *
+     * @param trace the trace to index
+     * @return the index
      * @since 3.0
      */
     protected ITmfTraceIndex createIndex(final ITmfTrace trace) {

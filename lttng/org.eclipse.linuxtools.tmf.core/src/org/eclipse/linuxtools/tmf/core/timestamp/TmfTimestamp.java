@@ -17,8 +17,6 @@ package org.eclipse.linuxtools.tmf.core.timestamp;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
-
 /**
  * A generic timestamp implementation. The timestamp is represented by the
  * tuple { value, scale, precision }. By default, timestamps are scaled in
@@ -346,10 +344,9 @@ public class TmfTimestamp implements ITmfTimestamp {
      */
     @Override
     public void serializeOut(ByteBuffer bufferOut) {
-        IndexHelper.writeLong(bufferOut, fValue);
-
-        IndexHelper.writeInt(bufferOut, fScale);
-        IndexHelper.writeInt(bufferOut, fPrecision);
+        bufferOut.putLong(fValue);
+        bufferOut.putInt(fScale);
+        bufferOut.putInt(fPrecision);
     }
 
     /**
@@ -357,10 +354,9 @@ public class TmfTimestamp implements ITmfTimestamp {
      */
     @Override
     public void serializeIn(ByteBuffer bufferIn) {
-        fValue = IndexHelper.readLong(bufferIn);
-        fScale = IndexHelper.readInt(bufferIn);
-        fPrecision = IndexHelper.readInt(bufferIn);
-
+        fValue = bufferIn.getLong();
+        fScale = bufferIn.getInt();
+        fPrecision = bufferIn.getInt();
     }
 
     /**

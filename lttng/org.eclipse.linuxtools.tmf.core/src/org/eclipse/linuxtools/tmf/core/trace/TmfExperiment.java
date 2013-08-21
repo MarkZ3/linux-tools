@@ -15,7 +15,6 @@
 
 package org.eclipse.linuxtools.tmf.core.trace;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.core.resources.IFile;
@@ -530,21 +529,14 @@ public class TmfExperiment extends TmfTrace implements ITmfEventParser {
         }
     }
 
-    /**
-     * @since 3.0
-     */
     @Override
-    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) throws IOException {
-        return null;
+    public ITmfCheckpoint restoreCheckPoint(ByteBuffer bufferIn) {
+        throw new UnsupportedOperationException();
     }
 
-    /**
-     * @since 3.0
-     */
     @Override
     public int getCheckointSize() {
-        // TODO Auto-generated method stub
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
 }

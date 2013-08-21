@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.tests.trace.index;
+package org.eclipse.linuxtools.tmf.core.tests.trace.indexer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -20,9 +20,9 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTree;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.BTreeCheckpointVisitor;
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.BTree;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.BTreeCheckpointVisitor;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.FlatArray;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpoint;
 import org.eclipse.linuxtools.tmf.core.trace.location.TmfLongLocation;
@@ -215,7 +215,7 @@ public class AllBench {
                 TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
                 BTreeCheckpointVisitor treeVisitor = new BTreeCheckpointVisitor(checkpoint);
                 bTree.accept(treeVisitor);
-                assertEquals(randomCheckpoint.intValue(), treeVisitor.getRank());
+                assertEquals(randomCheckpoint.intValue(), treeVisitor.getCheckpoint().getRank());
             }
             time += (System.currentTimeMillis() - old);
             cacheMisses = bTree.getCacheMisses();

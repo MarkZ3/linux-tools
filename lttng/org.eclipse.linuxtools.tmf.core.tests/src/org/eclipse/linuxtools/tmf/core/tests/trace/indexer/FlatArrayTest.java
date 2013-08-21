@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.tests.trace.index;
+package org.eclipse.linuxtools.tmf.core.tests.trace.indexer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -22,7 +22,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.eclipse.linuxtools.internal.tmf.core.trace.index.FlatArray;
+import org.eclipse.linuxtools.internal.tmf.core.trace.indexer.FlatArray;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
@@ -61,6 +61,9 @@ public class FlatArrayTest {
     public void tearDown() {
         fTrace.dispose();
         fTrace = null;
+        if (fFlatArray != null) {
+            fFlatArray.dispose();
+        }
         if (fFile.exists()) {
             fFile.delete();
         }
@@ -74,6 +77,7 @@ public class FlatArrayTest {
         fFlatArray = new FlatArray(fFile, fTrace);
         assertTrue(fFile.exists());
         assertTrue(fFlatArray.isCreatedFromScratch());
+        fFlatArray.dispose();
     }
 
     /**
@@ -109,18 +113,17 @@ public class FlatArrayTest {
      */
     @Test
     public void testInsert() {
-        FlatArray flatArray = new FlatArray(fFile, fTrace);
+        fFlatArray = new FlatArray(fFile, fTrace);
         TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345), new TmfLongLocation(123456L));
-        flatArray.insert(checkpoint);
+        fFlatArray.insert(checkpoint);
 
-        ITmfCheckpoint fFileCheckpoint = flatArray.get(0);
+        ITmfCheckpoint fFileCheckpoint = fFlatArray.get(0);
         assertEquals(checkpoint, fFileCheckpoint);
 
-
-        int found = flatArray.binarySearch(checkpoint);
+        int found = fFlatArray.binarySearch(checkpoint);
         assertEquals(0, found);
 
-        flatArray.dispose();
+        fFlatArray.dispose();
     }
 
     /**
@@ -129,14 +132,14 @@ public class FlatArrayTest {
      */
     @Test
     public void testInsertAlot() {
-        FlatArray flatArray = new FlatArray(fFile, fTrace);
+        fFlatArray = new FlatArray(fFile, fTrace);
         for (int i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + i), new TmfLongLocation(123456L + i));
             checkpoint.setRank(i);
-            flatArray.insert(checkpoint);
+            fFlatArray.insert(checkpoint);
         }
 
-        flatArray.dispose();
+        fFlatArray.dispose();
 
         boolean random = false;
         ArrayList<Integer> list = new ArrayList<Integer>();
@@ -149,26 +152,25 @@ public class FlatArrayTest {
             }
         }
 
-        flatArray = new FlatArray(fFile, fTrace);
+        fFlatArray = new FlatArray(fFile, fTrace);
 
         for (int i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             Integer randomCheckpoint = list.get(i);
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
 
-            ITmfCheckpoint fFileCheckpoint = flatArray.get(randomCheckpoint);
+            ITmfCheckpoint fFileCheckpoint = fFlatArray.get(randomCheckpoint);
             assertEquals(checkpoint, fFileCheckpoint);
         }
 
-
         for (int i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             Integer randomCheckpoint = list.get(i);
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(12345 + randomCheckpoint), new TmfLongLocation(123456L + randomCheckpoint));
 
-            int found = flatArray.binarySearch(checkpoint);
+            int found = fFlatArray.binarySearch(checkpoint);
             assertEquals(randomCheckpoint.intValue(), found);
         }
 
-        flatArray.dispose();
+        fFlatArray.dispose();
     }
 
     /**
@@ -176,43 +178,43 @@ public class FlatArrayTest {
      */
     @Test
     public void testBinarySearch() {
-        FlatArray flatArray = new FlatArray(fFile, fTrace);
+        fFlatArray = new FlatArray(fFile, fTrace);
         for (long i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(i), new TmfLongLocation(i));
-            flatArray.insert(checkpoint);
+            fFlatArray.insert(checkpoint);
         }
 
         TmfCheckpoint expectedCheckpoint = new TmfCheckpoint(new TmfTimestamp(122), new TmfLongLocation(122L));
         int expectedRank = 122;
 
-        int rank = flatArray.binarySearch(expectedCheckpoint);
-        ITmfCheckpoint found = flatArray.get(rank);
+        int rank = fFlatArray.binarySearch(expectedCheckpoint);
+        ITmfCheckpoint found = fFlatArray.get(rank);
 
         assertEquals(expectedRank, rank);
         assertEquals(found, expectedCheckpoint);
-        flatArray.dispose();
+        fFlatArray.dispose();
     }
     /**
      * Tests that binarySearch find the correct checkpoint when the time stamp is between checkpoints
      */
     @Test
     public void testBinarySearchFindInBetween() {
-        FlatArray flatArray = new FlatArray(fFile, fTrace);
+        fFlatArray = new FlatArray(fFile, fTrace);
         for (long i = 0; i < CHECKPOINTS_INSERT_NUM; i++) {
             TmfCheckpoint checkpoint = new TmfCheckpoint(new TmfTimestamp(2 * i), new TmfLongLocation(2 * i));
-            flatArray.insert(checkpoint);
+            fFlatArray.insert(checkpoint);
         }
 
         TmfCheckpoint searchedCheckpoint = new TmfCheckpoint(new TmfTimestamp(123), new TmfLongLocation(123L));
         TmfCheckpoint expectedCheckpoint = new TmfCheckpoint(new TmfTimestamp(122), new TmfLongLocation(122L));
         int expectedRank = 61;
 
-        int rank = flatArray.binarySearch(searchedCheckpoint);
-        ITmfCheckpoint found = flatArray.get(rank);
+        int rank = fFlatArray.binarySearch(searchedCheckpoint);
+        ITmfCheckpoint found = fFlatArray.get(rank);
 
         assertEquals(expectedRank, rank);
         assertEquals(found, expectedCheckpoint);
-        flatArray.dispose();
+        fFlatArray.dispose();
     }
 
     /**
@@ -246,8 +248,10 @@ public class FlatArrayTest {
     public void testSetGetSize() {
         fFlatArray = new FlatArray(fFile, fTrace);
         assertEquals(0, fFlatArray.size());
-        int expected = 1234;
-        fFlatArray.setSize(expected);
+        int expected = CHECKPOINTS_INSERT_NUM;
+        for (int i = 0; i < expected; ++i) {
+            fFlatArray.insert(new TmfCheckpoint(new TmfTimestamp(0), new TmfLongLocation(0L)));
+        }
         assertEquals(expected, fFlatArray.size());
         fFlatArray.dispose();
     }

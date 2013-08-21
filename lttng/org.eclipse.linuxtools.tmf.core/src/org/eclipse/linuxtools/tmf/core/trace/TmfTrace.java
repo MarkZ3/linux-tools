@@ -43,6 +43,7 @@ import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.ITmfTraceIndexer;
+import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.TmfCheckpointIndexer;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
 /**
@@ -167,8 +168,17 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
         fIndexer = (indexer != null) ? indexer : createIndexer(fCacheSize);
     }
 
-    private ITmfTraceIndexer createIndexer(int cacheSize) {
-        return new TmfBTreeTraceIndexer(this, cacheSize);
+    /**
+     * Creates the indexer instance. Classes extending this class can override
+     * this to provide a different indexer implementation.
+     *
+     * @param interval the checkpoints interval
+     *
+     * @return the indexer
+     * @since 3.0
+     */
+    protected ITmfTraceIndexer createIndexer(int interval) {
+        return new TmfCheckpointIndexer(this, interval);
     }
 
     /**

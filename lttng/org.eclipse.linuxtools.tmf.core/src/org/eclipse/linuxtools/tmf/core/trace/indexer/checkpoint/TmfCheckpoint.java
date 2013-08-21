@@ -16,7 +16,6 @@ package org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.linuxtools.internal.tmf.core.IndexHelper;
 import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.trace.location.ITmfLocation;
 
@@ -181,7 +180,7 @@ public class TmfCheckpoint implements ITmfCheckpoint {
     public void serializeOut(ByteBuffer bufferOut) {
         fLocation.serializeOut(bufferOut);
         fTimestamp.serializeOut(bufferOut);
-        IndexHelper.writeInt(bufferOut, fRank);
+        bufferOut.putInt(fRank);
     }
 
     /**
@@ -189,7 +188,7 @@ public class TmfCheckpoint implements ITmfCheckpoint {
      */
     @Override
     public void serializeIn(ByteBuffer bufferIn) {
-        fRank = IndexHelper.readInt(bufferIn);
+        fRank = bufferIn.getInt();
     }
 
     /**

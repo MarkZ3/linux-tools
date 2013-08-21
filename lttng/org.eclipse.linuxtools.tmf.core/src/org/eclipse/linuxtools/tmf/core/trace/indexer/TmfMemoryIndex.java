@@ -10,13 +10,15 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.core.trace;
+package org.eclipse.linuxtools.tmf.core.trace.indexer;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceIndex;
 import org.eclipse.linuxtools.tmf.core.trace.indexer.checkpoint.ITmfCheckpoint;
 
 /**
@@ -69,7 +71,7 @@ public class TmfMemoryIndex implements ITmfTraceIndex {
 
     @Override
     public boolean isCreatedFromScratch() {
-        return false;
+        return true;
     }
 
     @Override

@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.internal.tmf.core.trace.index;
+package org.eclipse.linuxtools.internal.tmf.core.trace.indexer;
 
 import org.eclipse.osgi.util.NLS;
 
@@ -18,11 +18,11 @@ import org.eclipse.osgi.util.NLS;
  * Message bundle for tmf.core.trace.index
  */
 public class Messages extends NLS {
-    private static final String BUNDLE_NAME = "org.eclipse.linuxtools.internal.tmf.core.trace.index.messages"; //$NON-NLS-1$
+    private static final String BUNDLE_NAME = "org.eclipse.linuxtools.internal.tmf.core.trace.indexer.messages"; //$NON-NLS-1$
     /**
      * Error opening index
      */
-    public static String BTree_ErrorOpeningIndex;
+    public static String ErrorOpeningIndex;
     /**
      * I/O Error allocating a node
      */
@@ -34,7 +34,7 @@ public class Messages extends NLS {
     /**
      * I/O Error reading header from disk
      */
-    public static String BTree_IOErrorReadingHeader;
+    public static String IOErrorReadingHeader;
     /**
      * I/O Error reading node from disk
      */
@@ -43,6 +43,14 @@ public class Messages extends NLS {
      * I/O Error writing node to disk
      */
     public static String BTreeNode_IOErrorWriting;
+    /**
+     * I/O Error reading from disk
+     */
+    public static String FlatArray_IOErrorReading;
+    /**
+     * I/O Error writing to disk
+     */
+    public static String FlatArray_IOErrorWriting;
     static {
         // initialize resource bundle
         NLS.initializeMessages(BUNDLE_NAME, Messages.class);

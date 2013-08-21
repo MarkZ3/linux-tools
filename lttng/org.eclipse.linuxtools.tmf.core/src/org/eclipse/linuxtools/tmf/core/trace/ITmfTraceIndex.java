@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2013 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Marc-Andre Laperle - Initial API and implementation
+ *******************************************************************************/
+
 package org.eclipse.linuxtools.tmf.core.trace;
 
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
@@ -60,14 +72,30 @@ public interface ITmfTraceIndex {
     public boolean isCreatedFromScratch();
 
     /**
+     * Set trace time range to be stored in the index
      *
-     * @param timeRange
+     * @param timeRange the time range to be stored in the index
      */
     void setTimeRange(TmfTimeRange timeRange);
 
+    /**
+     * Set the total number of events in the trace to be stored in the index
+     *
+     * @param nbEvents the total number of events
+     */
     void setNbEvents(long nbEvents);
 
+    /**
+     * Get the trace time range stored in the index
+     *
+     * @return the trace time range
+     */
     TmfTimeRange getTimeRange();
 
+    /**
+     * Get the total number of events in the trace stored in the index
+     *
+     * @return the total number of events
+     */
     long getNbEvents();
 }

@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.internal.tmf.core.trace.index;
+package org.eclipse.linuxtools.internal.tmf.core.trace.indexer;
 
 import java.util.ArrayDeque;
 
