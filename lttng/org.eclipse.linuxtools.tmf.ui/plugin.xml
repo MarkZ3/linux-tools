@@ -594,6 +594,38 @@
                </with>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command"
+               label="Export..."
+               mnemonic="E"
+               style="push"
+               tooltip="Export">
+            <visibleWhen
+                  checkEnabled="false">
+               <with
+                     variable="selection">
+                  <and>
+                     <count
+                           value="1">
+                     </count>
+                     <iterate
+                           ifEmpty="false"
+                           operator="and">
+                        <and>
+                           <or>
+                              <instanceof
+                                    value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement">
+                              </instanceof>
+                              <instanceof
+                                    value="org.eclipse.linuxtools.tmf.ui.project.model.TmfExperimentElement">
+                              </instanceof>
+                           </or>
+                        </and>
+                     </iterate>
+                  </and>
+               </with>
+            </visibleWhen>
+         </command>
          <separator
                name="org.eclipse.linuxtools.tmf.ui.separator3"
                visible="true">
@@ -752,6 +784,11 @@
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
             id="org.eclipse.linuxtools.tmf.ui.command.delete_suppl_files"
             name="%command.delete_suppl_files">
+      </command>
+      <command
+            categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
+            id="org.eclipse.linuxtools.tmf.ui.export.trace.command"
+            name="Export...">
       </command>
       <command
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
@@ -1000,6 +1037,23 @@
       <handler
             class="org.eclipse.linuxtools.internal.tmf.ui.project.handlers.DeleteTraceSupplementaryFilesHandler"
             commandId="org.eclipse.linuxtools.tmf.ui.command.delete_suppl_files">
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate
+                     operator="and">
+                  <instanceof
+                        value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement">
+                  </instanceof>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.linuxtools.tmf.ui.project.wizards.export.ExportTraceHandler"
+            commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command">
          <activeWhen>
             <and>
                <count
@@ -1269,5 +1323,28 @@
          </selectionEnablement>
       </linkHelper>
    </extension>
-
+   
+   <extension point="org.eclipse.ui.exportWizards">
+         <category
+            id="org.eclipse.linuxtools.tmf.export.category"
+            name="%project.new.category.name">
+      </category>
+   <wizard
+         category="org.eclipse.linuxtools.tmf.export.category"
+         class="org.eclipse.linuxtools.tmf.ui.project.wizards.export.ExportTraceWizard"
+         icon="icons/elcl16/trace.gif"
+         id="org.eclipse.linuxtools.tmf.ui.export.trace"
+         name="Trace">
+     <description>Export Trace and related files</description>
+     <selection class="org.eclipse.core.resources.IResource" /> 
+   </wizard>
+ </extension>
+ <!--
+             category="org.eclipse.linuxtools.tmf.import.category"
+            class="org.eclipse.linuxtools.tmf.ui.project.wizards.importtrace.BatchImportTraceWizard"
+            icon="icons/etool16/import.gif"
+            id="org.eclipse.linuxtools.tmf.ui.batch_import"
+            
+            
+-->
 </plugin>
