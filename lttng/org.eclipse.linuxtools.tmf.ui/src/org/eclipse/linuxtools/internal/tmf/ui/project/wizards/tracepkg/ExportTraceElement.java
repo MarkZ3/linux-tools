@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.model.WorkbenchAdapter;
@@ -46,11 +46,11 @@ public abstract class ExportTraceElement extends WorkbenchAdapter {
      */
     abstract public String getText();
 
-    ExportTraceElement[] getChildren() {
+    public ExportTraceElement[] getChildren() {
         return children;
     }
 
-    void setChildren(ExportTraceElement[] children) {
+    public void setChildren(ExportTraceElement[] children) {
         this.children = children;
     }
 

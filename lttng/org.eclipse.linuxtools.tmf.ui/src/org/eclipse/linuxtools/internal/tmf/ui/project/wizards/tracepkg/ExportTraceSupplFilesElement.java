@@ -10,25 +10,34 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
+
+import java.util.List;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
-class ExportTraceSupplFilesElement extends ExportTraceElement {
+public class ExportTraceSupplFilesElement extends ExportTraceElement {
 
     private static final String SUPPL_FILE_ICON_PATH = "icons/obj16/thread_obj.gif"; //$NON-NLS-1$
 
-    IResource[] resources;
+    private IResource[] fResources;
 
-    ExportTraceSupplFilesElement(IResource[] resources, ExportTraceElement parent) {
+    private List<String> fSuppFileNames;
+
+    public ExportTraceSupplFilesElement(IResource[] resources, ExportTraceElement parent) {
         super(parent);
-        this.resources = resources;
+        this.fResources = resources;
     }
 
-    IResource[] getResources() {
-        return resources;
+    public ExportTraceSupplFilesElement(List<String> suppFileNames, ExportTraceElement parent) {
+        super(parent);
+        this.fSuppFileNames = suppFileNames;
+    }
+
+    public IResource[] getResources() {
+        return fResources;
     }
 
     @Override
@@ -39,6 +48,10 @@ class ExportTraceSupplFilesElement extends ExportTraceElement {
     @Override
     public Image getImage() {
         return Activator.getDefault().getImageFromImageRegistry(SUPPL_FILE_ICON_PATH);
+    }
+
+    public List<String> getSuppFileNames() {
+        return fSuppFileNames;
     }
 
 }

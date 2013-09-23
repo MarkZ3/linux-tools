@@ -10,15 +10,15 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
-class ExportTraceBookmarkElement extends ExportTraceElement {
+public class ExportTraceBookmarkElement extends ExportTraceElement {
     private static final String BOOKMARK_IMAGE_PATH = "icons/elcl16/bookmark_obj.gif"; //$NON-NLS-1$
 
-    ExportTraceBookmarkElement(ExportTraceElement parent) {
+    public ExportTraceBookmarkElement(ExportTraceElement parent) {
         super(parent);
     }
 

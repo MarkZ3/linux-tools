@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -35,6 +35,14 @@ import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceBookmarkElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceContentProvider;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceLabelProvider;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceSupplFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceTraceElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -54,12 +62,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 
 /**
  * Wizard page for the export trace wizard
  */
-@SuppressWarnings("restriction")
 public class ExportTraceWizardPage extends WizardPage {
 
     private static final int SIZING_TEXT_FIELD_WIDTH = 250;
@@ -491,13 +497,13 @@ public class ExportTraceWizardPage extends WizardPage {
         // ErrorDialog only prints the call stack for a CoreException
         CoreException coreException = new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, stackMessage, exception));
         final Status s = new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, exceptionMessage, coreException);
-        ErrorDialog.openError(getContainer().getShell(), IDEWorkbenchMessages.WizardExportPage_internalErrorTitle, message, s);
+        ErrorDialog.openError(getContainer().getShell(), Messages.WizardExportPage_internalErrorTitle, message, s);
     }
 
     private static void addToHistory(List<String> history, String newEntry) {
         history.remove(newEntry);
         history.add(0, newEntry);
-    
+
         // since only one new item was added, we can be over the limit
         // by at most one item
         if (history.size() > COMBO_HISTORY_LENGTH) {
@@ -525,17 +531,17 @@ public class ExportTraceWizardPage extends WizardPage {
             if (directoryNames == null) {
                 directoryNames = new String[0];
             }
-    
+
             directoryNames = addToHistory(directoryNames, getDestinationValue());
             settings.put(STORE_DESTINATION_NAMES_ID, directoryNames);
-    
+
             settings.put(STORE_COMPRESS_CONTENTS_ID, fCompressContentsCheckbox.getSelection());
             settings.put(STORE_FORMAT_ID, fZipFormatButton.getSelection());
         }
     }
 
     private void updateFileNameWithFormat() {
-    
+
         String destinationValue = stripKnownExtension(getDestinationValue());
         if (fZipFormatButton.getSelection()) {
             destinationValue = destinationValue.concat(ZIP_EXTENSION);
@@ -544,7 +550,7 @@ public class ExportTraceWizardPage extends WizardPage {
         } else {
             destinationValue = destinationValue.concat(TAR_EXTENSION);
         }
-    
+
         setDestinationValue(destinationValue);
     }
 
@@ -553,11 +559,11 @@ public class ExportTraceWizardPage extends WizardPage {
         if (str.endsWith(TAR_GZ_EXTENSION)) {
             ret = ret.substring(0, ret.lastIndexOf(".")); //$NON-NLS-1$
         }
-    
+
         if (ret.endsWith(ZIP_EXTENSION) | ret.endsWith(TAR_EXTENSION) | ret.endsWith(TGZ_EXTENSION)) {
             ret = ret.substring(0, ret.lastIndexOf(".")); //$NON-NLS-1$
         }
-    
+
         return ret;
     }
 

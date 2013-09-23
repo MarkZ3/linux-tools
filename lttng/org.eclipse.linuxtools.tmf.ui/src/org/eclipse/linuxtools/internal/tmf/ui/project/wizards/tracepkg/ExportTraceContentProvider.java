@@ -10,12 +10,12 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-class ExportTraceContentProvider implements ITreeContentProvider {
+public class ExportTraceContentProvider implements ITreeContentProvider {
 
     @Override
     public void dispose() {

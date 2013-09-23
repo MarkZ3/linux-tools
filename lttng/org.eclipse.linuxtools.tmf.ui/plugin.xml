@@ -626,6 +626,35 @@
                </with>
             </visibleWhen>
          </command>
+        <command
+               commandId="org.eclipse.linuxtools.tmf.ui.import.tracepkg.command"
+               label="Import..."
+               mnemonic="E"
+               style="push"
+               tooltip="Import">
+            <visibleWhen
+                  checkEnabled="false">
+               <with
+                     variable="selection">
+                  <and>
+                     <count
+                           value="1">
+                     </count>
+                     <iterate
+                           ifEmpty="false"
+                           operator="and">
+                        <and>
+                           <or>
+                              <instanceof
+                                    value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder">
+                              </instanceof>
+                           </or>
+                        </and>
+                     </iterate>
+                  </and>
+               </with>
+            </visibleWhen>
+         </command>
          <separator
                name="org.eclipse.linuxtools.tmf.ui.separator3"
                visible="true">
@@ -789,6 +818,11 @@
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
             id="org.eclipse.linuxtools.tmf.ui.export.trace.command"
             name="Export...">
+      </command>
+      <command
+            categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
+            id="org.eclipse.linuxtools.tmf.ui.import.tracepkg.command"
+            name="Import...">
       </command>
       <command
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
@@ -1052,7 +1086,7 @@
          </activeWhen>
       </handler>
       <handler
-            class="org.eclipse.linuxtools.tmf.ui.project.wizards.export.ExportTraceHandler"
+            class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTraceHandler"
             commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command">
          <activeWhen>
             <and>
@@ -1063,6 +1097,23 @@
                      operator="and">
                   <instanceof
                         value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement">
+                  </instanceof>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt.ImportTracePackageHandler"
+            commandId="org.eclipse.linuxtools.tmf.ui.import.tracepkg.command">
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate
+                     operator="and">
+                  <instanceof
+                        value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder">
                   </instanceof>
                </iterate>
             </and>
@@ -1331,7 +1382,7 @@
       </category>
    <wizard
          category="org.eclipse.linuxtools.tmf.export.category"
-         class="org.eclipse.linuxtools.tmf.ui.project.wizards.export.ExportTraceWizard"
+         class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTraceWizard"
          icon="icons/elcl16/trace.gif"
          id="org.eclipse.linuxtools.tmf.ui.export.trace"
          name="Trace">

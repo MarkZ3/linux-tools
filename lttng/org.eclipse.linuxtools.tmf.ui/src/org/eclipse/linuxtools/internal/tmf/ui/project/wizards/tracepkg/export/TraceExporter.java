@@ -1,4 +1,4 @@
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
@@ -26,6 +26,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceBookmarkElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceSupplFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceTraceElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileExportOperation;
 import org.w3c.dom.Document;
@@ -35,13 +41,13 @@ import org.w3c.dom.Node;
 @SuppressWarnings("restriction")
 public class TraceExporter {
 
-    ExportTraceTraceElement fTraceExportElement;
-    Object[] fCheckedElements;
-    boolean fUseCompression;
-    boolean fUseTar;
-    String fFileName;
-    List<IResource> fResources;
-    IStatus fStatus;
+    private ExportTraceTraceElement fTraceExportElement;
+    private Object[] fCheckedElements;
+    private boolean fUseCompression;
+    private boolean fUseTar;
+    private String fFileName;
+    private List<IResource> fResources;
+    private IStatus fStatus;
 
     public TraceExporter(ExportTraceTraceElement traceExportElement, Object[] checkedElements, boolean useCompression, boolean useTar, String fileName) {
         fTraceExportElement = traceExportElement;
@@ -62,12 +68,12 @@ public class TraceExporter {
             IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-            Element createElement = doc.createElement("tmf-export"); //$NON-NLS-1$
+            Element createElement = doc.createElement(ITracePackageConstants.TMF_EXPORT_ELEMENT);
             Node tmfNode = doc.appendChild(createElement);
-            Element traceXmlElement = doc.createElement("trace"); //$NON-NLS-1$
+            Element traceXmlElement = doc.createElement(ITracePackageConstants.TRACE_ELEMENT);
             TmfTraceElement traceElement = fTraceExportElement.getTraceElement();
-            traceXmlElement.setAttribute("name", traceElement.getResource().getName()); //$NON-NLS-1$
-            traceXmlElement.setAttribute("type", traceElement.getTraceType()); //$NON-NLS-1$
+            traceXmlElement.setAttribute(ITracePackageConstants.TRACE_NAME_ATTRIB, traceElement.getResource().getName());
+            traceXmlElement.setAttribute(ITracePackageConstants.TRACE_TYPE_ATTRIB, traceElement.getTraceType());
             Node traceNode = tmfNode.appendChild(traceXmlElement);
 
             // List<IResource> resources = new ArrayList<IResource>();
@@ -97,7 +103,7 @@ public class TraceExporter {
             ModalContext.checkCanceled(monitor);
 
             // TODO use System.getProperty("java.io.tmpdir") ??;
-            IFile file = root.getFile(fTraceExportElement.getTraceElement().getSupplementaryFolderParent().getFullPath().append("export-manifest.xml")); //$NON-NLS-1$
+            IFile file = root.getFile(fTraceExportElement.getTraceElement().getSupplementaryFolderParent().getFullPath().append(ITracePackageConstants.MANIFEST_FILENAME));
             ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes());
             if (file.exists()) {
                 file.setContents(inputStream, IResource.FORCE, null);
@@ -133,40 +139,40 @@ public class TraceExporter {
         for (IResource res : element.getResources()) {
             ModalContext.checkCanceled(monitor);
             fResources.add(res);
-            Element suppFileElement = doc.createElement("supplementary-file"); //$NON-NLS-1$
-            suppFileElement.setAttribute("name", res.getName()); //$NON-NLS-1$
+            Element suppFileElement = doc.createElement(ITracePackageConstants.SUPPLEMENTARY_FILE_ELEMENT);
+            suppFileElement.setAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB, res.getName());
             traceNode.appendChild(suppFileElement);
         }
     }
 
     private void exportTraceFiles(IProgressMonitor monitor, Node traceNode, ExportTraceFilesElement element) throws CoreException, InterruptedException {
         Document doc = traceNode.getOwnerDocument();
-        IResource resource = ((ExportTraceTraceElement)element.getParent()).getTraceElement().getResource();
+        IResource resource = ((ExportTraceTraceElement) element.getParent()).getTraceElement().getResource();
         fResources.add(resource);
-        Element suppFileElement = doc.createElement("file"); //$NON-NLS-1$
-        suppFileElement.setAttribute("name", resource.getName()); //$NON-NLS-1$
-        traceNode.appendChild(suppFileElement);
+        Element fileElement = doc.createElement(ITracePackageConstants.TRACE_FILE_ELEMENT);
+        fileElement.setAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB, resource.getName());
+        Node fileNode = traceNode.appendChild(fileElement);
         for (QualifiedName key : resource.getPersistentProperties().keySet()) {
             ModalContext.checkCanceled(monitor);
 
-            Element singlePersistentPropertyElement = doc.createElement("persistent-property"); //$NON-NLS-1$
-            singlePersistentPropertyElement.setAttribute("name", key.getQualifier() + "." + key.getLocalName()); //$NON-NLS-1$ //$NON-NLS-2$
-            singlePersistentPropertyElement.setAttribute("value", resource.getPersistentProperty(key)); //$NON-NLS-1$
-            traceNode.appendChild(singlePersistentPropertyElement);
+            Element singlePersistentPropertyElement = doc.createElement(ITracePackageConstants.PERSISTENT_PROPERTY_ELEMENT);
+            singlePersistentPropertyElement.setAttribute(ITracePackageConstants.PERSISTENT_PROPERTY_NAME_ATTRIB, key.getQualifier() + "." + key.getLocalName()); //$NON-NLS-1$
+            singlePersistentPropertyElement.setAttribute(ITracePackageConstants.PERSISTENT_PROPERTY_VALUE_ATTRIB, resource.getPersistentProperty(key));
+            fileNode.appendChild(singlePersistentPropertyElement);
         }
     }
 
     private static void exportBookmarks(IProgressMonitor monitor, Node traceNode, ExportTraceBookmarkElement element) throws CoreException, InterruptedException {
         Document doc = traceNode.getOwnerDocument();
-        IMarker[] findMarkers = ((ExportTraceTraceElement)element.getParent()).getTraceElement().getBookmarksFile().findMarkers(IMarker.BOOKMARK, false, IResource.DEPTH_ZERO);
+        IMarker[] findMarkers = ((ExportTraceTraceElement) element.getParent()).getTraceElement().getBookmarksFile().findMarkers(IMarker.BOOKMARK, false, IResource.DEPTH_ZERO);
         if (findMarkers.length > 0) {
-            Element bookmarksXmlElement = doc.createElement("bookmarks"); //$NON-NLS-1$
+            Element bookmarksXmlElement = doc.createElement(ITracePackageConstants.BOOKMARKS_ELEMENT);
             Node bookmarksNode = traceNode.appendChild(bookmarksXmlElement);
 
             for (IMarker marker : findMarkers) {
                 ModalContext.checkCanceled(monitor);
 
-                Element singleBookmarkXmlElement = doc.createElement("bookmark"); //$NON-NLS-1$
+                Element singleBookmarkXmlElement = doc.createElement(ITracePackageConstants.BOOKMARK_ELEMENT);
                 for (String key : marker.getAttributes().keySet()) {
                     singleBookmarkXmlElement.setAttribute(key, marker.getAttribute(key).toString());
                 }

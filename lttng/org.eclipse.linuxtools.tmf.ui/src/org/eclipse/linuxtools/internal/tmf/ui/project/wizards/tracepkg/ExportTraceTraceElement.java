@@ -10,7 +10,7 @@
  *     Marc-Andre Laperle - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.linuxtools.tmf.ui.project.wizards.export;
+package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 
@@ -22,6 +22,7 @@ import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 public class ExportTraceTraceElement extends ExportTraceElement {
 
     private TmfTraceElement fTraceElement;
+    private String fImportName;
 
     /**
      * Construct an instance associated to a TmfTraceElement.
@@ -34,9 +35,14 @@ public class ExportTraceTraceElement extends ExportTraceElement {
         fTraceElement = traceElement;
     }
 
+    public ExportTraceTraceElement(ExportTraceElement parent, String importName) {
+        super(parent);
+        fImportName = importName;
+    }
+
     @Override
     public String getText() {
-        return fTraceElement.getName();
+        return fTraceElement != null ? fTraceElement.getName() : fImportName;
     }
 
     /**
