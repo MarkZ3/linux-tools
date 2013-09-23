@@ -230,7 +230,7 @@ public class ExportTraceWizardPage extends WizardPage {
             children.add(new ExportTraceFilesElement(traceTransferElement));
             children.add(new ExportTraceSupplFilesElement(tmfTraceElement.getSupplementaryResources(), traceTransferElement));
 
-            children.add(new ExportTraceBookmarkElement(traceTransferElement));
+            children.add(new ExportTraceBookmarkElement(traceTransferElement, null));
 
             traceTransferElement.setChildren(children.toArray(new ExportTraceElement[] {}));
             fTraceExportElementViewer.setInput(new ExportTraceElement[] { traceTransferElement });

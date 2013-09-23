@@ -9,11 +9,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -37,7 +42,9 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTra
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceTraceElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
+import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
+import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceType;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -58,8 +65,10 @@ import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileManipulations;
 import org.eclipse.ui.internal.wizards.datatransfer.TarEntry;
 import org.eclipse.ui.internal.wizards.datatransfer.TarException;
 import org.eclipse.ui.internal.wizards.datatransfer.TarFile;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -288,7 +297,8 @@ public class ImportTracePackagePage extends WizardPage {
                 if (traceNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element traceElement = (Element) traceNode;
                     String traceName = traceElement.getAttribute(ITracePackageConstants.TRACE_NAME_ATTRIB);
-                    element = new ExportTraceTraceElement(null, traceName);
+                    String traceType = traceElement.getAttribute(ITracePackageConstants.TRACE_TYPE_ATTRIB);
+                    element = new ExportTraceTraceElement(null, traceName, traceType);
 
                     List<ExportTraceElement> children = new ArrayList<ExportTraceElement>();
                     NodeList fileElements = traceElement.getElementsByTagName(ITracePackageConstants.TRACE_FILE_ELEMENT);
@@ -315,14 +325,33 @@ public class ImportTracePackagePage extends WizardPage {
                         children.add(new ExportTraceSupplFilesElement(suppFiles, element));
                     }
 
+                    List<Map<String, String>> bookmarks = new ArrayList<Map<String,String>>();
                     NodeList bookmarksElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARKS_ELEMENT);
                     for (int j = 0; j < bookmarksElements.getLength(); ++j) {
                         Node bookmarksNode = bookmarksElements.item(j);
                         if (bookmarksNode.getNodeType() == Node.ELEMENT_NODE) {
-                            children.add(new ExportTraceBookmarkElement(element));
-                            break;
+                            NodeList bookmarkElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARK_ELEMENT);
+                            for (int k = 0; k < bookmarkElements.getLength(); ++k) {
+                                Node bookmarkNode = bookmarkElements.item(k);
+                                if (bookmarkNode.getNodeType() == Node.ELEMENT_NODE) {
+                                    Element bookmarkElement = (Element)bookmarkNode;
+                                    NamedNodeMap attributesMap = bookmarkElement.getAttributes();
+                                    Map<String, String> attributes = new HashMap<String, String>();
+                                    for (int l = 0; l < attributesMap.getLength(); ++l) {
+                                        Attr attr = (Attr)attributesMap.item(l);
+                                        attributes.put(attr.getName(), attr.getNodeValue());
+                                    }
+
+                                    bookmarks.add(attributes);
+                                }
+                            }
+                            //bookmarks
                         }
                     }
+                    if (!bookmarks.isEmpty()) {
+                        children.add(new ExportTraceBookmarkElement(element, bookmarks));
+                    }
+
 
                     element.setChildren(children.toArray(new ExportTraceElement[] {}));
                 }
@@ -556,7 +585,8 @@ public class ImportTracePackagePage extends WizardPage {
         // }
 
         ExportTraceElement[] input = (ExportTraceElement[])fTraceExportElementViewer.getInput();
-        final TraceImporter exporter = new TraceImporter(fileName, (ExportTraceTraceElement) input[0], tmfTraceFolder);
+        ExportTraceTraceElement exportTraceTraceElement = (ExportTraceTraceElement) input[0];
+        final TraceImporter exporter = new TraceImporter(fileName, exportTraceTraceElement, tmfTraceFolder);
 
         try {
             getContainer().run(true, true, new IRunnableWithProgress() {
@@ -578,7 +608,69 @@ public class ImportTracePackagePage extends WizardPage {
         } catch (InterruptedException e) {
         }
 
-        return exporter.getStatus().getSeverity() == IStatus.OK;
+        IResource traceRes = tmfTraceFolder.getResource().findMember(exportTraceTraceElement.getText());
+
+        IStatus ret = Status.OK_STATUS;
+        try {
+            ret = TmfTraceType.setTraceType(traceRes.getFullPath(), TmfTraceType.getInstance().getTraceType(exportTraceTraceElement.getTraceType()));
+        } catch (CoreException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        // Add bookmarks
+        Object[] checkedElements = fTraceExportElementViewer.getCheckedElements();
+
+        //FIXME: Will not work for experiments
+        for (Object o : checkedElements) {
+            if (o instanceof ExportTraceBookmarkElement) {
+
+                //Get element
+                IFile bookmarksFile = null;
+                List<TmfTraceElement> traces = tmfTraceFolder.getTraces();
+                for (TmfTraceElement t : traces) {
+                    if (t.getName().equals(traceRes.getName())) {
+                        try {
+                            bookmarksFile = t.createBookmarksFile();
+                        } catch (CoreException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                        break;
+                    }
+                }
+
+                if (bookmarksFile == null) {
+                    break;
+                }
+
+                ExportTraceBookmarkElement exportTraceBookmarkElement = (ExportTraceBookmarkElement) o;
+                List<Map<String,String>> bookmarks = exportTraceBookmarkElement.getBookmarks();
+                for (Map<String,String> attrs : bookmarks) {
+                    IMarker createMarker = null;
+                    try {
+                        createMarker = bookmarksFile.createMarker(IMarker.BOOKMARK);
+                    } catch (CoreException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    if (createMarker != null) {
+                        for (String a: attrs.keySet()) {
+                            try {
+                                createMarker.setAttribute(a, attrs.get(a));
+                            } catch (CoreException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                }
+
+            }
+        }
+
+        return exporter.getStatus().getSeverity() == IStatus.OK && ret.getSeverity() == IStatus.OK;
     }
 
 }

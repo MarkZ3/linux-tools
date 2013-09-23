@@ -24,6 +24,7 @@ import java.util.zip.ZipFile;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceElement;
@@ -57,72 +58,17 @@ public class TraceImporter implements IOverwriteQuery {
         return fStatus;
     }
 
-    class Provider implements IImportStructureProvider {
+    private abstract class ProviderElement {
 
         private String fPath;
         private String fLabel;
-        private InputStream fInputStream;
 
-        public Provider(String destinationPath, String label, InputStream inputStream) {
+        public ProviderElement(String destinationPath, String label) {
             fPath = destinationPath;
             fLabel = label;
-            fInputStream = inputStream;
         }
 
-        @Override
-        public List getChildren(Object element) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public InputStream getContents(Object element) {
-            return fInputStream;
-        }
-
-        @Override
-        public String getFullPath(Object element) {
-            return fPath;
-        }
-
-        @Override
-        public String getLabel(Object element) {
-            return fLabel;
-        }
-
-        @Override
-        public boolean isFolder(Object element) {
-            return false;
-        }
-
-    }
-
-    class ProviderElement {
-        List<ProviderElement> children;
-
-        private String fPath;
-        private String fLabel;
-        private InputStream fInputStream;
-
-        // private boolean fIsFolder;
-
-        public ProviderElement(String destinationPath, String label, InputStream inputStream) {
-            fPath = destinationPath;
-            fLabel = label;
-            fInputStream = inputStream;
-        }
-
-        public void setChildren(List<ProviderElement> children) {
-            this.children = children;
-        }
-
-        public List<ProviderElement> getChildren() {
-            return children;
-        }
-
-        public InputStream getContents() {
-            return fInputStream;
-        }
+        abstract public InputStream getContents();
 
         public String getFullPath() {
             return fPath;
@@ -137,21 +83,11 @@ public class TraceImporter implements IOverwriteQuery {
         }
     }
 
-    //
-    // class ProviderParent {
-    //
-    // public List<?> getChildren() {
-    // // TODO Auto-generated method stub
-    // return null;
-    // }
-    //
-    // }
-    //
-    class Provider2 implements IImportStructureProvider {
+    private class ImportProvider implements IImportStructureProvider {
 
         @Override
         public List getChildren(Object element) {
-            return ((ProviderElement) element).getChildren();
+            return null;
         }
 
         @Override
@@ -172,6 +108,34 @@ public class TraceImporter implements IOverwriteQuery {
         @Override
         public boolean isFolder(Object element) {
             return ((ProviderElement) element).isFolder();
+        }
+
+    }
+
+    private class TarProviderElement extends ProviderElement {
+
+        private TarFile tarFile;
+        private TarEntry entry;
+
+        public TarProviderElement(String destinationPath, String label, TarFile tarFile, TarEntry entry) {
+            super(destinationPath, label);
+            this.tarFile = tarFile;
+            this.entry = entry;
+        }
+
+        @Override
+        public InputStream getContents() {
+            InputStream inputStream = null;
+            try {
+                inputStream = tarFile.getInputStream(entry);
+            } catch (TarException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return inputStream;
         }
 
     }
@@ -226,22 +190,14 @@ public class TraceImporter implements IOverwriteQuery {
                                 // }
 
                                 ProviderElement pe;
-                                try {
-                                    pe = new ProviderElement(entry.getName(), entry.getName(), tarFile.getInputStream(entry));
+                                Path path = new Path(entry.getName());
+                                pe = new TarProviderElement(entry.getName(), path.lastSegment(), tarFile, entry);
 
-                                    objects.add(pe);
-
-                                } catch (TarException e) {
-                                    // TODO Auto-generated catch block
-                                    e.printStackTrace();
-                                } catch (IOException e) {
-                                    // TODO Auto-generated catch block
-                                    e.printStackTrace();
-                                }
+                                objects.add(pe);
                             }
                         }
 
-                        Provider2 p = new Provider2();
+                        ImportProvider p = new ImportProvider();
 
                         ImportOperation operation = new ImportOperation(containerPath,
                                 null, p, this,

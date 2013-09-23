@@ -23,6 +23,7 @@ public class ExportTraceTraceElement extends ExportTraceElement {
 
     private TmfTraceElement fTraceElement;
     private String fImportName;
+    private String traceType;
 
     /**
      * Construct an instance associated to a TmfTraceElement.
@@ -35,9 +36,10 @@ public class ExportTraceTraceElement extends ExportTraceElement {
         fTraceElement = traceElement;
     }
 
-    public ExportTraceTraceElement(ExportTraceElement parent, String importName) {
+    public ExportTraceTraceElement(ExportTraceElement parent, String importName, String traceType) {
         super(parent);
         fImportName = importName;
+        this.traceType = traceType;
     }
 
     @Override
@@ -52,4 +54,10 @@ public class ExportTraceTraceElement extends ExportTraceElement {
         return fTraceElement;
     }
 
+    /**
+     * @return the trace type of this trace
+     */
+    public String getTraceType () {
+        return traceType;
+    }
 }

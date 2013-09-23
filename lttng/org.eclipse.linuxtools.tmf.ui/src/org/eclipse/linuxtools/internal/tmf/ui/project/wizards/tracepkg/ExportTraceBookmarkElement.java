@@ -12,14 +12,26 @@
 
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
 public class ExportTraceBookmarkElement extends ExportTraceElement {
     private static final String BOOKMARK_IMAGE_PATH = "icons/elcl16/bookmark_obj.gif"; //$NON-NLS-1$
+    private List<Map<String, String>> bookmarks;
 
-    public ExportTraceBookmarkElement(ExportTraceElement parent) {
+    public class BookmarkInfo {
+        BookmarkInfo(Map<String, String> attr) {
+            markerAttributes = attr;
+        }
+        public Map<String, String> markerAttributes;
+    }
+
+    public ExportTraceBookmarkElement(ExportTraceElement parent, List<Map<String,String>> bookmarks) {
         super(parent);
+        this.bookmarks = bookmarks;
     }
 
     @Override
@@ -30,6 +42,10 @@ public class ExportTraceBookmarkElement extends ExportTraceElement {
     @Override
     public Image getImage() {
         return Activator.getDefault().getImageFromImageRegistry(BOOKMARK_IMAGE_PATH);
+    }
+
+    public List<Map<String, String>> getBookmarks() {
+        return bookmarks;
     }
 
 }
