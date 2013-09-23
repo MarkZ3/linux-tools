@@ -9,7 +9,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +34,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceBookmarkElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceBookmarkElement.BookmarkInfo;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceFilesElement;
@@ -45,6 +45,7 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePac
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceType;
+import org.eclipse.linuxtools.tmf.ui.project.model.TraceTypeHelper;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -80,6 +81,7 @@ public class ImportTracePackagePage extends WizardPage {
     private static final int SIZING_TEXT_FIELD_WIDTH = 250;
     private final static String STORE_SOURCE_NAMES_ID = "ImportTracePackagePage1.STORE_SOURCE_NAMES_ID"; //$NON-NLS-1$
     private static final int COMBO_HISTORY_LENGTH = 5;
+    private static boolean isTarFile;
 
     IStructuredSelection fSelection;
     private CheckboxTreeViewer fTraceExportElementViewer;
@@ -242,7 +244,7 @@ public class ImportTracePackagePage extends WizardPage {
 
     private static ExportTraceElement extractManifest(IProgressMonitor monitor, String fileName) throws InterruptedException {
         ExportTraceElement element = null;
-        boolean isTarFile = ArchiveFileManipulations.isTarFile(fileName);
+        isTarFile = ArchiveFileManipulations.isTarFile(fileName);
         monitor.worked(1);
         if (isTarFile) {
             TarFile sourceTarFile = getSpecifiedTarSourceFile(fileName);
@@ -325,7 +327,8 @@ public class ImportTracePackagePage extends WizardPage {
                         children.add(new ExportTraceSupplFilesElement(suppFiles, element));
                     }
 
-                    List<Map<String, String>> bookmarks = new ArrayList<Map<String,String>>();
+                    List<Map<String, String>> bookmarks = new ArrayList<Map<String, String>>();
+                    List<ExportTraceBookmarkElement.BookmarkInfo> bookmarkInfos = new ArrayList<ExportTraceBookmarkElement.BookmarkInfo>();
                     NodeList bookmarksElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARKS_ELEMENT);
                     for (int j = 0; j < bookmarksElements.getLength(); ++j) {
                         Node bookmarksNode = bookmarksElements.item(j);
@@ -334,24 +337,36 @@ public class ImportTracePackagePage extends WizardPage {
                             for (int k = 0; k < bookmarkElements.getLength(); ++k) {
                                 Node bookmarkNode = bookmarkElements.item(k);
                                 if (bookmarkNode.getNodeType() == Node.ELEMENT_NODE) {
-                                    Element bookmarkElement = (Element)bookmarkNode;
+                                    Element bookmarkElement = (Element) bookmarkNode;
                                     NamedNodeMap attributesMap = bookmarkElement.getAttributes();
-                                    Map<String, String> attributes = new HashMap<String, String>();
-                                    for (int l = 0; l < attributesMap.getLength(); ++l) {
-                                        Attr attr = (Attr)attributesMap.item(l);
-                                        attributes.put(attr.getName(), attr.getNodeValue());
-                                    }
+                                    Node locationNode = attributesMap.getNamedItem(IMarker.LOCATION);
+                                    Node messageNode = attributesMap.getNamedItem(IMarker.MESSAGE);
 
-                                    bookmarks.add(attributes);
+                                    if (locationNode != null && messageNode != null) {
+                                        Attr locationAttr = (Attr) locationNode;
+                                        Integer location = Integer.valueOf(locationAttr.getValue());
+                                        Attr messageAttr = (Attr) messageNode;
+                                        bookmarkInfos.add(new ExportTraceBookmarkElement.BookmarkInfo(location, messageAttr.getValue()));
+
+                                    }
+                                    // Map<String, String> attributes = new
+                                    // HashMap<String, String>();
+                                    // for (int l = 0; l <
+                                    // attributesMap.getLength(); ++l) {
+                                    // Attr attr = (Attr)attributesMap.item(l);
+                                    // attributes.put(attr.getName(),
+                                    // attr.getNodeValue());
+                                    // }
+
+                                    // bookmarks.add(attributes);
                                 }
                             }
-                            //bookmarks
+                            // bookmarks
                         }
                     }
-                    if (!bookmarks.isEmpty()) {
-                        children.add(new ExportTraceBookmarkElement(element, bookmarks));
+                    if (!bookmarkInfos.isEmpty()) {
+                        children.add(new ExportTraceBookmarkElement(element, bookmarks, bookmarkInfos));
                     }
-
 
                     element.setChildren(children.toArray(new ExportTraceElement[] {}));
                 }
@@ -422,6 +437,12 @@ public class ImportTracePackagePage extends WizardPage {
         data.widthHint = SIZING_TEXT_FIELD_WIDTH;
         fDestinationNameField.setLayoutData(data);
         fDestinationNameField.setFont(font);
+        fDestinationNameField.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                updateWithSelection();
+            }
+        });
 
         // destination browse button
         fDestinationBrowseButton = new Button(destinationSelectionGroup,
@@ -460,10 +481,14 @@ public class ImportTracePackagePage extends WizardPage {
             setErrorMessage(null);
             setDestinationValue(selectedFileName);
 
-            setTraceElements();
-            fTraceExportElementViewer.expandAll();
-            setAllChecked(true);
+            updateWithSelection();
         }
+    }
+
+    private void updateWithSelection() {
+        setTraceElements();
+        fTraceExportElementViewer.expandAll();
+        setAllChecked(true);
     }
 
     private void setDestinationValue(String value) {
@@ -513,7 +538,7 @@ public class ImportTracePackagePage extends WizardPage {
             }
 
             // destination
-            setDestinationValue(directoryNames[0]);
+            //setDestinationValue(directoryNames[0]);
             for (int i = 0; i < directoryNames.length; i++) {
                 fDestinationNameField.add(directoryNames[i]);
             }
@@ -584,9 +609,9 @@ public class ImportTracePackagePage extends WizardPage {
         TmfTraceFolder tmfTraceFolder = (TmfTraceFolder) fSelection.getFirstElement();
         // }
 
-        ExportTraceElement[] input = (ExportTraceElement[])fTraceExportElementViewer.getInput();
+        ExportTraceElement[] input = (ExportTraceElement[]) fTraceExportElementViewer.getInput();
         ExportTraceTraceElement exportTraceTraceElement = (ExportTraceTraceElement) input[0];
-        final TraceImporter exporter = new TraceImporter(fileName, exportTraceTraceElement, tmfTraceFolder);
+        final TraceImporter exporter = new TraceImporter(fileName, isTarFile, exportTraceTraceElement, tmfTraceFolder);
 
         try {
             getContainer().run(true, true, new IRunnableWithProgress() {
@@ -612,7 +637,8 @@ public class ImportTracePackagePage extends WizardPage {
 
         IStatus ret = Status.OK_STATUS;
         try {
-            ret = TmfTraceType.setTraceType(traceRes.getFullPath(), TmfTraceType.getInstance().getTraceType(exportTraceTraceElement.getTraceType()));
+            TraceTypeHelper traceType = TmfTraceType.getInstance().getTraceType(exportTraceTraceElement.getTraceType());
+            ret = TmfTraceType.setTraceType(traceRes.getFullPath(), traceType);
         } catch (CoreException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -621,11 +647,11 @@ public class ImportTracePackagePage extends WizardPage {
         // Add bookmarks
         Object[] checkedElements = fTraceExportElementViewer.getCheckedElements();
 
-        //FIXME: Will not work for experiments
+        // FIXME: Will not work for experiments
         for (Object o : checkedElements) {
             if (o instanceof ExportTraceBookmarkElement) {
 
-                //Get element
+                // Get element
                 IFile bookmarksFile = null;
                 List<TmfTraceElement> traces = tmfTraceFolder.getTraces();
                 for (TmfTraceElement t : traces) {
@@ -645,8 +671,9 @@ public class ImportTracePackagePage extends WizardPage {
                 }
 
                 ExportTraceBookmarkElement exportTraceBookmarkElement = (ExportTraceBookmarkElement) o;
-                List<Map<String,String>> bookmarks = exportTraceBookmarkElement.getBookmarks();
-                for (Map<String,String> attrs : bookmarks) {
+
+                List<ExportTraceBookmarkElement.BookmarkInfo> bookmarks = exportTraceBookmarkElement.getBookmarkInfos();
+                for (BookmarkInfo attrs : bookmarks) {
                     IMarker createMarker = null;
                     try {
                         createMarker = bookmarksFile.createMarker(IMarker.BOOKMARK);
@@ -654,15 +681,15 @@ public class ImportTracePackagePage extends WizardPage {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
-                    if (createMarker != null) {
-                        for (String a: attrs.keySet()) {
-                            try {
-                                createMarker.setAttribute(a, attrs.get(a));
-                            } catch (CoreException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            }
+                    if (createMarker != null && createMarker.exists()) {
+                        try {
+                            createMarker.setAttribute(IMarker.MESSAGE, attrs.messageAttr);
+                            createMarker.setAttribute(IMarker.LOCATION, attrs.location);
+                        } catch (CoreException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
                         }
+
                     }
 
                 }

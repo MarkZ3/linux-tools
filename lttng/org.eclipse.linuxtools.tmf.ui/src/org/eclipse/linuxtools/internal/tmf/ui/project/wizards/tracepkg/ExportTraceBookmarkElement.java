@@ -21,17 +21,27 @@ import org.eclipse.swt.graphics.Image;
 public class ExportTraceBookmarkElement extends ExportTraceElement {
     private static final String BOOKMARK_IMAGE_PATH = "icons/elcl16/bookmark_obj.gif"; //$NON-NLS-1$
     private List<Map<String, String>> bookmarks;
+    private List<BookmarkInfo> bookmarkInfos;
 
-    public class BookmarkInfo {
-        BookmarkInfo(Map<String, String> attr) {
-            markerAttributes = attr;
+    public static class BookmarkInfo {
+
+
+
+        public String messageAttr;
+        public Integer location;
+
+        public BookmarkInfo(Integer location, String messageAttr) {
+            this.location = location;
+            this.messageAttr = messageAttr;
+            // TODO Auto-generated constructor stub
         }
-        public Map<String, String> markerAttributes;
+
     }
 
-    public ExportTraceBookmarkElement(ExportTraceElement parent, List<Map<String,String>> bookmarks) {
+    public ExportTraceBookmarkElement(ExportTraceElement parent, List<Map<String,String>> bookmarks, List<BookmarkInfo> bookmarkInfos) {
         super(parent);
         this.bookmarks = bookmarks;
+        this.bookmarkInfos = bookmarkInfos;
     }
 
     @Override
@@ -46,6 +56,10 @@ public class ExportTraceBookmarkElement extends ExportTraceElement {
 
     public List<Map<String, String>> getBookmarks() {
         return bookmarks;
+    }
+
+    public List<BookmarkInfo> getBookmarkInfos() {
+        return bookmarkInfos;
     }
 
 }

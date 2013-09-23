@@ -29,10 +29,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceTraceElement;
+import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.ui.dialogs.IOverwriteQuery;
-import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileManipulations;
 import org.eclipse.ui.internal.wizards.datatransfer.TarEntry;
 import org.eclipse.ui.internal.wizards.datatransfer.TarException;
 import org.eclipse.ui.internal.wizards.datatransfer.TarFile;
@@ -47,9 +48,11 @@ public class TraceImporter implements IOverwriteQuery {
     // private List<Object> fileSystemObjects;
     private ExportTraceTraceElement fExportTraceTraceElement;
     private TmfTraceFolder fTmfTraceFolder;
+    private boolean isTarFile;
 
-    public TraceImporter(String fileName, ExportTraceTraceElement exportTraceTraceElement, TmfTraceFolder tmfTraceFolder) {
+    public TraceImporter(String fileName, boolean isTarFile, ExportTraceTraceElement exportTraceTraceElement, TmfTraceFolder tmfTraceFolder) {
         fFileName = fileName;
+        this.isTarFile = isTarFile;
         fExportTraceTraceElement = exportTraceTraceElement;
         fTmfTraceFolder = tmfTraceFolder;
     }
@@ -144,56 +147,88 @@ public class TraceImporter implements IOverwriteQuery {
         int totalWork = 20;
         monitor.beginTask(Messages.TraceImporter_ReadingPackage, totalWork);
 
-        // ILeveledImportStructureProvider importStructureProvider = null;
-        if (ArchiveFileManipulations.isTarFile(fFileName)) {
-            if (ensureTarSourceIsValid()) {
-                TarFile tarFile = getSpecifiedTarSourceFile(fFileName);
+        if (isTarFile) {
+            TarFile tarFile = getSpecifiedTarSourceFile(fFileName);
 
-                ExportTraceElement[] children = fExportTraceTraceElement.getChildren();
-                for (ExportTraceElement element : children) {
-                    if (element instanceof ExportTraceFilesElement) {
-                        ExportTraceFilesElement exportTraceFilesElement = (ExportTraceFilesElement) element;
-                        String fileName = exportTraceFilesElement.getFileName();
-                        Enumeration<?> entries = tarFile.entries();
-                        IPath containerPath = fTmfTraceFolder.getPath();
+            ExportTraceElement[] children = fExportTraceTraceElement.getChildren();
+            for (ExportTraceElement element : children) {
+                if (element instanceof ExportTraceFilesElement) {
+                    ExportTraceFilesElement exportTraceFilesElement = (ExportTraceFilesElement) element;
+                    String fileName = exportTraceFilesElement.getFileName();
+                    Enumeration<?> entries = tarFile.entries();
+                    IPath containerPath = fTmfTraceFolder.getPath();
+                    List<Object> objects = new ArrayList<Object>();
+                    while (entries.hasMoreElements()) {
+                        TarEntry entry = (TarEntry) entries.nextElement();
+                        boolean fileMatch = entry.getName().equalsIgnoreCase(fileName);
+                        boolean folderMatch = entry.getName().startsWith(fileName + "/");
+                        if (fileMatch || folderMatch) {
+                            ProviderElement pe;
+                            Path path = new Path(entry.getName());
+                            pe = new TarProviderElement(entry.getName(), path.lastSegment(), tarFile, entry);
+
+                            objects.add(pe);
+                        }
+                    }
+
+                    ImportProvider p = new ImportProvider();
+
+                    ImportOperation operation = new ImportOperation(containerPath,
+                            null, p, this,
+                            objects);
+                    operation.setCreateContainerStructure(true);
+                    operation.setOverwriteResources(true);
+
+                    try {
+                        operation.run(monitor);
+                    } catch (InvocationTargetException e) {
+                        fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error!", e);
+                        return;
+                    } catch (InterruptedException e) {
+                        fStatus = Status.CANCEL_STATUS;
+                        return;
+                    }
+
+                    fStatus = operation.getStatus();
+
+                } else if (element instanceof ExportTraceSupplFilesElement) {
+                    ExportTraceSupplFilesElement suppFilesElement = (ExportTraceSupplFilesElement) element;
+                    List<String> fileNames = suppFilesElement.getSuppFileNames();
+
+                    // Find suppl folder
+                    List<TmfTraceElement> traces = fTmfTraceFolder.getTraces();
+                    TmfTraceElement traceElement = null;
+                    for (TmfTraceElement t : traces) {
+                        if (t.getName().equals(fExportTraceTraceElement.getText())) {
+                            traceElement = t;
+                        }
+                    }
+
+                    if (traceElement != null) {
+                        try {
+                            tarFile.close();
+                        } catch (IOException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        }
+                        tarFile = getSpecifiedTarSourceFile(fFileName);
+                        traceElement.refreshSupplementaryFolder();
+                        IPath containerPath = traceElement.getTraceSupplementaryFolder(traceElement.getResource().getName()).getFullPath();
+
                         List<Object> objects = new ArrayList<Object>();
+                        Enumeration<?> entries = tarFile.entries();
                         while (entries.hasMoreElements()) {
                             TarEntry entry = (TarEntry) entries.nextElement();
-                            boolean folderMatch = entry.getName().startsWith(fileName + "/");
-                            boolean fileMatch = entry.getName().equalsIgnoreCase(fileName);
-                            if (fileMatch || folderMatch) {
-                                // ExportTraceTraceElement traceElement =
-                                // (ExportTraceTraceElement)
-                                // exportTraceFilesElement.getParent();
-                                // String traceName = traceElement.getText();
+                            for (String fileName : fileNames) {
+                                boolean fileMatch = entry.getName().equalsIgnoreCase(fileName);
+                                boolean folderMatch = entry.getName().startsWith(fileName + "/");
+                                if (fileMatch || folderMatch) {
+                                    ProviderElement pe;
+                                    Path path = new Path(entry.getName());
+                                    pe = new TarProviderElement(entry.getName(), path.lastSegment(), tarFile, entry);
 
-                                // if (folderMatch) {
-                                // IPath tracePath =
-                                // containerPath.append(traceName);
-                                // // IWorkspaceRoot workspaceRoot =
-                                // ResourcesPlugin.getWorkspace().getRoot();
-                                // // IResource tracePathRes =
-                                // workspaceRoot.findMember(tracePath);
-                                // // if (tracePathRes == null ||
-                                // !tracePathRes.exists()) {
-                                // // try {
-                                // //
-                                // fTmfTraceFolder.getResource().getFolder(traceName).create(true,
-                                // true, monitor);
-                                // // } catch (CoreException e) {
-                                // // // TODO Auto-generated catch block
-                                // // e.printStackTrace();
-                                // // }
-                                // // }
-                                // containerPath = tracePath;
-                                //
-                                // }
-
-                                ProviderElement pe;
-                                Path path = new Path(entry.getName());
-                                pe = new TarProviderElement(entry.getName(), path.lastSegment(), tarFile, entry);
-
-                                objects.add(pe);
+                                    objects.add(pe);
+                                }
                             }
                         }
 
@@ -216,68 +251,17 @@ public class TraceImporter implements IOverwriteQuery {
                         }
 
                         fStatus = operation.getStatus();
-
                     }
 
                 }
-                // importStructureProvider = new
-                // TarLeveledStructureProvider(tarFile);
-            }
-        } /*
-           * else if (ensureZipSourceIsValid()) { ZipFile zipFile =
-           * getSpecifiedZipSourceFile(); importStructureProvider = new
-           * ZipLeveledStructureProvider(zipFile); }
-           *
-           * if (importStructureProvider == null) { fStatus = new
-           * Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error!"); return; }
-           */
 
-        // IPath containerPath = null;
-        // ImportOperation operation = new ImportOperation(containerPath,
-        // importStructureProvider.getRoot(), importStructureProvider, this,
-        // fileSystemObjects);
-        //
-        // try {
-        // operation.run(monitor);
-        // } catch (InvocationTargetException e) {
-        // fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error!",
-        // e);
-        // } catch (InterruptedException e) {
-        // fStatus = Status.CANCEL_STATUS;
-        // }
-        // fStatus = operation.getStatus();
-        //
-        // //
-        // ArchiveFileManipulations.closeStructureProvider(importStructureProvider,
-        // // getShell());
+            }
+        }
 
         monitor.done();
         fStatus = Status.OK_STATUS;
         return;
     }
-
-    // /**
-    // * Answer a boolean indicating whether the specified source currently
-    // exists
-    // * and is valid (ie.- proper format)
-    // */
-    // private boolean ensureZipSourceIsValid() {
-    // ZipFile specifiedFile = getSpecifiedZipSourceFile();
-    // if (specifiedFile == null) {
-    // // setErrorMessage(DataTransferMessages.ZipImport_badFormat);
-    // return false;
-    // }
-    // try {
-    // specifiedFile.close();
-    // } catch (IOException e) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // return false;
-    // }
-    // // return ArchiveFileManipulations.closeZipFile(specifiedFile,
-    // // getShell());
-    // return true;
-    // }
 
     /**
      * Answer a handle to the zip file currently specified as being the source.
@@ -285,24 +269,6 @@ public class TraceImporter implements IOverwriteQuery {
      */
     protected ZipFile getSpecifiedZipSourceFile() {
         return getSpecifiedZipSourceFile(fFileName);
-    }
-
-    private boolean ensureTarSourceIsValid() {
-        TarFile specifiedFile = getSpecifiedTarSourceFile(fFileName);
-        if (specifiedFile == null) {
-            // setErrorMessage(DataTransferMessages.TarImport_badFormat);
-            return false;
-        }
-        try {
-            specifiedFile.close();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-        // return ArchiveFileManipulations.closeTarFile(specifiedFile,
-        // getShell());
     }
 
     /**
