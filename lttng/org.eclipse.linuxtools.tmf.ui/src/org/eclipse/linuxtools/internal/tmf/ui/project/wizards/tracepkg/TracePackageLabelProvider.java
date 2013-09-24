@@ -12,14 +12,18 @@
 
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
+import org.eclipse.jface.viewers.IColorProvider;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * A label provider for the export trace tree
  */
-public class TracePackageLabelProvider implements ILabelProvider {
+public class TracePackageLabelProvider implements ILabelProvider, IColorProvider {
 
     @Override
     public void addListener(ILabelProviderListener listener) {
@@ -46,6 +50,19 @@ public class TracePackageLabelProvider implements ILabelProvider {
     @Override
     public String getText(Object element) {
         return ((TracePackageElement) element).getText();
+    }
+
+    @Override
+    public Color getForeground(Object element) {
+        if(!((TracePackageElement) element).isEnabled()) {
+            return Display.getDefault().getSystemColor(SWT.COLOR_GRAY);
+        }
+        return null;
+    }
+
+    @Override
+    public Color getBackground(Object element) {
+        return null;
     }
 
 }

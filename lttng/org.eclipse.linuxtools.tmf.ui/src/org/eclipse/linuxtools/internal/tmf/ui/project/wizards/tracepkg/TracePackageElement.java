@@ -20,22 +20,24 @@ import org.eclipse.ui.model.WorkbenchAdapter;
  * tree.
  */
 public abstract class TracePackageElement extends WorkbenchAdapter {
-    TracePackageElement[] children;
-    TracePackageElement parent;
+    TracePackageElement[] fChildren;
+    TracePackageElement fParent;
+    boolean fEnabled;
 
     /**
      *
      * @param parent the parent of this element, can be set to null
      */
     public TracePackageElement(TracePackageElement parent) {
-        this.parent = parent;
+        this.fParent = parent;
+        fEnabled = true;
     }
 
     /**
      * @return the parent of this element or null if there is no parent
      */
     public Object getParent() {
-        return parent;
+        return fParent;
     }
 
     /**
@@ -47,11 +49,11 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
     abstract public String getText();
 
     public TracePackageElement[] getChildren() {
-        return children;
+        return fChildren;
     }
 
     public void setChildren(TracePackageElement[] children) {
-        this.children = children;
+        this.fChildren = children;
     }
 
     /**
@@ -62,5 +64,13 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
      */
     public Image getImage() {
         return null;
+    }
+
+    public boolean isEnabled() {
+        return fEnabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        fEnabled = enabled;
     }
 }

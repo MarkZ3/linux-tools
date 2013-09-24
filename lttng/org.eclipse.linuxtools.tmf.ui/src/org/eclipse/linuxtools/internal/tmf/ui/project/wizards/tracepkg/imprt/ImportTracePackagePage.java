@@ -623,7 +623,7 @@ public class ImportTracePackagePage extends WizardPage {
 
         TracePackageElement[] input = (TracePackageElement[]) fTraceExportElementViewer.getInput();
         TracePackageTraceElement exportTraceTraceElement = (TracePackageTraceElement) input[0];
-        final TraceImporter exporter = new TraceImporter(fileName, isTarFile, exportTraceTraceElement, tmfTraceFolder);
+        final TracePackageImportOperation exporter = new TracePackageImportOperation(fileName, isTarFile, exportTraceTraceElement, tmfTraceFolder);
 
         try {
             getContainer().run(true, true, new IRunnableWithProgress() {

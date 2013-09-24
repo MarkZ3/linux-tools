@@ -41,7 +41,7 @@ import org.eclipse.ui.wizards.datatransfer.IImportStructureProvider;
 import org.eclipse.ui.wizards.datatransfer.ImportOperation;
 
 @SuppressWarnings("restriction")
-public class TraceImporter implements IOverwriteQuery {
+public class TracePackageImportOperation implements IOverwriteQuery {
 
     String fFileName;
     IStatus fStatus;
@@ -50,7 +50,7 @@ public class TraceImporter implements IOverwriteQuery {
     private TmfTraceFolder fTmfTraceFolder;
     private boolean isTarFile;
 
-    public TraceImporter(String fileName, boolean isTarFile, TracePackageTraceElement exportTraceTraceElement, TmfTraceFolder tmfTraceFolder) {
+    public TracePackageImportOperation(String fileName, boolean isTarFile, TracePackageTraceElement exportTraceTraceElement, TmfTraceFolder tmfTraceFolder) {
         fFileName = fileName;
         this.isTarFile = isTarFile;
         fExportTraceTraceElement = exportTraceTraceElement;

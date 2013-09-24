@@ -1086,7 +1086,7 @@
          </activeWhen>
       </handler>
       <handler
-            class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTraceHandler"
+            class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTracePackageHandler"
             commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command">
          <activeWhen>
             <and>
@@ -1382,7 +1382,7 @@
       </category>
    <wizard
          category="org.eclipse.linuxtools.tmf.export.category"
-         class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTraceWizard"
+         class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTracePackageWizard"
          icon="icons/elcl16/trace.gif"
          id="org.eclipse.linuxtools.tmf.ui.export.trace"
          name="Trace">

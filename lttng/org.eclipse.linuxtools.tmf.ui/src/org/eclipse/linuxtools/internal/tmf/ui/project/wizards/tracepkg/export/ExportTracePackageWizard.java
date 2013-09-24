@@ -22,13 +22,13 @@ import org.eclipse.ui.IWorkbench;
 /**
  * Wizard for exporting a single trace
  */
-public class ExportTraceWizard extends Wizard implements IExportWizard {
+public class ExportTracePackageWizard extends Wizard implements IExportWizard {
 
     private static final String STORE_EXPORT_TRACE_WIZARD = "ExportTraceWizard"; //$NON-NLS-1$
     private IStructuredSelection fSelection;
-    private ExportTraceWizardPage page;
+    private ExportTracePackageWizardPage page;
 
-    ExportTraceWizard() {
+    ExportTracePackageWizard() {
         IDialogSettings workbenchSettings = Activator.getDefault().getDialogSettings();
         IDialogSettings section = workbenchSettings
                 .getSection(STORE_EXPORT_TRACE_WIZARD);
@@ -52,7 +52,7 @@ public class ExportTraceWizard extends Wizard implements IExportWizard {
     @Override
     public void addPages() {
         super.addPages();
-        page = new ExportTraceWizardPage("Page name", fSelection); //$NON-NLS-1$
+        page = new ExportTracePackageWizardPage("Page name", fSelection); //$NON-NLS-1$
         addPage(page);
     }
 

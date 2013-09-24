@@ -51,7 +51,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 @SuppressWarnings("restriction")
-public class TraceExporter {
+public class TracePackageExportOperation {
 
     private TracePackageTraceElement fTraceExportElement;
     private Object[] fCheckedElements;
@@ -61,7 +61,7 @@ public class TraceExporter {
     private List<IResource> fResources;
     private IStatus fStatus;
 
-    public TraceExporter(TracePackageTraceElement traceExportElement, Object[] checkedElements, boolean useCompression, boolean useTar, String fileName) {
+    public TracePackageExportOperation(TracePackageTraceElement traceExportElement, Object[] checkedElements, boolean useCompression, boolean useTar, String fileName) {
         fTraceExportElement = traceExportElement;
         fCheckedElements = checkedElements;
         fUseCompression = useCompression;
@@ -70,7 +70,7 @@ public class TraceExporter {
         fResources = new ArrayList<IResource>();
     }
 
-    public void doExport(IProgressMonitor monitor) {
+    public void run(IProgressMonitor monitor) {
 
         try {
 

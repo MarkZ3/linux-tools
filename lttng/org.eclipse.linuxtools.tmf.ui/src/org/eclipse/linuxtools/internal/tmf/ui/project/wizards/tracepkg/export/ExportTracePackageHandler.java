@@ -26,11 +26,11 @@ import org.eclipse.ui.handlers.HandlerUtil;
 /**
  * Handler for exporting a trace
  */
-public class ExportTraceHandler extends AbstractHandler {
+public class ExportTracePackageHandler extends AbstractHandler {
 
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
-        ExportTraceWizard w = new ExportTraceWizard();
+        ExportTracePackageWizard w = new ExportTracePackageWizard();
         IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 
         if (window == null) {
