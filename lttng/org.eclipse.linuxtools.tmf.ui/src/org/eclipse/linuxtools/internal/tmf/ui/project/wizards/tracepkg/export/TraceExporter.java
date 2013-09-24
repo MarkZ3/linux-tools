@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2013 Ericsson
+ *
+ * All rights reserved. This program and the accompanying materials are
+ * made available under the terms of the Eclipse Public License v1.0 which
+ * accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Marc-Andre Laperle - Initial API and implementation
+ *******************************************************************************/
+
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export;
 
 import java.io.ByteArrayInputStream;
@@ -26,10 +38,10 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceBookmarkElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceFilesElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceSupplFilesElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceTraceElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
@@ -41,7 +53,7 @@ import org.w3c.dom.Node;
 @SuppressWarnings("restriction")
 public class TraceExporter {
 
-    private ExportTraceTraceElement fTraceExportElement;
+    private TracePackageTraceElement fTraceExportElement;
     private Object[] fCheckedElements;
     private boolean fUseCompression;
     private boolean fUseTar;
@@ -49,7 +61,7 @@ public class TraceExporter {
     private List<IResource> fResources;
     private IStatus fStatus;
 
-    public TraceExporter(ExportTraceTraceElement traceExportElement, Object[] checkedElements, boolean useCompression, boolean useTar, String fileName) {
+    public TraceExporter(TracePackageTraceElement traceExportElement, Object[] checkedElements, boolean useCompression, boolean useTar, String fileName) {
         fTraceExportElement = traceExportElement;
         fCheckedElements = checkedElements;
         fUseCompression = useCompression;
@@ -80,12 +92,12 @@ public class TraceExporter {
             for (Object element : fCheckedElements) {
                 ModalContext.checkCanceled(monitor);
 
-                if (element instanceof ExportTraceSupplFilesElement) {
-                    exportSupplementaryFiles(monitor, traceNode, (ExportTraceSupplFilesElement) element);
-                } else if (element instanceof ExportTraceBookmarkElement) {
-                    exportBookmarks(monitor, traceNode, (ExportTraceBookmarkElement) element);
-                } else if (element instanceof ExportTraceFilesElement) {
-                    exportTraceFiles(monitor, traceNode, (ExportTraceFilesElement) element);
+                if (element instanceof TracePackageSupplFilesElement) {
+                    exportSupplementaryFiles(monitor, traceNode, (TracePackageSupplFilesElement) element);
+                } else if (element instanceof TracePackageBookmarkElement) {
+                    exportBookmarks(monitor, traceNode, (TracePackageBookmarkElement) element);
+                } else if (element instanceof TracePackageFilesElement) {
+                    exportTraceFiles(monitor, traceNode, (TracePackageFilesElement) element);
                 }
 
                 monitor.worked(1);
@@ -134,7 +146,7 @@ public class TraceExporter {
         return op.getStatus();
     }
 
-    private void exportSupplementaryFiles(IProgressMonitor monitor, Node traceNode, ExportTraceSupplFilesElement element) throws InterruptedException {
+    private void exportSupplementaryFiles(IProgressMonitor monitor, Node traceNode, TracePackageSupplFilesElement element) throws InterruptedException {
         Document doc = traceNode.getOwnerDocument();
         for (IResource res : element.getResources()) {
             ModalContext.checkCanceled(monitor);
@@ -145,9 +157,9 @@ public class TraceExporter {
         }
     }
 
-    private void exportTraceFiles(IProgressMonitor monitor, Node traceNode, ExportTraceFilesElement element) throws CoreException, InterruptedException {
+    private void exportTraceFiles(IProgressMonitor monitor, Node traceNode, TracePackageFilesElement element) throws CoreException, InterruptedException {
         Document doc = traceNode.getOwnerDocument();
-        IResource resource = ((ExportTraceTraceElement) element.getParent()).getTraceElement().getResource();
+        IResource resource = ((TracePackageTraceElement) element.getParent()).getTraceElement().getResource();
         fResources.add(resource);
         Element fileElement = doc.createElement(ITracePackageConstants.TRACE_FILE_ELEMENT);
         fileElement.setAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB, resource.getName());
@@ -162,9 +174,9 @@ public class TraceExporter {
         }
     }
 
-    private static void exportBookmarks(IProgressMonitor monitor, Node traceNode, ExportTraceBookmarkElement element) throws CoreException, InterruptedException {
+    private static void exportBookmarks(IProgressMonitor monitor, Node traceNode, TracePackageBookmarkElement element) throws CoreException, InterruptedException {
         Document doc = traceNode.getOwnerDocument();
-        IMarker[] findMarkers = ((ExportTraceTraceElement) element.getParent()).getTraceElement().getBookmarksFile().findMarkers(IMarker.BOOKMARK, false, IResource.DEPTH_ZERO);
+        IMarker[] findMarkers = ((TracePackageTraceElement) element.getParent()).getTraceElement().getBookmarksFile().findMarkers(IMarker.BOOKMARK, false, IResource.DEPTH_ZERO);
         if (findMarkers.length > 0) {
             Element bookmarksXmlElement = doc.createElement(ITracePackageConstants.BOOKMARKS_ELEMENT);
             Node bookmarksNode = traceNode.appendChild(bookmarksXmlElement);

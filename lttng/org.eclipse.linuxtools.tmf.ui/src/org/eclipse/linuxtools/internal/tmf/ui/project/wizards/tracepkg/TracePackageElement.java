@@ -19,15 +19,15 @@ import org.eclipse.ui.model.WorkbenchAdapter;
  * An ExportTraceElement represents an item in the ExportTraceWizard
  * tree.
  */
-public abstract class ExportTraceElement extends WorkbenchAdapter {
-    ExportTraceElement[] children;
-    ExportTraceElement parent;
+public abstract class TracePackageElement extends WorkbenchAdapter {
+    TracePackageElement[] children;
+    TracePackageElement parent;
 
     /**
      *
      * @param parent the parent of this element, can be set to null
      */
-    public ExportTraceElement(ExportTraceElement parent) {
+    public TracePackageElement(TracePackageElement parent) {
         this.parent = parent;
     }
 
@@ -46,11 +46,11 @@ public abstract class ExportTraceElement extends WorkbenchAdapter {
      */
     abstract public String getText();
 
-    public ExportTraceElement[] getChildren() {
+    public TracePackageElement[] getChildren() {
         return children;
     }
 
-    public void setChildren(ExportTraceElement[] children) {
+    public void setChildren(TracePackageElement[] children) {
         this.children = children;
     }
 

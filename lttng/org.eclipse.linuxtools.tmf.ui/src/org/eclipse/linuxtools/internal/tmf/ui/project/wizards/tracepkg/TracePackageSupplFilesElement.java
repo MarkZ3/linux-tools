@@ -18,7 +18,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
-public class ExportTraceSupplFilesElement extends ExportTraceElement {
+public class TracePackageSupplFilesElement extends TracePackageElement {
 
     private static final String SUPPL_FILE_ICON_PATH = "icons/obj16/thread_obj.gif"; //$NON-NLS-1$
 
@@ -26,12 +26,12 @@ public class ExportTraceSupplFilesElement extends ExportTraceElement {
 
     private List<String> fSuppFileNames;
 
-    public ExportTraceSupplFilesElement(IResource[] resources, ExportTraceElement parent) {
+    public TracePackageSupplFilesElement(IResource[] resources, TracePackageElement parent) {
         super(parent);
         this.fResources = resources;
     }
 
-    public ExportTraceSupplFilesElement(List<String> suppFileNames, ExportTraceElement parent) {
+    public TracePackageSupplFilesElement(List<String> suppFileNames, TracePackageElement parent) {
         super(parent);
         this.fSuppFileNames = suppFileNames;
     }

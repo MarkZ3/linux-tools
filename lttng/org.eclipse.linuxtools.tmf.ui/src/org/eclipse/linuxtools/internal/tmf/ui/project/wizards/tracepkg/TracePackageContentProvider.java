@@ -15,7 +15,7 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-public class ExportTraceContentProvider implements ITreeContentProvider {
+public class TracePackageContentProvider implements ITreeContentProvider {
 
     @Override
     public void dispose() {
@@ -27,25 +27,25 @@ public class ExportTraceContentProvider implements ITreeContentProvider {
 
     @Override
     public Object[] getElements(Object inputElement) {
-        if (inputElement instanceof ExportTraceElement[]) {
-            return (ExportTraceElement[]) inputElement;
+        if (inputElement instanceof TracePackageElement[]) {
+            return (TracePackageElement[]) inputElement;
         }
         return null;
     }
 
     @Override
     public Object[] getChildren(Object parentElement) {
-        return ((ExportTraceElement) parentElement).getChildren();
+        return ((TracePackageElement) parentElement).getChildren();
     }
 
     @Override
     public Object getParent(Object element) {
-        return ((ExportTraceElement) element).getParent();
+        return ((TracePackageElement) element).getParent();
     }
 
     @Override
     public boolean hasChildren(Object element) {
-        ExportTraceElement traceTransferElement = (ExportTraceElement) element;
+        TracePackageElement traceTransferElement = (TracePackageElement) element;
         return traceTransferElement.getChildren() != null && traceTransferElement.getChildren().length > 0;
     }
 

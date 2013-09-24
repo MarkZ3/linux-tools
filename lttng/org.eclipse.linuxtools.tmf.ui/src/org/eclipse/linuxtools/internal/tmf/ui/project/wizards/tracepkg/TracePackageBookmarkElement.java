@@ -18,7 +18,7 @@ import java.util.Map;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
-public class ExportTraceBookmarkElement extends ExportTraceElement {
+public class TracePackageBookmarkElement extends TracePackageElement {
     private static final String BOOKMARK_IMAGE_PATH = "icons/elcl16/bookmark_obj.gif"; //$NON-NLS-1$
     private List<Map<String, String>> bookmarks;
     private List<BookmarkInfo> bookmarkInfos;
@@ -38,7 +38,7 @@ public class ExportTraceBookmarkElement extends ExportTraceElement {
 
     }
 
-    public ExportTraceBookmarkElement(ExportTraceElement parent, List<Map<String,String>> bookmarks, List<BookmarkInfo> bookmarkInfos) {
+    public TracePackageBookmarkElement(TracePackageElement parent, List<Map<String,String>> bookmarks, List<BookmarkInfo> bookmarkInfos) {
         super(parent);
         this.bookmarks = bookmarks;
         this.bookmarkInfos = bookmarkInfos;

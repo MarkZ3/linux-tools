@@ -19,7 +19,7 @@ import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
  * of other elements (events, supplementary files, bookmarks, etc).
  *
  */
-public class ExportTraceTraceElement extends ExportTraceElement {
+public class TracePackageTraceElement extends TracePackageElement {
 
     private TmfTraceElement fTraceElement;
     private String fImportName;
@@ -31,12 +31,12 @@ public class ExportTraceTraceElement extends ExportTraceElement {
      * @param parent the parent of this element, can be set to null
      * @param traceElement the associated TmfTraceElement
      */
-    public ExportTraceTraceElement(ExportTraceElement parent, TmfTraceElement traceElement) {
+    public TracePackageTraceElement(TracePackageElement parent, TmfTraceElement traceElement) {
         super(parent);
         fTraceElement = traceElement;
     }
 
-    public ExportTraceTraceElement(ExportTraceElement parent, String importName, String traceType) {
+    public TracePackageTraceElement(TracePackageElement parent, String importName, String traceType) {
         super(parent);
         fImportName = importName;
         this.traceType = traceType;

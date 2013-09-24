@@ -19,13 +19,9 @@ public class Messages extends NLS {
     private static final String BUNDLE_NAME = "org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt.messages"; //$NON-NLS-1$
     public static String ImportTracePkgPage_title;
     public static String ArchiveImport_selectSourceTitle;
-    public static String DataTransfer_browse;
-    public static String FileExport_toArchive;
+    public static String FileImport_FromArchive;
     public static String ImportTracePackagePage_ErrorOperation;
-    public static String ImportTracePackagePage_internalErrorTitle;
     public static String TraceImporter_ReadingPackage;
-    public static String SelectAll;
-    public static String DeselectAll;
 
     static {
         // initialize resource bundle

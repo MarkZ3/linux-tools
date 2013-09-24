@@ -19,7 +19,7 @@ import org.eclipse.swt.graphics.Image;
 /**
  * A label provider for the export trace tree
  */
-public class ExportTraceLabelProvider implements ILabelProvider {
+public class TracePackageLabelProvider implements ILabelProvider {
 
     @Override
     public void addListener(ILabelProviderListener listener) {
@@ -40,12 +40,12 @@ public class ExportTraceLabelProvider implements ILabelProvider {
 
     @Override
     public Image getImage(Object element) {
-        return ((ExportTraceElement) element).getImage();
+        return ((TracePackageElement) element).getImage();
     }
 
     @Override
     public String getText(Object element) {
-        return ((ExportTraceElement) element).getText();
+        return ((TracePackageElement) element).getText();
     }
 
 }

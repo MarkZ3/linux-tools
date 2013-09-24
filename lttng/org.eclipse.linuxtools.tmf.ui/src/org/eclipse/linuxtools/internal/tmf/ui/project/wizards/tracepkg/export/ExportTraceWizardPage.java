@@ -35,13 +35,13 @@ import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceBookmarkElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceContentProvider;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceFilesElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceLabelProvider;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceSupplFilesElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ExportTraceTraceElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageLabelProvider;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.swt.SWT;
@@ -214,8 +214,8 @@ public class ExportTraceWizardPage extends WizardPage {
         });
         GridData layoutData = new GridData(GridData.FILL_BOTH);
         fTraceExportElementViewer.getTree().setLayoutData(layoutData);
-        fTraceExportElementViewer.setContentProvider(new ExportTraceContentProvider());
-        fTraceExportElementViewer.setLabelProvider(new ExportTraceLabelProvider());
+        fTraceExportElementViewer.setContentProvider(new TracePackageContentProvider());
+        fTraceExportElementViewer.setLabelProvider(new TracePackageLabelProvider());
 
         setTraceElements();
         fTraceExportElementViewer.expandAll();
@@ -225,15 +225,15 @@ public class ExportTraceWizardPage extends WizardPage {
     private void setTraceElements() {
         if (fSelection.getFirstElement() instanceof TmfTraceElement) {
             TmfTraceElement tmfTraceElement = (TmfTraceElement) fSelection.getFirstElement();
-            ExportTraceElement traceTransferElement = new ExportTraceTraceElement(null, tmfTraceElement);
-            List<ExportTraceElement> children = new ArrayList<ExportTraceElement>();
-            children.add(new ExportTraceFilesElement(traceTransferElement));
-            children.add(new ExportTraceSupplFilesElement(tmfTraceElement.getSupplementaryResources(), traceTransferElement));
+            TracePackageElement traceTransferElement = new TracePackageTraceElement(null, tmfTraceElement);
+            List<TracePackageElement> children = new ArrayList<TracePackageElement>();
+            children.add(new TracePackageFilesElement(traceTransferElement));
+            children.add(new TracePackageSupplFilesElement(tmfTraceElement.getSupplementaryResources(), traceTransferElement));
 
-            children.add(new ExportTraceBookmarkElement(traceTransferElement, null, null));
+            children.add(new TracePackageBookmarkElement(traceTransferElement, null, null));
 
-            traceTransferElement.setChildren(children.toArray(new ExportTraceElement[] {}));
-            fTraceExportElementViewer.setInput(new ExportTraceElement[] { traceTransferElement });
+            traceTransferElement.setChildren(children.toArray(new TracePackageElement[] {}));
+            fTraceExportElementViewer.setInput(new TracePackageElement[] { traceTransferElement });
         }
     }
 
@@ -574,7 +574,7 @@ public class ExportTraceWizardPage extends WizardPage {
 
         saveWidgetValues();
 
-        ExportTraceTraceElement traceExportElement = (ExportTraceTraceElement) fTraceExportElementViewer.getTree().getItem(0).getData();
+        TracePackageTraceElement traceExportElement = (TracePackageTraceElement) fTraceExportElementViewer.getTree().getItem(0).getData();
         Object[] checkedElements = fTraceExportElementViewer.getCheckedElements();
         boolean useCompression = fCompressContentsCheckbox.getSelection();
         boolean useTar = fTargzFormatButton.getSelection();

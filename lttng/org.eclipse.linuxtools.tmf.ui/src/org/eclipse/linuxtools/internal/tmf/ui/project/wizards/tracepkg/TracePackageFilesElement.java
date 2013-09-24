@@ -18,7 +18,7 @@ import org.eclipse.swt.graphics.Image;
 /**
  * An ExportTraceElement representing the trace files of a trace.
  */
-public class ExportTraceFilesElement extends ExportTraceElement {
+public class TracePackageFilesElement extends TracePackageElement {
 
     private static final String TRACE_ICON_PATH = "icons/elcl16/trace.gif"; //$NON-NLS-1$
     private String fFileName;
@@ -28,7 +28,7 @@ public class ExportTraceFilesElement extends ExportTraceElement {
      *
      * @param parent the parent of this element, can be set to null
      */
-    public ExportTraceFilesElement(ExportTraceElement parent) {
+    public TracePackageFilesElement(TracePackageElement parent) {
         super(parent);
     }
 
@@ -38,7 +38,7 @@ public class ExportTraceFilesElement extends ExportTraceElement {
      * @param parent the parent of this element, can be set to null
      * @param fileName
      */
-    public ExportTraceFilesElement(ExportTraceElement parent, String fileName) {
+    public TracePackageFilesElement(TracePackageElement parent, String fileName) {
         super(parent);
         fFileName = fileName;
     }
