@@ -44,6 +44,11 @@ public class TracePackageSupplFileElement extends TracePackageElement {
     }
 
     @Override
+    public long getSize() {
+        return fResource.getLocation().toFile().length() + super.getSize();
+    }
+
+    @Override
     public Image getImage() {
         return Activator.getDefault().getImageFromImageRegistry(SUPPL_FILE_ICON_PATH);
     }

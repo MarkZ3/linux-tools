@@ -30,10 +30,21 @@ import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.viewers.CellEditor;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ColumnViewer;
+import org.eclipse.jface.viewers.ColumnViewerEditor;
+import org.eclipse.jface.viewers.ColumnViewerEditorActivationStrategy;
+import org.eclipse.jface.viewers.EditingSupport;
+import org.eclipse.jface.viewers.FocusCellOwnerDrawHighlighter;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.TextCellEditor;
+import org.eclipse.jface.viewers.TreeViewerColumn;
+import org.eclipse.jface.viewers.TreeViewerEditor;
+import org.eclipse.jface.viewers.TreeViewerFocusCellManager;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages;
@@ -71,6 +82,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
 
     private static final int SIZING_TEXT_FIELD_WIDTH = 250;
     private static final int COMBO_HISTORY_LENGTH = 5;
+    private static final int COL_WIDTH = 200;
 
     private static final String ZIP_EXTENSION = ".zip"; //$NON-NLS-1$
     private static final String TAR_EXTENSION = ".tar"; //$NON-NLS-1$
@@ -95,6 +107,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
     private Button fDeselectAllButton;
 
     private IStructuredSelection fSelection;
+    private Label fApproximateSizeLabel;
 
     /**
      * Constructor for the export trace wizard page
@@ -195,6 +208,36 @@ public class ExportTracePackageWizardPage extends WizardPage {
 
     }
 
+    private final class ColumnEditorSupport extends EditingSupport {
+        private final TextCellEditor textCellEditor;
+
+        private ColumnEditorSupport(ColumnViewer viewer, TextCellEditor textCellEditor) {
+            super(viewer);
+            this.textCellEditor = textCellEditor;
+        }
+
+        @Override
+        protected boolean canEdit(Object element) {
+            return false;
+        }
+
+        @Override
+        protected CellEditor getCellEditor(Object element) {
+            return textCellEditor;
+        }
+
+        @Override
+        protected Object getValue(Object element) {
+
+            return null;
+        }
+
+        @Override
+        protected void setValue(Object element, Object value) {
+
+        }
+    }
+
     private void createTraceElementsGroup(Composite parent) {
         fTraceExportElementViewer = new CheckboxTreeViewer(parent, SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER | SWT.CHECK);
 
@@ -202,36 +245,99 @@ public class ExportTracePackageWizardPage extends WizardPage {
             @Override
             public void checkStateChanged(CheckStateChangedEvent event) {
                 updatePageCompletion();
-                TracePackageElement element = (TracePackageElement)event.getElement();
-                if(!element.isEnabled()) {
+                TracePackageElement element = (TracePackageElement) event.getElement();
+                if (!element.isEnabled()) {
                     fTraceExportElementViewer.setChecked(element, true);
                 } else if (element.getChildren() != null) {
                     setSubtreeChecked(element, event.getChecked());
+                } else {
+                    element.setChecked(event.getChecked());
                 }
+                updateApproximateSize();
             }
         });
 
         GridData layoutData = new GridData(GridData.FILL_BOTH);
+        fTraceExportElementViewer.getTree().setHeaderVisible(true);
         fTraceExportElementViewer.getTree().setLayoutData(layoutData);
         fTraceExportElementViewer.setContentProvider(new TracePackageContentProvider());
         fTraceExportElementViewer.setLabelProvider(new TracePackageLabelProvider());
+
+        TreeViewerFocusCellManager focusCellManager = new TreeViewerFocusCellManager(fTraceExportElementViewer, new FocusCellOwnerDrawHighlighter(fTraceExportElementViewer));
+        ColumnViewerEditorActivationStrategy actSupport = new ColumnViewerEditorActivationStrategy(fTraceExportElementViewer) {
+        };
+        TreeViewerEditor.create(fTraceExportElementViewer, focusCellManager, actSupport, ColumnViewerEditor.TABBING_MOVE_TO_ROW_NEIGHBOR
+                | ColumnViewerEditor.TABBING_VERTICAL | ColumnViewerEditor.KEYBOARD_ACTIVATION);
+        final TextCellEditor textCellEditor = new TextCellEditor(fTraceExportElementViewer.getTree());
+
+        // --------------------
+        // Column 1
+        // --------------------
+        TreeViewerColumn column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
+        column.getColumn().setWidth(COL_WIDTH);
+        column.setLabelProvider(new TracePackageLabelProvider());
+        column.setEditingSupport(new ColumnEditorSupport(fTraceExportElementViewer, textCellEditor));
+
+        // --------------------
+        // Column 2
+        // --------------------
+
+        column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
+        column.getColumn().setWidth(COL_WIDTH);
+        column.getColumn().setText("Size");
+        column.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public String getText(Object element) {
+                TracePackageElement tracePackageElement = (TracePackageElement) element;
+                if (tracePackageElement.getChildren() != null) {
+                    return null;
+                }
+                return getHumanReadable(tracePackageElement.getSize());
+            }
+        });
 
         setTraceElements();
         fTraceExportElementViewer.expandToLevel(2);
 
         setAllChecked(true);
+        setSubtreeChecked(((TracePackageElement[])fTraceExportElementViewer.getInput())[0], true);
+
+        fApproximateSizeLabel = new Label(parent, SWT.BORDER);
+        updateApproximateSize();
+
+    }
+
+    private void updateApproximateSize() {
+        fApproximateSizeLabel.setText("Approximate uncompressed size: " + getHumanReadable(((TracePackageElement[])fTraceExportElementViewer.getInput())[0].getCheckedSize()));
+    }
+
+    public static String getHumanReadable(long size) {
+        String humanSuffix[] = { "B", "KB", "MB", "GB", "TB" };
+        long curSize = size;
+
+        int suffixIndex = 0;
+        while (curSize >= 1024) {
+            curSize /= 1024;
+            ++suffixIndex;
+        }
+
+        return Long.toString(curSize) + " " + humanSuffix[suffixIndex]; //$NON-NLS-1$
     }
 
     /**
      * A version of setSubtreeChecked that is aware of isEnabled
      *
-     * @param element  the element
-     * @param state true if the item should be checked, and false if it should be unchecked
+     * @param element
+     *            the element
+     * @param state
+     *            true if the item should be checked, and false if it should be
+     *            unchecked
      */
     private void setSubtreeChecked(TracePackageElement element, boolean state) {
         for (TracePackageElement e : element.getChildren()) {
             if (e.isEnabled()) {
                 fTraceExportElementViewer.setChecked(e, state);
+                e.setChecked(state);
                 if (e.getChildren() != null) {
                     setSubtreeChecked(e, state);
                 }
@@ -251,7 +357,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
             filesElement.setEnabled(false);
             children.add(filesElement);
 
-            //Supp files
+            // Supp files
             IResource[] supplementaryResources = tmfTraceElement.getSupplementaryResources();
             List<TracePackageElement> suppFilesChildren = new ArrayList<TracePackageElement>();
             TracePackageSupplFilesElement suppFilesElement = new TracePackageSupplFilesElement(supplementaryResources, traceTransferElement);
@@ -261,7 +367,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
             }
             suppFilesElement.setChildren(suppFilesChildren.toArray(new TracePackageElement[] {}));
 
-            //Bookmarks
+            // Bookmarks
             children.add(new TracePackageBookmarkElement(traceTransferElement, null, null));
 
             traceTransferElement.setChildren(children.toArray(new TracePackageElement[] {}));
@@ -342,7 +448,8 @@ public class ExportTracePackageWizardPage extends WizardPage {
     /**
      * Sets all items in the element viewer to be checked or unchecked
      *
-     * @param checked whether or not items should be checked
+     * @param checked
+     *            whether or not items should be checked
      */
     private void setAllChecked(boolean checked) {
         TreeItem[] items = fTraceExportElementViewer.getTree().getItems();

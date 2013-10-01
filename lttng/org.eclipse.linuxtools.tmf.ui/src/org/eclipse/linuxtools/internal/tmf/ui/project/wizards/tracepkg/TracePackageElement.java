@@ -23,6 +23,8 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
     TracePackageElement[] fChildren;
     TracePackageElement fParent;
     boolean fEnabled;
+    long fSize = 0;
+    private boolean fChecked;
 
     /**
      *
@@ -57,6 +59,33 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
     }
 
     /**
+     * Get the total size of the element including its children
+     *
+     * @return
+     */
+    public long getSize() {
+        return 0;
+    }
+
+
+    /**
+     * Get the total size of the element including its children
+     *
+     * @return
+     */
+    public long getCheckedSize() {
+        long size = 0;
+        if (fChildren != null) {
+            for (TracePackageElement child : fChildren) {
+                size += child.getCheckedSize();
+            }
+        } else if (fChecked) {
+            size += getSize();
+        }
+        return size;
+    }
+
+    /**
      * Get the image representation of this element to be displayed in the
      * tree.
      *
@@ -72,5 +101,9 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
 
     public void setEnabled(boolean enabled) {
         fEnabled = enabled;
+    }
+
+    public void setChecked(boolean state) {
+        fChecked = state;
     }
 }
