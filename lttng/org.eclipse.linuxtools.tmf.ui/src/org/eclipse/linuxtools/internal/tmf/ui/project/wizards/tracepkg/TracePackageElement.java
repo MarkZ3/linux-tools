@@ -18,12 +18,14 @@ import org.eclipse.ui.model.WorkbenchAdapter;
 /**
  * An ExportTraceElement represents an item in the ExportTraceWizard
  * tree.
+ *
+ * @author Marc-Andre Laperle
  */
 public abstract class TracePackageElement extends WorkbenchAdapter {
     TracePackageElement[] fChildren;
     TracePackageElement fParent;
     boolean fEnabled;
-    long fSize = 0;
+    //private long fSize = 0;
     private boolean fChecked;
 
     /**
@@ -38,7 +40,7 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
     /**
      * @return the parent of this element or null if there is no parent
      */
-    public Object getParent() {
+    public TracePackageElement getParent() {
         return fParent;
     }
 
@@ -50,38 +52,38 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
      */
     abstract public String getText();
 
+    /**
+     * Get the children of this element
+     *
+     * @return the children of this element
+     */
     public TracePackageElement[] getChildren() {
         return fChildren;
     }
 
+    /**
+     * Set the children of this element
+     *
+     * @param children the children of this element
+     */
     public void setChildren(TracePackageElement[] children) {
         this.fChildren = children;
     }
 
     /**
      * Get the total size of the element including its children
+     * @param checkedOnly only count checked elements
      *
-     * @return
+     * @return the total size of the element
      */
-    public long getSize() {
-        return 0;
-    }
-
-
-    /**
-     * Get the total size of the element including its children
-     *
-     * @return
-     */
-    public long getCheckedSize() {
+    public long getSize(boolean checkedOnly) {
         long size = 0;
         if (fChildren != null) {
             for (TracePackageElement child : fChildren) {
-                size += child.getCheckedSize();
+                size += child.getSize(checkedOnly);
             }
-        } else if (fChecked) {
-            size += getSize();
         }
+
         return size;
     }
 
@@ -95,15 +97,39 @@ public abstract class TracePackageElement extends WorkbenchAdapter {
         return null;
     }
 
+    /**
+     * Returns whether or not the element is enabled (grayed and not modifiable).
+     *
+     * @return whether or not the element is enabled
+     */
     public boolean isEnabled() {
         return fEnabled;
     }
 
+    /**
+     * Returns whether or not the element is checked.
+     *
+     * @return whether or not the element is checked
+     */
+    public boolean isChecked() {
+        return fChecked;
+    }
+
+    /**
+     * Sets whether or not the element should be enabled (grayed and not modifiable).
+     *
+     * @param enabled if the element should be enabled
+     */
     public void setEnabled(boolean enabled) {
         fEnabled = enabled;
     }
 
-    public void setChecked(boolean state) {
-        fChecked = state;
+    /**
+     * Sets whether or not the element should be checked.
+     *
+     * @param checked if the element should be checked
+     */
+    public void setChecked(boolean checked) {
+        fChecked = checked;
     }
 }

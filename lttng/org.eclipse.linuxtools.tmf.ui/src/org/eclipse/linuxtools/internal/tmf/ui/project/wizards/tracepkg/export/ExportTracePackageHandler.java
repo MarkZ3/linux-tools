@@ -24,7 +24,9 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
- * Handler for exporting a trace
+ * Handler for exporting a trace package
+ *
+ * @author Marc-Andre Laperle
  */
 public class ExportTracePackageHandler extends AbstractHandler {
 

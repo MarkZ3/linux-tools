@@ -15,6 +15,11 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
+/**
+ * A content provider to display the content of a trace package in a tree
+ *
+ * @author Marc-Andre Laperle
+ */
 public class TracePackageContentProvider implements ITreeContentProvider {
 
     @Override

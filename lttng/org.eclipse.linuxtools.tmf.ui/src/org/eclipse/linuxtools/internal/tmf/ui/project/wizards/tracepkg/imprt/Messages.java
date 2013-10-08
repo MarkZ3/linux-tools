@@ -14,14 +14,21 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt;
 
 import org.eclipse.osgi.util.NLS;
 
-@SuppressWarnings("javadoc")
+/**
+ *
+ * @author Marc-Andre Laperle
+ */
 public class Messages extends NLS {
     private static final String BUNDLE_NAME = "org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt.messages"; //$NON-NLS-1$
+
+    public static String TracePackage_ErrorImportOperation;
     public static String ImportTracePkgPage_title;
     public static String ArchiveImport_selectSourceTitle;
     public static String FileImport_FromArchive;
     public static String ImportTracePackagePage_ErrorOperation;
+    public static String ImportTracePackagePage_Title;
     public static String TraceImporter_ReadingPackage;
+    public static String TraceImporter_ImportingPackage;
 
     static {
         // initialize resource bundle

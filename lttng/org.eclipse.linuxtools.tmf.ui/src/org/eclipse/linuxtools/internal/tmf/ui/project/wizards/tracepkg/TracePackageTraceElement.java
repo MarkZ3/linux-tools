@@ -12,12 +12,15 @@
 
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
+import org.eclipse.linuxtools.tmf.ui.project.model.TmfNavigatorLabelProvider;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
+import org.eclipse.swt.graphics.Image;
 
 /**
  * An ExportTraceElement associated to a TmfTraceElement. This will be the parent
  * of other elements (events, supplementary files, bookmarks, etc).
  *
+ * @author Marc-Andre Laperle
  */
 public class TracePackageTraceElement extends TracePackageElement {
 
@@ -26,7 +29,7 @@ public class TracePackageTraceElement extends TracePackageElement {
     private String traceType;
 
     /**
-     * Construct an instance associated to a TmfTraceElement.
+     * Construct an instance associated to a TmfTraceElement. For exporting.
      *
      * @param parent the parent of this element, can be set to null
      * @param traceElement the associated TmfTraceElement
@@ -36,6 +39,13 @@ public class TracePackageTraceElement extends TracePackageElement {
         fTraceElement = traceElement;
     }
 
+    /**
+     * Construct an instance associated to a TmfTraceElement. For importing.
+     *
+     * @param parent the parent of this element, can be set to null
+     * @param importName the name to use to identify this trace
+     * @param traceType the trace type to set for this trace
+     */
     public TracePackageTraceElement(TracePackageElement parent, String importName, String traceType) {
         super(parent);
         fImportName = importName;
@@ -59,5 +69,11 @@ public class TracePackageTraceElement extends TracePackageElement {
      */
     public String getTraceType () {
         return traceType;
+    }
+
+    @Override
+    public Image getImage() {
+        TmfNavigatorLabelProvider tmfNavigatorLabelProvider = new TmfNavigatorLabelProvider();
+        return tmfNavigatorLabelProvider.getImage(fTraceElement);
     }
 }

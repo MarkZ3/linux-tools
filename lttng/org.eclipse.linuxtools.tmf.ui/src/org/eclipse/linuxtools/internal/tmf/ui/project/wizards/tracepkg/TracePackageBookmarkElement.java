@@ -13,40 +13,82 @@
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
+/**
+ * A trace package element representing the bookmarks of a trace
+ *
+ * @author Marc-Andre Laperle
+ */
 public class TracePackageBookmarkElement extends TracePackageElement {
     private static final String BOOKMARK_IMAGE_PATH = "icons/elcl16/bookmark_obj.gif"; //$NON-NLS-1$
-    private List<Map<String, String>> bookmarks;
     private List<BookmarkInfo> bookmarkInfos;
 
+    /**
+     * Information about a single bookmark
+     */
     public static class BookmarkInfo {
 
+        /**
+         * The bookmark message
+         */
+        final private String fMessageAttr;
 
+        /**
+         * The bookmark location
+         */
+        final private Integer fLocation;
 
-        public String messageAttr;
-        public Integer location;
+        /**
+         * Get the bookmark message
+         * @return the bookmark message
+         */
+        public String getMessage() {
+            return fMessageAttr;
+        }
 
-        public BookmarkInfo(Integer location, String messageAttr) {
-            this.location = location;
-            this.messageAttr = messageAttr;
-            // TODO Auto-generated constructor stub
+        /**
+         * Get the bookmark location
+         * @return the bookmark location
+         */
+        public Integer getLocation() {
+            return fLocation;
+        }
+
+        /**
+         * Create the information for a single bookmark
+         *
+         * @param location the bookmark location
+         * @param message the bookmark message
+         */
+        public BookmarkInfo(Integer location, String message) {
+            fLocation = location;
+            fMessageAttr = message;
         }
 
     }
 
-    public TracePackageBookmarkElement(TracePackageElement parent, List<Map<String,String>> bookmarks, List<BookmarkInfo> bookmarkInfos) {
+    /**
+     * Construct a bookmark element containing all the bookmarks
+     *
+     * @param parent the parent node
+     * @param bookmarkInfos the bookmarks for the trace
+     */
+    public TracePackageBookmarkElement(TracePackageElement parent, List<BookmarkInfo> bookmarkInfos) {
         super(parent);
-        this.bookmarks = bookmarks;
         this.bookmarkInfos = bookmarkInfos;
     }
 
     @Override
+    public long getSize(boolean checkedOnly) {
+        return 0;
+    }
+
+    @Override
     public String getText() {
-        return Messages.ExportTraceWizardPage_Bookmarks;
+        return Messages.TracePackage_Bookmarks;
     }
 
     @Override
@@ -54,12 +96,12 @@ public class TracePackageBookmarkElement extends TracePackageElement {
         return Activator.getDefault().getImageFromImageRegistry(BOOKMARK_IMAGE_PATH);
     }
 
-    public List<Map<String, String>> getBookmarks() {
-        return bookmarks;
-    }
-
-    public List<BookmarkInfo> getBookmarkInfos() {
+    /**
+     * Get all the bookmarks
+     *
+     * @return the bookmarks
+     */
+    public List<BookmarkInfo> getBookmarks() {
         return bookmarkInfos;
     }
-
 }

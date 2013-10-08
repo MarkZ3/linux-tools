@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -45,15 +44,16 @@ import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement.BookmarkInfo;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageLabelProvider;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFileElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceType;
@@ -86,6 +86,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Wizard page for the import trace package wizard
+ *
+ * @author Marc-Andre Laperle
+ */
 @SuppressWarnings("restriction")
 public class ImportTracePackagePage extends WizardPage {
 
@@ -93,7 +98,6 @@ public class ImportTracePackagePage extends WizardPage {
     private static final int SIZING_TEXT_FIELD_WIDTH = 250;
     private final static String STORE_SOURCE_NAMES_ID = "ImportTracePackagePage1.STORE_SOURCE_NAMES_ID"; //$NON-NLS-1$
     private static final int COMBO_HISTORY_LENGTH = 5;
-    private static boolean isTarFile;
 
     IStructuredSelection fSelection;
     private CheckboxTreeViewer fTraceExportElementViewer;
@@ -151,7 +155,7 @@ public class ImportTracePackagePage extends WizardPage {
                 | GridData.HORIZONTAL_ALIGN_FILL));
 
         fSelectAllButton = createButton(buttonComposite,
-                IDialogConstants.SELECT_ALL_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.SelectAll, false);
+                IDialogConstants.SELECT_ALL_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_SelectAll, false);
 
         SelectionListener listener = new SelectionAdapter() {
             @Override
@@ -165,7 +169,7 @@ public class ImportTracePackagePage extends WizardPage {
         setButtonLayoutData(fSelectAllButton);
 
         fDeselectAllButton = createButton(buttonComposite,
-                IDialogConstants.DESELECT_ALL_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.DeselectAll, false);
+                IDialogConstants.DESELECT_ALL_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_DeselectAll, false);
 
         listener = new SelectionAdapter() {
             @Override
@@ -222,7 +226,6 @@ public class ImportTracePackagePage extends WizardPage {
 
     private void setTraceElements() {
 
-        // disposeStructureProvider();
         class Container {
             public TracePackageElement element;
         }
@@ -234,7 +237,7 @@ public class ImportTracePackagePage extends WizardPage {
 
                 @Override
                 public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-                    monitor.beginTask("Reading package", 10);
+                    monitor.beginTask(Messages.TraceImporter_ReadingPackage, 10);
                     c.element = extractManifest(monitor, fileName);
                     monitor.done();
                 }
@@ -256,7 +259,7 @@ public class ImportTracePackagePage extends WizardPage {
 
     private static TracePackageElement extractManifest(IProgressMonitor monitor, String fileName) throws InterruptedException {
         TracePackageElement element = null;
-        isTarFile = ArchiveFileManipulations.isTarFile(fileName);
+        boolean isTarFile = ArchiveFileManipulations.isTarFile(fileName);
         monitor.worked(1);
         if (isTarFile) {
             TarFile sourceTarFile = getSpecifiedTarSourceFile(fileName);
@@ -325,21 +328,27 @@ public class ImportTracePackagePage extends WizardPage {
                         }
                     }
 
-                    List<String> suppFiles = new ArrayList<String>();
+                    TracePackageSupplFilesElement supplFilesElement = new TracePackageSupplFilesElement(element);
+
+                    // Supplementary files
+                    List<TracePackageSupplFileElement> suppFiles = new ArrayList<TracePackageSupplFileElement>();
                     NodeList suppFilesElements = traceElement.getElementsByTagName(ITracePackageConstants.SUPPLEMENTARY_FILE_ELEMENT);
                     for (int j = 0; j < suppFilesElements.getLength(); ++j) {
                         Node suppFileNode = suppFilesElements.item(j);
                         if (suppFileNode.getNodeType() == Node.ELEMENT_NODE) {
                             Element suppFileElement = (Element) suppFileNode;
-                            suppFiles.add(suppFileElement.getAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB));
+                            String fileName = suppFileElement.getAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB);
+                            TracePackageSupplFileElement supplFile = new TracePackageSupplFileElement(fileName, supplFilesElement);
+                            suppFiles.add(supplFile);
                         }
                     }
 
                     if (!suppFiles.isEmpty()) {
-                        children.add(new TracePackageSupplFilesElement(suppFiles, element));
+                        supplFilesElement.setChildren(suppFiles.toArray(new TracePackageElement[] {}));
+                        children.add(supplFilesElement);
                     }
 
-                    List<Map<String, String>> bookmarks = new ArrayList<Map<String, String>>();
+                    // bookmarks
                     List<TracePackageBookmarkElement.BookmarkInfo> bookmarkInfos = new ArrayList<TracePackageBookmarkElement.BookmarkInfo>();
                     NodeList bookmarksElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARKS_ELEMENT);
                     for (int j = 0; j < bookmarksElements.getLength(); ++j) {
@@ -361,23 +370,12 @@ public class ImportTracePackagePage extends WizardPage {
                                         bookmarkInfos.add(new TracePackageBookmarkElement.BookmarkInfo(location, messageAttr.getValue()));
 
                                     }
-                                    // Map<String, String> attributes = new
-                                    // HashMap<String, String>();
-                                    // for (int l = 0; l <
-                                    // attributesMap.getLength(); ++l) {
-                                    // Attr attr = (Attr)attributesMap.item(l);
-                                    // attributes.put(attr.getName(),
-                                    // attr.getNodeValue());
-                                    // }
-
-                                    // bookmarks.add(attributes);
                                 }
                             }
-                            // bookmarks
                         }
                     }
                     if (!bookmarkInfos.isEmpty()) {
-                        children.add(new TracePackageBookmarkElement(element, bookmarks, bookmarkInfos));
+                        children.add(new TracePackageBookmarkElement(element, bookmarkInfos));
                     }
 
                     element.setChildren(children.toArray(new TracePackageElement[] {}));
@@ -459,7 +457,7 @@ public class ImportTracePackagePage extends WizardPage {
         // destination browse button
         fDestinationBrowseButton = new Button(destinationSelectionGroup,
                 SWT.PUSH);
-        fDestinationBrowseButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.DataTransfer_browse);
+        fDestinationBrowseButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_Browse);
         fDestinationBrowseButton.addListener(SWT.Selection, new Listener() {
             @Override
             public void handleEvent(Event event) {
@@ -560,7 +558,7 @@ public class ImportTracePackagePage extends WizardPage {
     }
 
     private void updateMessage() {
-        setMessage("Choose the content to import");
+        setMessage(Messages.ImportTracePackagePage_Title);
     }
 
     /**
@@ -608,29 +606,30 @@ public class ImportTracePackagePage extends WizardPage {
         // ErrorDialog only prints the call stack for a CoreException
         CoreException coreException = new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, stackMessage, exception));
         final Status s = new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, exceptionMessage, coreException);
-        ErrorDialog.openError(getContainer().getShell(), org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.WizardExportPage_internalErrorTitle, message, s);
+        ErrorDialog.openError(getContainer().getShell(), org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_InternalErrorTitle, message, s);
     }
 
+    /**
+     * Finish the wizard page
+     *
+     * @return true on success
+     */
     public boolean finish() {
         saveWidgetValues();
 
         String fileName = getDestinationValue();
-
-        // TODO: should always be true?
-        // if (fSelection.getFirstElement() instanceof TmfTraceFolder) {
         TmfTraceFolder tmfTraceFolder = (TmfTraceFolder) fSelection.getFirstElement();
-        // }
 
         TracePackageElement[] input = (TracePackageElement[]) fTraceExportElementViewer.getInput();
         TracePackageTraceElement exportTraceTraceElement = (TracePackageTraceElement) input[0];
-        final TracePackageImportOperation exporter = new TracePackageImportOperation(fileName, isTarFile, exportTraceTraceElement, tmfTraceFolder);
+        final TracePackageImportOperation exporter = new TracePackageImportOperation(fileName, exportTraceTraceElement, tmfTraceFolder);
 
         try {
             getContainer().run(true, true, new IRunnableWithProgress() {
 
                 @Override
                 public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
-                    exporter.doImport(monitor);
+                    exporter.run(monitor);
                 }
             });
 
@@ -658,8 +657,6 @@ public class ImportTracePackagePage extends WizardPage {
 
         // Add bookmarks
         Object[] checkedElements = fTraceExportElementViewer.getCheckedElements();
-
-        // FIXME: Will not work for experiments
         for (Object o : checkedElements) {
             if (o instanceof TracePackageBookmarkElement) {
 
@@ -684,7 +681,7 @@ public class ImportTracePackagePage extends WizardPage {
 
                 TracePackageBookmarkElement exportTraceBookmarkElement = (TracePackageBookmarkElement) o;
 
-                List<TracePackageBookmarkElement.BookmarkInfo> bookmarks = exportTraceBookmarkElement.getBookmarkInfos();
+                List<TracePackageBookmarkElement.BookmarkInfo> bookmarks = exportTraceBookmarkElement.getBookmarks();
                 for (BookmarkInfo attrs : bookmarks) {
                     IMarker createMarker = null;
                     try {
@@ -695,8 +692,8 @@ public class ImportTracePackagePage extends WizardPage {
                     }
                     if (createMarker != null && createMarker.exists()) {
                         try {
-                            createMarker.setAttribute(IMarker.MESSAGE, attrs.messageAttr);
-                            createMarker.setAttribute(IMarker.LOCATION, attrs.location);
+                            createMarker.setAttribute(IMarker.MESSAGE, attrs.getMessage());
+                            createMarker.setAttribute(IMarker.LOCATION, attrs.getLocation());
                         } catch (CoreException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();

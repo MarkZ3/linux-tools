@@ -27,27 +27,16 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.CellEditor;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ColumnViewer;
-import org.eclipse.jface.viewers.ColumnViewerEditor;
-import org.eclipse.jface.viewers.ColumnViewerEditorActivationStrategy;
-import org.eclipse.jface.viewers.EditingSupport;
-import org.eclipse.jface.viewers.FocusCellOwnerDrawHighlighter;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.jface.viewers.TreeViewerColumn;
-import org.eclipse.jface.viewers.TreeViewerEditor;
-import org.eclipse.jface.viewers.TreeViewerFocusCellManager;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
@@ -72,17 +61,18 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TreeItem;
 
 /**
- * Wizard page for the export trace wizard
+ * Wizard page for the export trace package wizard
+ *
+ * @author Marc-Andre Laperle
  */
 public class ExportTracePackageWizardPage extends WizardPage {
 
-    private static final int SIZING_TEXT_FIELD_WIDTH = 250;
     private static final int COMBO_HISTORY_LENGTH = 5;
-    private static final int COL_WIDTH = 200;
+    private static final int CONTENT_COL_WIDTH = 300;
+    private static final int SIZE_COL_WIDTH = 100;
 
     private static final String ZIP_EXTENSION = ".zip"; //$NON-NLS-1$
     private static final String TAR_EXTENSION = ".tar"; //$NON-NLS-1$
@@ -92,9 +82,9 @@ public class ExportTracePackageWizardPage extends WizardPage {
     static private final String ICON_PATH = "icons/wizban/export_wiz.png"; //$NON-NLS-1$
 
     // dialog store id constants
-    private final static String STORE_DESTINATION_NAMES_ID = "ExportTraceWizardPage1.STORE_DESTINATION_NAMES_ID"; //$NON-NLS-1$
-    private final static String STORE_COMPRESS_CONTENTS_ID = "ExportTraceWizardPage1.STORE_COMPRESS_CONTENTS_ID"; //$NON-NLS-1$
-    private final static String STORE_FORMAT_ID = "ExportTraceWizardPage1.STORE_FORMAT_ID"; //$NON-NLS-1$
+    private final static String STORE_DESTINATION_NAMES_ID = "ExportTracePackageWizardPage1.STORE_DESTINATION_NAMES_ID"; //$NON-NLS-1$
+    private final static String STORE_COMPRESS_CONTENTS_ID = "ExportTracePackageWizardPage1.STORE_COMPRESS_CONTENTS_ID"; //$NON-NLS-1$
+    private final static String STORE_FORMAT_ID = "ExportTracePackageWizardPage1.STORE_FORMAT_ID"; //$NON-NLS-1$
 
     private Combo fDestinationNameField;
 
@@ -118,7 +108,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
      *            the current object selection
      */
     public ExportTracePackageWizardPage(String pageName, IStructuredSelection selection) {
-        super(pageName, Messages.WizardExportPage_title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
+        super(pageName, Messages.ExportTracePackageWizardPage_Title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
         fSelection = selection;
     }
 
@@ -136,6 +126,8 @@ public class ExportTracePackageWizardPage extends WizardPage {
         createDestinationGroup(composite);
         createOptionsGroup(composite);
 
+        updateApproximateSize();
+
         restoreWidgetValues();
         updateMessage();
 
@@ -152,10 +144,10 @@ public class ExportTracePackageWizardPage extends WizardPage {
     private void restoreWidgetValues() {
         IDialogSettings settings = getDialogSettings();
         if (settings != null) {
-            String[] directoryNames = settings
-                    .getArray(STORE_DESTINATION_NAMES_ID);
+            String[] directoryNames = settings.getArray(STORE_DESTINATION_NAMES_ID);
             if (directoryNames == null || directoryNames.length == 0) {
-                return; // ie.- no settings stored
+                // No settings stored
+                return;
             }
 
             // destination
@@ -171,7 +163,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
     }
 
     private void updateMessage() {
-        setMessage(Messages.ExportTraceWizardPage_ChooseContent);
+        setMessage(Messages.ExportTracePackageWizardPage_ChooseContent);
     }
 
     private void createOptionsGroup(Composite parent) {
@@ -180,7 +172,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
         optionsGroup.setLayout(new RowLayout(SWT.VERTICAL));
         optionsGroup.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL));
-        optionsGroup.setText(Messages.WizardExportPage_options);
+        optionsGroup.setText(Messages.ExportTracePackageWizardPage_Options);
 
         SelectionAdapter listener = new SelectionAdapter() {
             @Override
@@ -191,51 +183,20 @@ public class ExportTracePackageWizardPage extends WizardPage {
 
         // create directory structure radios
         fZipFormatButton = new Button(optionsGroup, SWT.RADIO | SWT.LEFT);
-        fZipFormatButton.setText(Messages.ArchiveExport_saveInZipFormat);
+        fZipFormatButton.setText(Messages.ExportTracePackageWizardPage_SaveInZipFormat);
         fZipFormatButton.setSelection(true);
         fZipFormatButton.addSelectionListener(listener);
 
         // create directory structure radios
         fTargzFormatButton = new Button(optionsGroup, SWT.RADIO | SWT.LEFT);
-        fTargzFormatButton.setText(Messages.ArchiveExport_saveInTarFormat);
+        fTargzFormatButton.setText(Messages.ExportTracePackageWizardPage_SaveInTarFormat);
         fTargzFormatButton.setSelection(false);
         fTargzFormatButton.addSelectionListener(listener);
 
         fCompressContentsCheckbox = new Button(optionsGroup, SWT.CHECK | SWT.LEFT);
-        fCompressContentsCheckbox.setText(Messages.ZipExport_compressContents);
+        fCompressContentsCheckbox.setText(Messages.ExportTracePackageWizardPage_CompressContents);
         fCompressContentsCheckbox.setSelection(true);
         fCompressContentsCheckbox.addSelectionListener(listener);
-
-    }
-
-    private final class ColumnEditorSupport extends EditingSupport {
-        private final TextCellEditor textCellEditor;
-
-        private ColumnEditorSupport(ColumnViewer viewer, TextCellEditor textCellEditor) {
-            super(viewer);
-            this.textCellEditor = textCellEditor;
-        }
-
-        @Override
-        protected boolean canEdit(Object element) {
-            return false;
-        }
-
-        @Override
-        protected CellEditor getCellEditor(Object element) {
-            return textCellEditor;
-        }
-
-        @Override
-        protected Object getValue(Object element) {
-
-            return null;
-        }
-
-        @Override
-        protected void setValue(Object element, Object value) {
-
-        }
     }
 
     private void createTraceElementsGroup(Composite parent) {
@@ -244,16 +205,30 @@ public class ExportTracePackageWizardPage extends WizardPage {
         fTraceExportElementViewer.addCheckStateListener(new ICheckStateListener() {
             @Override
             public void checkStateChanged(CheckStateChangedEvent event) {
-                updatePageCompletion();
                 TracePackageElement element = (TracePackageElement) event.getElement();
                 if (!element.isEnabled()) {
-                    fTraceExportElementViewer.setChecked(element, true);
-                } else if (element.getChildren() != null) {
-                    setSubtreeChecked(element, event.getChecked());
+                    fTraceExportElementViewer.setChecked(element, element.isChecked());
                 } else {
-                    element.setChecked(event.getChecked());
+                    setSubtreeChecked(element, true, event.getChecked());
                 }
+
+                maintainCheckIntegrity(element);
                 updateApproximateSize();
+                updatePageCompletion();
+            }
+
+            private void maintainCheckIntegrity(final TracePackageElement element) {
+                TracePackageElement parentElement = element.getParent();
+                boolean allChecked = true;
+                if (parentElement != null) {
+                    if (parentElement.getChildren() != null) {
+                        for (TracePackageElement child : parentElement.getChildren()) {
+                            allChecked &= fTraceExportElementViewer.getChecked(child);
+                        }
+                    }
+                    fTraceExportElementViewer.setChecked(parentElement, allChecked);
+                    maintainCheckIntegrity(parentElement);
+                }
             }
         });
 
@@ -263,56 +238,71 @@ public class ExportTracePackageWizardPage extends WizardPage {
         fTraceExportElementViewer.setContentProvider(new TracePackageContentProvider());
         fTraceExportElementViewer.setLabelProvider(new TracePackageLabelProvider());
 
-        TreeViewerFocusCellManager focusCellManager = new TreeViewerFocusCellManager(fTraceExportElementViewer, new FocusCellOwnerDrawHighlighter(fTraceExportElementViewer));
-        ColumnViewerEditorActivationStrategy actSupport = new ColumnViewerEditorActivationStrategy(fTraceExportElementViewer) {
-        };
-        TreeViewerEditor.create(fTraceExportElementViewer, focusCellManager, actSupport, ColumnViewerEditor.TABBING_MOVE_TO_ROW_NEIGHBOR
-                | ColumnViewerEditor.TABBING_VERTICAL | ColumnViewerEditor.KEYBOARD_ACTIVATION);
-        final TextCellEditor textCellEditor = new TextCellEditor(fTraceExportElementViewer.getTree());
-
-        // --------------------
-        // Column 1
-        // --------------------
+        // Content column
         TreeViewerColumn column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
-        column.getColumn().setWidth(COL_WIDTH);
+        column.getColumn().setWidth(CONTENT_COL_WIDTH);
+        column.getColumn().setText(Messages.ExportTracePackageWizardPage_ContentColumnName);
         column.setLabelProvider(new TracePackageLabelProvider());
-        column.setEditingSupport(new ColumnEditorSupport(fTraceExportElementViewer, textCellEditor));
 
-        // --------------------
-        // Column 2
-        // --------------------
-
+        // Size column
         column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
-        column.getColumn().setWidth(COL_WIDTH);
-        column.getColumn().setText("Size");
+        column.getColumn().setWidth(SIZE_COL_WIDTH);
+        column.getColumn().setText(Messages.ExportTracePackageWizardPage_SizeColumnName);
         column.setLabelProvider(new ColumnLabelProvider() {
             @Override
             public String getText(Object element) {
                 TracePackageElement tracePackageElement = (TracePackageElement) element;
-                if (tracePackageElement.getChildren() != null) {
+                long size = tracePackageElement.getSize(false);
+                if (size == 0) {
                     return null;
                 }
-                return getHumanReadable(tracePackageElement.getSize());
+                int level = 0;
+                TracePackageElement curElement = tracePackageElement.getParent();
+                while (curElement != null) {
+                    curElement = curElement.getParent();
+                    ++level;
+                }
+
+                return indent(getHumanReadable(size), level);
+            }
+
+            private String indent(String humanReadable, int level) {
+                StringBuilder s = new StringBuilder(humanReadable);
+                for (int i = 0; i < level; ++i) {
+                    final String indentStr = "  "; //$NON-NLS-1$
+                    s.insert(0, indentStr);
+                }
+                return s.toString();
             }
         });
 
-        setTraceElements();
+        setTraceElementsInput();
         fTraceExportElementViewer.expandToLevel(2);
 
-        setAllChecked(true);
-        setSubtreeChecked(((TracePackageElement[])fTraceExportElementViewer.getInput())[0], true);
-
-        fApproximateSizeLabel = new Label(parent, SWT.BORDER);
-        updateApproximateSize();
-
+        setAllChecked(false, true);
     }
 
     private void updateApproximateSize() {
-        fApproximateSizeLabel.setText("Approximate uncompressed size: " + getHumanReadable(((TracePackageElement[])fTraceExportElementViewer.getInput())[0].getCheckedSize()));
+        long checkedSize = 0;
+        TracePackageElement[] tracePackageElements = (TracePackageElement[]) fTraceExportElementViewer.getInput();
+        for (TracePackageElement element : tracePackageElements) {
+            checkedSize += element.getSize(true);
+        }
+        checkedSize = Math.max(0, checkedSize);
+        fApproximateSizeLabel.setText(Messages.ExportTracePackageWizardPage_ApproximateSizeLbl + getHumanReadable(checkedSize));
     }
 
-    public static String getHumanReadable(long size) {
-        String humanSuffix[] = { "B", "KB", "MB", "GB", "TB" };
+    /**
+     * Get the human readable string for a size in bytes. (KB, MB, etc).
+     *
+     * @param size
+     *            the size to print in human readable,
+     * @return the human readable string
+     */
+    private static String getHumanReadable(long size) {
+        String humanSuffix[] = { Messages.ExportTracePackageWizardPage_SizeByte, Messages.ExportTracePackageWizardPage_SizeKilobyte,
+                Messages.ExportTracePackageWizardPage_SizeMegabyte, Messages.ExportTracePackageWizardPage_SizeGigabyte,
+                Messages.ExportTracePackageWizardPage_SizeTerabyte };
         long curSize = size;
 
         int suffixIndex = 0;
@@ -332,76 +322,60 @@ public class ExportTracePackageWizardPage extends WizardPage {
      * @param state
      *            true if the item should be checked, and false if it should be
      *            unchecked
+     * @param checked
      */
-    private void setSubtreeChecked(TracePackageElement element, boolean state) {
-        for (TracePackageElement e : element.getChildren()) {
-            if (e.isEnabled()) {
-                fTraceExportElementViewer.setChecked(e, state);
-                e.setChecked(state);
-                if (e.getChildren() != null) {
-                    setSubtreeChecked(e, state);
+    private void setSubtreeChecked(TracePackageElement element, boolean enabledOnly, boolean checked) {
+        if (!enabledOnly || element.isEnabled()) {
+            fTraceExportElementViewer.setChecked(element, checked);
+            element.setChecked(checked);
+            if (element.getChildren() != null) {
+                for (TracePackageElement child : element.getChildren()) {
+                    setSubtreeChecked(child, enabledOnly, checked);
                 }
             }
         }
     }
 
-    private void setTraceElements() {
-        if (fSelection.getFirstElement() instanceof TmfTraceElement) {
-            TmfTraceElement tmfTraceElement = (TmfTraceElement) fSelection.getFirstElement();
-            TracePackageElement traceTransferElement = new TracePackageTraceElement(null, tmfTraceElement);
+    private void setTraceElementsInput() {
+        Object[] selectedElements = fSelection.toArray();
+        List<TracePackageTraceElement> traceElements = new ArrayList<TracePackageTraceElement>();
+        for (Object selectedElement : selectedElements) {
+            if (selectedElement instanceof TmfTraceElement) {
+                TmfTraceElement tmfTraceElement = (TmfTraceElement) selectedElement;
+                TracePackageTraceElement traceElement = new TracePackageTraceElement(null, tmfTraceElement);
 
-            // Trace files
-            List<TracePackageElement> children = new ArrayList<TracePackageElement>();
-            TracePackageFilesElement filesElement = new TracePackageFilesElement(traceTransferElement);
-            // Always export the files
-            filesElement.setEnabled(false);
-            children.add(filesElement);
+                // Trace files
+                List<TracePackageElement> children = new ArrayList<TracePackageElement>();
+                TracePackageFilesElement filesElement = new TracePackageFilesElement(traceElement, tmfTraceElement.getResource());
+                filesElement.setChecked(true);
+                // Always export the files
+                filesElement.setEnabled(false);
+                children.add(filesElement);
 
-            // Supp files
-            IResource[] supplementaryResources = tmfTraceElement.getSupplementaryResources();
-            List<TracePackageElement> suppFilesChildren = new ArrayList<TracePackageElement>();
-            TracePackageSupplFilesElement suppFilesElement = new TracePackageSupplFilesElement(supplementaryResources, traceTransferElement);
-            children.add(suppFilesElement);
-            for (IResource res : supplementaryResources) {
-                suppFilesChildren.add(new TracePackageSupplFileElement(res, suppFilesElement));
+                // Supplementary files
+                IResource[] supplementaryResources = tmfTraceElement.getSupplementaryResources();
+                List<TracePackageElement> suppFilesChildren = new ArrayList<TracePackageElement>();
+                TracePackageSupplFilesElement suppFilesElement = new TracePackageSupplFilesElement(traceElement);
+                children.add(suppFilesElement);
+                for (IResource res : supplementaryResources) {
+                    suppFilesChildren.add(new TracePackageSupplFileElement(res, suppFilesElement));
+                }
+                suppFilesElement.setChildren(suppFilesChildren.toArray(new TracePackageElement[] {}));
+
+                // Bookmarks
+                children.add(new TracePackageBookmarkElement(traceElement, null));
+
+                traceElement.setChildren(children.toArray(new TracePackageElement[] {}));
+
+                traceElements.add(traceElement);
             }
-            suppFilesElement.setChildren(suppFilesChildren.toArray(new TracePackageElement[] {}));
-
-            // Bookmarks
-            children.add(new TracePackageBookmarkElement(traceTransferElement, null, null));
-
-            traceTransferElement.setChildren(children.toArray(new TracePackageElement[] {}));
-            fTraceExportElementViewer.setInput(new TracePackageElement[] { traceTransferElement });
         }
-    }
 
-    private Button createButton(Composite parent, int id, String label,
-            boolean defaultButton) {
-        // increment the number of columns in the button bar
-        ((GridLayout) parent.getLayout()).numColumns++;
-
-        Button button = new Button(parent, SWT.PUSH);
-
-        GridData buttonData = new GridData(GridData.FILL_HORIZONTAL);
-        button.setLayoutData(buttonData);
-
-        button.setData(new Integer(id));
-        button.setText(label);
-
-        if (defaultButton) {
-            Shell shell = parent.getShell();
-            if (shell != null) {
-                shell.setDefaultButton(button);
-            }
-            button.setFocus();
-        }
-        setButtonLayoutData(button);
-        return button;
+        fTraceExportElementViewer.setInput(traceElements.toArray(new TracePackageTraceElement[] {}));
     }
 
     /**
-     * Creates the buttons for selecting specific types or selecting all or none
-     * of the elements.
+     * Creates the buttons for selecting all or none of the elements.
      *
      * @param parent
      *            the parent control
@@ -413,36 +387,40 @@ public class ExportTracePackageWizardPage extends WizardPage {
 
         GridLayout layout = new GridLayout();
         layout.numColumns = 3;
-        layout.makeColumnsEqualWidth = true;
         buttonComposite.setLayout(layout);
         buttonComposite.setLayoutData(new GridData(GridData.VERTICAL_ALIGN_FILL
                 | GridData.HORIZONTAL_ALIGN_FILL));
 
-        fSelectAllButton = createButton(buttonComposite,
-                IDialogConstants.SELECT_ALL_ID, Messages.SelectAll, false);
+        fSelectAllButton = new Button(buttonComposite, SWT.PUSH);
+        fSelectAllButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_SelectAll);
 
         SelectionListener listener = new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                setAllChecked(true);
+                setAllChecked(true, true);
+                updateApproximateSize();
                 updatePageCompletion();
             }
         };
         fSelectAllButton.addSelectionListener(listener);
-        setButtonLayoutData(fSelectAllButton);
 
-        fDeselectAllButton = createButton(buttonComposite,
-                IDialogConstants.DESELECT_ALL_ID, Messages.DeselectAll, false);
+        fDeselectAllButton = new Button(buttonComposite, SWT.PUSH);
+        fDeselectAllButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_DeselectAll);
 
         listener = new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                setAllChecked(false);
+                setAllChecked(true, false);
+                updateApproximateSize();
                 updatePageCompletion();
             }
         };
         fDeselectAllButton.addSelectionListener(listener);
-        setButtonLayoutData(fDeselectAllButton);
+
+        fApproximateSizeLabel = new Label(buttonComposite, SWT.SINGLE | SWT.RIGHT);
+        GridData layoutData = new GridData(GridData.FILL_HORIZONTAL);
+        layoutData.grabExcessHorizontalSpace = true;
+        fApproximateSizeLabel.setLayoutData(layoutData);
     }
 
     /**
@@ -451,11 +429,11 @@ public class ExportTracePackageWizardPage extends WizardPage {
      * @param checked
      *            whether or not items should be checked
      */
-    private void setAllChecked(boolean checked) {
+    private void setAllChecked(boolean enabledOnly, boolean checked) {
         TreeItem[] items = fTraceExportElementViewer.getTree().getItems();
         for (int i = 0; i < items.length; i++) {
             Object element = items[i].getData();
-            fTraceExportElementViewer.setSubtreeChecked(element, checked);
+            setSubtreeChecked((TracePackageElement) element, enabledOnly, checked);
         }
     }
 
@@ -494,20 +472,21 @@ public class ExportTracePackageWizardPage extends WizardPage {
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_FILL));
 
         Label destinationLabel = new Label(destinationSelectionGroup, SWT.NONE);
-        destinationLabel.setText(Messages.FileExport_toArchive);
+        destinationLabel.setText(Messages.ExportTracePackageWizardPage_ToArchive);
 
         // destination name entry field
         fDestinationNameField = new Combo(destinationSelectionGroup, SWT.SINGLE
                 | SWT.BORDER);
         GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL);
-        data.widthHint = SIZING_TEXT_FIELD_WIDTH;
+        data.grabExcessHorizontalSpace = true;
+        data.widthHint = 50;
         fDestinationNameField.setLayoutData(data);
 
         // destination browse button
         fDestinationBrowseButton = new Button(destinationSelectionGroup,
                 SWT.PUSH);
-        fDestinationBrowseButton.setText(Messages.DataTransfer_browse);
+        fDestinationBrowseButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_Browse);
         fDestinationBrowseButton.addListener(SWT.Selection, new Listener() {
             @Override
             public void handleEvent(Event event) {
@@ -530,7 +509,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
     private void handleDestinationBrowseButtonPressed() {
         FileDialog dialog = new FileDialog(getContainer().getShell(), SWT.SAVE | SWT.SHEET);
         dialog.setFilterExtensions(new String[] { "*.zip;*.tar.gz;*.tar;*.tgz", "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
-        dialog.setText(Messages.ArchiveExport_selectDestinationTitle);
+        dialog.setText(Messages.ExportTracePackageWizardPage_SelectDestinationTitle);
         String currentSourceString = getDestinationValue();
         int lastSeparatorIndex = currentSourceString.lastIndexOf(File.separator);
         if (lastSeparatorIndex != -1) {
@@ -572,7 +551,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
         // ErrorDialog only prints the call stack for a CoreException
         CoreException coreException = new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, stackMessage, exception));
         final Status s = new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, exceptionMessage, coreException);
-        ErrorDialog.openError(getContainer().getShell(), Messages.WizardExportPage_internalErrorTitle, message, s);
+        ErrorDialog.openError(getContainer().getShell(), org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_InternalErrorTitle, message, s);
     }
 
     private static void addToHistory(List<String> history, String newEntry) {
@@ -625,9 +604,13 @@ public class ExportTracePackageWizardPage extends WizardPage {
     }
 
     private void updateFileNameWithFormat() {
-        String destinationValue = stripKnownExtension(getDestinationValue());
-        String outputExtension = getOutputExtension();
-        destinationValue = destinationValue.concat(outputExtension);
+        String destinationValue = getDestinationValue();
+        if (destinationValue.isEmpty()) {
+            return;
+        }
+
+        destinationValue = stripKnownExtension(destinationValue);
+        destinationValue = destinationValue.concat(getOutputExtension());
 
         setDestinationValue(destinationValue);
     }
@@ -646,18 +629,19 @@ public class ExportTracePackageWizardPage extends WizardPage {
     }
 
     /**
+     * Finish the wizard page
+     *
      * @return true on success
      */
     public boolean finish() {
 
         saveWidgetValues();
 
-        TracePackageTraceElement traceExportElement = (TracePackageTraceElement) fTraceExportElementViewer.getTree().getItem(0).getData();
-        Object[] checkedElements = fTraceExportElementViewer.getCheckedElements();
+        TracePackageTraceElement[] traceExportElements = (TracePackageTraceElement[]) fTraceExportElementViewer.getInput();
         boolean useCompression = fCompressContentsCheckbox.getSelection();
         boolean useTar = fTargzFormatButton.getSelection();
         String fileName = getDestinationValue();
-        final TracePackageExportOperation exporter = new TracePackageExportOperation(traceExportElement, checkedElements, useCompression, useTar, fileName);
+        final TracePackageExportOperation exporter = new TracePackageExportOperation(traceExportElements, useCompression, useTar, fileName);
 
         try {
             getContainer().run(true, true, new IRunnableWithProgress() {
@@ -670,12 +654,12 @@ public class ExportTracePackageWizardPage extends WizardPage {
 
             IStatus status = exporter.getStatus();
             if (status.getSeverity() == IStatus.ERROR) {
-                String message = status.getMessage().length() > 0 ? status.getMessage() : Messages.ExportTraceWizardPage_ErrorOperation;
+                String message = status.getMessage().length() > 0 ? status.getMessage() : org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation;
                 handleError(message, status.getException());
             }
 
         } catch (InvocationTargetException e) {
-            handleError(Messages.ExportTraceWizardPage_ErrorOperation, e);
+            handleError(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e);
         } catch (InterruptedException e) {
         }
 

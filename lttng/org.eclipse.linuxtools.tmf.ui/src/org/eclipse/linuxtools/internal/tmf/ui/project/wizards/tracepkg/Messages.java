@@ -14,31 +14,22 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 import org.eclipse.osgi.util.NLS;
 
-@SuppressWarnings("javadoc")
+/**
+ *
+ * @author Marc-Andre Laperle
+ */
 public class Messages extends NLS {
+
     private static final String BUNDLE_NAME = "org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.messages"; //$NON-NLS-1$
-    public static String WizardDataTransfer_exceptionMessage;
-    public static String WizardExportPage_internalErrorTitle;
-    public static String WizardExportPage_options;
-    public static String WizardExportPage_title;
-    public static String DataTransfer_browse;
-    public static String DataTransfer_exportProblems;
-    public static String FileExport_toArchive;
-    public static String FileExport_createDirectoryStructure;
-    public static String FileExport_createSelectedDirectories;
-    public static String ExportFile_overwriteExisting;
-    public static String ExportTraceEventsElement_Trace;
-    public static String ExportTraceWizardPage_Bookmarks;
-    public static String ExportTraceWizardPage_ChooseContent;
-    public static String ExportTraceWizardPage_ErrorOperation;
-    public static String ExportTraceWizardPage_GeneratingPackage;
-    public static String ExportTraceWizardPage_SupplementaryFiles;
-    public static String ArchiveExport_selectDestinationTitle;
-    public static String ZipExport_compressContents;
-    public static String ArchiveExport_saveInZipFormat;
-    public static String ArchiveExport_saveInTarFormat;
-    public static String SelectAll;
-    public static String DeselectAll;
+
+    public static String TracePackage_Bookmarks;
+    public static String TracePackage_Browse;
+    public static String TracePackage_DeselectAll;
+    public static String TracePackage_ErrorOperation;
+    public static String TracePackage_InternalErrorTitle;
+    public static String TracePackage_SelectAll;
+    public static String TracePackage_SupplementaryFiles;
+    public static String TracePackage_TraceElement;
 
     static {
         // initialize resource bundle

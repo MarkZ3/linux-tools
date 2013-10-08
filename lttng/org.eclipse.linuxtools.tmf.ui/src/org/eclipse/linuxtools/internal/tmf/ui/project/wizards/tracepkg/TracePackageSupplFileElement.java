@@ -16,6 +16,11 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
+/**
+ * A trace package element representing a single supplementary file
+ *
+ * @author Marc-Andre Laperle
+ */
 public class TracePackageSupplFileElement extends TracePackageElement {
 
     private static final String SUPPL_FILE_ICON_PATH = "icons/obj16/thread_obj.gif"; //$NON-NLS-1$
@@ -24,16 +29,38 @@ public class TracePackageSupplFileElement extends TracePackageElement {
 
     private String fSuppFileName;
 
+    /**
+     * Constructor used when exporting
+     *
+     * @param resource
+     *            the resource representing this supplementary file in the
+     *            workspace
+     * @param parent
+     *            the parent element
+     */
     public TracePackageSupplFileElement(IResource resource, TracePackageElement parent) {
         super(parent);
         this.fResource = resource;
     }
 
+    /**
+     * Constructor used when importing
+     *
+     * @param suppFileName
+     *            the name to be used for the supplementary file in the workspace
+     * @param parent
+     *            the parent element
+     */
     public TracePackageSupplFileElement(String suppFileName, TracePackageElement parent) {
         super(parent);
         this.fSuppFileName = suppFileName;
     }
 
+    /**
+     * Get the resource corresponding to this supplementary file
+     *
+     * @return the resource corresponding to this supplementary file
+     */
     public IResource getResource() {
         return fResource;
     }
@@ -44,8 +71,12 @@ public class TracePackageSupplFileElement extends TracePackageElement {
     }
 
     @Override
-    public long getSize() {
-        return fResource.getLocation().toFile().length() + super.getSize();
+    public long getSize(boolean checkedOnly) {
+        if (checkedOnly && !isChecked()) {
+            return 0;
+        }
+
+        return fResource.getLocation().toFile().length();
     }
 
     @Override

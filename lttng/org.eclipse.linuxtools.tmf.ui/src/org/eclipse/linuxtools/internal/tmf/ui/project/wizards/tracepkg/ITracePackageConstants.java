@@ -14,55 +14,71 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
 /**
  * Constants used in the trace package (XML attribute and element names, etc).
+ *
+ * @author Marc-Andre Laperle
  */
-@SuppressWarnings("nls")
 public interface ITracePackageConstants {
     /**
      * The file name for the package manifest file
      */
-    public static final String MANIFEST_FILENAME = "export-manifest.xml";
+    public static final String MANIFEST_FILENAME = "export-manifest.xml"; //$NON-NLS-1$
 
     /**
      * The root element of an export
      */
-    public static final String TMF_EXPORT_ELEMENT = "tmf-export";
+    public static final String TMF_EXPORT_ELEMENT = "tmf-export"; //$NON-NLS-1$
     /**
      * Element representing a single trace
      */
-    public static final String TRACE_ELEMENT = "trace";
+    public static final String TRACE_ELEMENT = "trace"; //$NON-NLS-1$
 
     /**
      * Attribute for the name of a trace
      */
-    public static final String TRACE_NAME_ATTRIB = "name";
+    public static final String TRACE_NAME_ATTRIB = "name"; //$NON-NLS-1$
     /**
      * Attribute for the type of a trace
      */
-    public static final String TRACE_TYPE_ATTRIB = "type";
+    public static final String TRACE_TYPE_ATTRIB = "type"; //$NON-NLS-1$
 
     /**
      * Element representing a single supplementary file
      */
-    public static final String SUPPLEMENTARY_FILE_ELEMENT = "supplementary-file";
+    public static final String SUPPLEMENTARY_FILE_ELEMENT = "supplementary-file"; //$NON-NLS-1$
 
     /**
      * Attribute for the name of a supplementary file
      */
-    public static final String SUPPLEMENTARY_FILE_NAME_ATTRIB = "name";
+    public static final String SUPPLEMENTARY_FILE_NAME_ATTRIB = "name"; //$NON-NLS-1$
 
     /**
      * Element representing a trace file or folder
      */
-    public static final String TRACE_FILE_ELEMENT = "file";
+    public static final String TRACE_FILE_ELEMENT = "file"; //$NON-NLS-1$
     /**
      * Attribute for the name of the file
      */
-    public static final String TRACE_FILE_NAME_ATTRIB = "name";
+    public static final String TRACE_FILE_NAME_ATTRIB = "name"; //$NON-NLS-1$
 
-    public static final String PERSISTENT_PROPERTY_ELEMENT = "persistent-property";
-    public static final String PERSISTENT_PROPERTY_NAME_ATTRIB = "name";
-    public static final String PERSISTENT_PROPERTY_VALUE_ATTRIB = "value";
+    /**
+     * Element representing a persistent property for a trace
+     */
+    public static final String PERSISTENT_PROPERTY_ELEMENT = "persistent-property"; //$NON-NLS-1$
+    /**
+     * Attribute for the name of a persistent property
+     */
+    public static final String PERSISTENT_PROPERTY_NAME_ATTRIB = "name"; //$NON-NLS-1$
+    /**
+     * Attribute for the value of a persistent property
+     */
+    public static final String PERSISTENT_PROPERTY_VALUE_ATTRIB = "value"; //$NON-NLS-1$
 
-    public static final String BOOKMARKS_ELEMENT = "bookmarks";
-    public static final String BOOKMARK_ELEMENT = "bookmark";
+    /**
+     * Element representing the bookmarks of a trace
+     */
+    public static final String BOOKMARKS_ELEMENT = "bookmarks"; //$NON-NLS-1$
+    /**
+     * Element representing a single bookmark of a trace
+     */
+    public static final String BOOKMARK_ELEMENT = "bookmark"; //$NON-NLS-1$
 }

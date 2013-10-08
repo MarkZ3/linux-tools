@@ -20,7 +20,9 @@ import org.eclipse.ui.IExportWizard;
 import org.eclipse.ui.IWorkbench;
 
 /**
- * Wizard for exporting a single trace
+ * Wizard for exporting a trace package
+ *
+ * @author Marc-Andre Laperle
  */
 public class ExportTracePackageWizard extends Wizard implements IExportWizard {
 
@@ -28,7 +30,10 @@ public class ExportTracePackageWizard extends Wizard implements IExportWizard {
     private IStructuredSelection fSelection;
     private ExportTracePackageWizardPage page;
 
-    ExportTracePackageWizard() {
+    /**
+     * Constructor for the export trace wizard
+     */
+    public ExportTracePackageWizard() {
         IDialogSettings workbenchSettings = Activator.getDefault().getDialogSettings();
         IDialogSettings section = workbenchSettings
                 .getSection(STORE_EXPORT_TRACE_WIZARD);

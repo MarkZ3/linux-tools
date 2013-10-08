@@ -19,6 +19,11 @@ import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.ui.IExportWizard;
 import org.eclipse.ui.IWorkbench;
 
+/**
+ * Wizard for importing a trace package
+ *
+ * @author Marc-Andre Laperle
+ */
 public class ImportTracePackageWizard extends Wizard implements IExportWizard {
 
     private static final String STORE_IMPORT_TRACE_PKG_WIZARD = "ImportTracePackageWizard"; //$NON-NLS-1$

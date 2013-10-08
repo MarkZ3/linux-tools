@@ -596,7 +596,7 @@
          </command>
          <command
                commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command"
-               label="Export..."
+               label="Export Trace Package..."
                mnemonic="E"
                style="push"
                tooltip="Export">
@@ -611,16 +611,9 @@
                      <iterate
                            ifEmpty="false"
                            operator="and">
-                        <and>
-                           <or>
-                              <instanceof
-                                    value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement">
-                              </instanceof>
-                              <instanceof
-                                    value="org.eclipse.linuxtools.tmf.ui.project.model.TmfExperimentElement">
-                              </instanceof>
-                           </or>
-                        </and>
+                        <instanceof
+                              value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement">
+                        </instanceof>
                      </iterate>
                   </and>
                </with>

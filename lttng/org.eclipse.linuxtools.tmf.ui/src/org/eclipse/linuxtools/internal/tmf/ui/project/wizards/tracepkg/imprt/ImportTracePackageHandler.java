@@ -25,6 +25,8 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Handler for importing a trace package
+ *
+ * @author Marc-Andre Laperle
  */
 public class ImportTracePackageHandler extends AbstractHandler {
 

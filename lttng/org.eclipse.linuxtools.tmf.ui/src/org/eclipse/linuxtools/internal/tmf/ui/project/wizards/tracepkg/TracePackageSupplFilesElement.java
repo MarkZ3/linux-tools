@@ -12,46 +12,36 @@
 
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
 
-import java.util.List;
-
-import org.eclipse.core.resources.IResource;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.swt.graphics.Image;
 
+/**
+ * A trace package element used for grouping supplementary file under a single
+ * subtree
+ *
+ * @author Marc-Andre Laperle
+ */
 public class TracePackageSupplFilesElement extends TracePackageElement {
 
     private static final String SUPPL_FILE_ICON_PATH = "icons/obj16/thread_obj.gif"; //$NON-NLS-1$
 
-    private IResource[] fResources;
-
-    private List<String> fSuppFileNames;
-
-    public TracePackageSupplFilesElement(IResource[] resources, TracePackageElement parent) {
+    /**
+     * Construct a new TracePackageSupplFilesElement instance
+     *
+     * @param parent
+     *            the parent of this element, can be set to null
+     */
+    public TracePackageSupplFilesElement(TracePackageElement parent) {
         super(parent);
-        this.fResources = resources;
-    }
-
-    public TracePackageSupplFilesElement(List<String> suppFileNames, TracePackageElement parent) {
-        super(parent);
-        this.fSuppFileNames = suppFileNames;
-    }
-
-    public IResource[] getResources() {
-        return fResources;
     }
 
     @Override
     public String getText() {
-        return Messages.ExportTraceWizardPage_SupplementaryFiles;
+        return Messages.TracePackage_SupplementaryFiles;
     }
 
     @Override
     public Image getImage() {
         return Activator.getDefault().getImageFromImageRegistry(SUPPL_FILE_ICON_PATH);
     }
-
-    public List<String> getSuppFileNames() {
-        return fSuppFileNames;
-    }
-
 }

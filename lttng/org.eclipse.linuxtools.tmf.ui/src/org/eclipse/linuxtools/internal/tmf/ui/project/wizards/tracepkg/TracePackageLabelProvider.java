@@ -20,7 +20,9 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 
 /**
- * A label provider for the export trace tree
+ * A label provider for the export trace tree.
+ *
+ * @author Marc-Andre Laperle
  */
 public class TracePackageLabelProvider extends ColumnLabelProvider {
 
