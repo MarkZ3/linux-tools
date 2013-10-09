@@ -15,20 +15,24 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Vector;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFileElement;
@@ -37,11 +41,16 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePack
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.ui.dialogs.IOverwriteQuery;
-import org.eclipse.ui.internal.wizards.datatransfer.TarEntry;
 import org.eclipse.ui.internal.wizards.datatransfer.TarException;
-import org.eclipse.ui.internal.wizards.datatransfer.TarFile;
 import org.eclipse.ui.wizards.datatransfer.IImportStructureProvider;
 import org.eclipse.ui.wizards.datatransfer.ImportOperation;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * An operation that imports a trace package from an archive
@@ -56,12 +65,18 @@ public class TracePackageImportOperation implements IOverwriteQuery {
     private final TmfTraceFolder fTmfTraceFolder;
     private IStatus fStatus;
 
+    // Result of reading the manifest
+    private TracePackageElement fResultElement;
+
     /**
      * Constructs a new import operation
      *
-     * @param importTraceElement the trace element to be imported
-     * @param fileName the output file name
-     * @param tmfTraceFolder the destination folder
+     * @param importTraceElement
+     *            the trace element to be imported
+     * @param fileName
+     *            the output file name
+     * @param tmfTraceFolder
+     *            the destination folder
      */
     public TracePackageImportOperation(String fileName, TracePackageTraceElement importTraceElement, TmfTraceFolder tmfTraceFolder) {
         fFileName = fileName;
@@ -69,7 +84,21 @@ public class TracePackageImportOperation implements IOverwriteQuery {
         fTmfTraceFolder = tmfTraceFolder;
     }
 
+    /**
+     * Constructs a new import operation for reading the manifest
+     *
+     * @param fileName
+     *            the output file name
+     */
+    public TracePackageImportOperation(String fileName) {
+        fFileName = fileName;
+        fImportTraceElement = null;
+        fTmfTraceFolder = null;
+    }
+
     private class ImportProvider implements IImportStructureProvider {
+
+        private Exception fException;
 
         @Override
         public List getChildren(Object element) {
@@ -78,7 +107,16 @@ public class TracePackageImportOperation implements IOverwriteQuery {
 
         @Override
         public InputStream getContents(Object element) {
-            return ((ArchiveProviderElement) element).getContents();
+            InputStream inputStream = null;
+            // We can add throws
+            try {
+                inputStream = ((ArchiveProviderElement) element).getContents();
+            } catch (IOException e) {
+                fException = e;
+            } catch (TarException e) {
+                fException = e;
+            }
+            return inputStream;
         }
 
         @Override
@@ -96,6 +134,9 @@ public class TracePackageImportOperation implements IOverwriteQuery {
             return ((ArchiveProviderElement) element).isFolder();
         }
 
+        public Exception getException() {
+            return fException;
+        }
     }
 
     private class ArchiveProviderElement {
@@ -103,28 +144,18 @@ public class TracePackageImportOperation implements IOverwriteQuery {
         private final String fPath;
         private final String fLabel;
 
-        private ArchiveFile archiveFile;
-        private ArchiveEntry entry;
+        private ArchiveFile fArchiveFile;
+        private ArchiveEntry fEntry;
 
         public ArchiveProviderElement(String destinationPath, String label, ArchiveFile archiveFile, ArchiveEntry entry) {
             fPath = destinationPath;
             fLabel = label;
-            this.archiveFile = archiveFile;
-            this.entry = entry;
+            this.fArchiveFile = archiveFile;
+            this.fEntry = entry;
         }
 
-        public InputStream getContents() {
-            InputStream inputStream = null;
-            try {
-                inputStream = archiveFile.getInputStream(entry);
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (TarException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            return inputStream;
+        public InputStream getContents() throws TarException, IOException {
+            return fArchiveFile.getInputStream(fEntry);
         }
 
         public String getFullPath() {
@@ -137,124 +168,6 @@ public class TracePackageImportOperation implements IOverwriteQuery {
 
         public boolean isFolder() {
             return false;
-        }
-
-    }
-
-    /**
-     *  Common interface between ZipEntry and TarEntry
-     */
-    private interface ArchiveEntry {
-        String getName();
-    }
-
-    /**
-     * Common interface between ZipFile and TarFile
-     */
-    private interface ArchiveFile {
-        Enumeration<? extends ArchiveEntry> entries();
-        void close() throws IOException;
-
-        InputStream getInputStream(ArchiveEntry entry) throws TarException, IOException;
-    }
-
-    /**
-     * Adapter for TarEntry to ArchiveEntry
-     */
-    private class TarArchiveEntry implements ArchiveEntry {
-        private TarEntry fTarEntry;
-
-        private TarArchiveEntry(TarEntry tarEntry) {
-            this.fTarEntry = tarEntry;
-        }
-
-        @Override
-        public String getName() {
-            return fTarEntry.getName();
-        }
-
-        public TarEntry getTarEntry() {
-            return fTarEntry;
-        }
-    }
-
-    /**
-     * Adapter for TarFile to ArchiveFile
-     */
-    private class TarAchiveFile implements ArchiveFile {
-        private TarFile fTarFile;
-        private TarAchiveFile(TarFile tarFile) {
-            this.fTarFile = tarFile;
-        }
-
-        @Override
-        public Enumeration<? extends ArchiveEntry> entries() {
-            Vector<ArchiveEntry> v = new Vector<ArchiveEntry>();
-            for (Enumeration<?> e = fTarFile.entries(); e.hasMoreElements();) {
-                v.add(new TarArchiveEntry((TarEntry) e.nextElement()));
-            }
-
-            return v.elements();
-        }
-
-        @Override
-        public void close() throws IOException {
-            fTarFile.close();
-        }
-
-        @Override
-        public InputStream getInputStream(ArchiveEntry entry) throws TarException, IOException {
-            return fTarFile.getInputStream(((TarArchiveEntry)entry).getTarEntry());
-        }
-    }
-
-    /**
-     * Adapter for ArchiveEntry to ArchiveEntry
-     */
-    private class ZipAchiveEntry implements ArchiveEntry {
-        private ZipEntry fZipEntry;
-
-        private ZipAchiveEntry(ZipEntry zipEntry) {
-            this.fZipEntry = zipEntry;
-        }
-
-        @Override
-        public String getName() {
-            return fZipEntry.getName();
-        }
-
-        public ZipEntry getZipEntry() {
-            return fZipEntry;
-        }
-    }
-
-    /**
-     * Adapter for ZipFile to ArchiveFile
-     */
-    private class ZipArchiveFile implements ArchiveFile {
-        private ZipFile fZipFile;
-        private ZipArchiveFile(ZipFile zipFile) {
-            this.fZipFile = zipFile;
-        }
-
-        @Override
-        public Enumeration<? extends ArchiveEntry> entries() {
-            Vector<ArchiveEntry> v = new Vector<ArchiveEntry>();
-            for (Enumeration<?> e = fZipFile.entries(); e.hasMoreElements();) {
-                v.add(new ZipAchiveEntry((ZipEntry) e.nextElement()));
-            }
-
-            return v.elements();
-        }
-
-        @Override
-        public void close() throws IOException {
-            fZipFile.close();
-        }
-
-        @Override
-        public InputStream getInputStream(ArchiveEntry entry) throws TarException, IOException {
-            return fZipFile.getInputStream(((ZipAchiveEntry)entry).getZipEntry());
         }
     }
 
@@ -281,58 +194,61 @@ public class TracePackageImportOperation implements IOverwriteQuery {
     }
 
     /**
-     * Run the operation. The status (result) of the operation can be obtained with {@link #getStatus}
+     * Run the operation. The status (result) of the operation can be obtained
+     * with {@link #getStatus}
      *
-     * @param progressMonitor the progress monitor to use to display progress and receive
-     *   requests for cancellation
+     * @param progressMonitor
+     *            the progress monitor to use to display progress and receive
+     *            requests for cancellation
      */
     public void run(IProgressMonitor progressMonitor) {
         int totalWork = getTotalWork(new TracePackageElement[] { fImportTraceElement }) * 2;
         progressMonitor.beginTask(Messages.TraceImporter_ImportingPackage, totalWork);
         try {
+            fStatus = Status.OK_STATUS;
             TracePackageElement[] children = fImportTraceElement.getChildren();
             for (TracePackageElement element : children) {
+                ModalContext.checkCanceled(progressMonitor);
+
                 if (element instanceof TracePackageFilesElement) {
                     TracePackageFilesElement exportTraceFilesElement = (TracePackageFilesElement) element;
-                    importTraceFiles(progressMonitor, exportTraceFilesElement);
+                    fStatus = importTraceFiles(progressMonitor, exportTraceFilesElement);
 
                 } else if (element instanceof TracePackageSupplFilesElement) {
                     TracePackageSupplFilesElement suppFilesElement = (TracePackageSupplFilesElement) element;
-                    importSupplFiles(progressMonitor, suppFilesElement);
+                    fStatus = importSupplFiles(progressMonitor, suppFilesElement);
                 }
 
+                if (fStatus.getSeverity() != IStatus.OK) {
+                    break;
+                }
             }
 
             progressMonitor.done();
-            fStatus = Status.OK_STATUS;
-        } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-                fStatus = Status.CANCEL_STATUS;
-            } else {
-                fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e);
-            }
+        } catch (InterruptedException e) {
+            fStatus = Status.CANCEL_STATUS;
         }
         return;
     }
 
     private static boolean fileNameMatches(String fileName, String entryName) {
         boolean fileMatch = entryName.equalsIgnoreCase(fileName);
-        //TODO: does that work on Windows?
+        // TODO: does that work on Windows?
         boolean folderMatch = entryName.startsWith(fileName + "/"); //$NON-NLS-1$
         return fileMatch || folderMatch;
     }
 
-    private void importTraceFiles(IProgressMonitor monitor, TracePackageFilesElement exportTraceFilesElement) throws IOException, InvocationTargetException, InterruptedException {
+    private IStatus importTraceFiles(IProgressMonitor monitor, TracePackageFilesElement exportTraceFilesElement) {
         List<String> fileNames = new ArrayList<String>();
         fileNames.add(exportTraceFilesElement.getFileName());
         IPath containerPath = fTmfTraceFolder.getPath();
-        importFiles(getSpecifiedArchiveFile(), fileNames, containerPath, monitor);
+        return importFiles(ArchiveUtil.getSpecifiedArchiveFile(fFileName), fileNames, containerPath, monitor);
     }
 
-    private void importSupplFiles(IProgressMonitor monitor, TracePackageSupplFilesElement suppFilesElement) throws IOException, InvocationTargetException, InterruptedException {
+    private IStatus importSupplFiles(IProgressMonitor monitor, TracePackageSupplFilesElement suppFilesElement) {
         List<String> fileNames = new ArrayList<String>();
         for (TracePackageElement child : suppFilesElement.getChildren()) {
-            TracePackageSupplFileElement supplFile = (TracePackageSupplFileElement)child;
+            TracePackageSupplFileElement supplFile = (TracePackageSupplFileElement) child;
             fileNames.add(supplFile.getText());
         }
 
@@ -345,15 +261,17 @@ public class TracePackageImportOperation implements IOverwriteQuery {
         }
 
         if (traceElement != null) {
-            ArchiveFile archiveFile = getSpecifiedArchiveFile();
+            ArchiveFile archiveFile = ArchiveUtil.getSpecifiedArchiveFile(fFileName);
             traceElement.refreshSupplementaryFolder();
             IPath containerPath = traceElement.getTraceSupplementaryFolder(traceElement.getResource().getName()).getFullPath();
-            importFiles(archiveFile, fileNames, containerPath, monitor);
+            return importFiles(archiveFile, fileNames, containerPath, monitor);
         }
+
+        return Status.OK_STATUS;
     }
 
-    private void importFiles(ArchiveFile archiveFile, List<String> fileNames, IPath destinationPath, IProgressMonitor monitor) throws IOException, InvocationTargetException, InterruptedException {
-        List<Object> objects = new ArrayList<Object>();
+    private IStatus importFiles(ArchiveFile archiveFile, List<String> fileNames, IPath destinationPath, IProgressMonitor monitor) {
+        List<ArchiveProviderElement> objects = new ArrayList<ArchiveProviderElement>();
         Enumeration<?> entries = archiveFile.entries();
         while (entries.hasMoreElements()) {
             ArchiveEntry entry = (ArchiveEntry) entries.nextElement();
@@ -366,54 +284,179 @@ public class TracePackageImportOperation implements IOverwriteQuery {
             }
         }
 
-        ImportProvider p = new ImportProvider();
+        ImportProvider provider = new ImportProvider();
 
         ImportOperation operation = new ImportOperation(destinationPath,
-                null, p, this,
+                null, provider, this,
                 objects);
         operation.setCreateContainerStructure(true);
         operation.setOverwriteResources(true);
 
-        operation.run(monitor);
-        archiveFile.close();
-        fStatus = operation.getStatus();
-    }
-
-    /**
-     * Answer a handle to the zip file currently specified as being the source.
-     * Return null if this file does not exist or is not of valid format.
-     */
-    private ArchiveFile getSpecifiedArchiveFile() {
-        if (fFileName.length() == 0) {
-            return null;
-        }
-
         try {
-            ZipFile zipFile = new ZipFile(fFileName);
-            return new ZipArchiveFile(zipFile);
-        } catch (ZipException e) {
-            // ignore
+            operation.run(monitor);
+            archiveFile.close();
+        } catch (InvocationTargetException e) {
+            return new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e);
+        } catch (InterruptedException e) {
+            return Status.CANCEL_STATUS;
         } catch (IOException e) {
-            // ignore
+            return new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e);
         }
 
-        try {
-            TarFile tarFile = new TarFile(fFileName);
-            return new TarAchiveFile(tarFile);
-        } catch (TarException e) {
-            // ignore
-        } catch (IOException e) {
-            // ignore
+        if (provider.getException() != null) {
+            return new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, provider.getException());
         }
 
-        return null;
+        return operation.getStatus();
     }
-
 
     @Override
     public String queryOverwrite(String pathString) {
         // We always overwrite once we reach this point
         return null;
+    }
+
+    /**
+     * Run extract the manifest operation. The status (result) of the operation
+     * can be obtained with {@link #getStatus}
+     *
+     * @param progressMonitor
+     *            the progress monitor to use to display progress and receive
+     *            requests for cancellation
+     */
+    public void runExtractManifestOperation(IProgressMonitor progressMonitor) {
+        TracePackageElement element = null;
+        try {
+            progressMonitor.worked(1);
+            ArchiveFile archiveFile = ArchiveUtil.getSpecifiedArchiveFile(fFileName);
+            progressMonitor.worked(1);
+            if (archiveFile == null) {
+                fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The selected file is not a supported file format");
+                return;
+            }
+
+            Enumeration<?> entries = archiveFile.entries();
+
+            boolean found = false;
+            while (entries.hasMoreElements()) {
+                ModalContext.checkCanceled(progressMonitor);
+
+                ArchiveEntry entry = (ArchiveEntry) entries.nextElement();
+                if (entry.getName().equalsIgnoreCase(ITracePackageConstants.MANIFEST_FILENAME)) {
+                    found = true;
+                    InputStream inputStream = archiveFile.getInputStream(entry);
+                    element = loadElementsFromManifest(inputStream);
+                    break;
+                }
+
+                progressMonitor.worked(1);
+            }
+
+            if (found) {
+                fStatus = Status.OK_STATUS;
+            }
+            else {
+                fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format(Messages.ImportTracePackagePage_ErrorManifestNotFound, ITracePackageConstants.MANIFEST_FILENAME));
+            }
+
+            fResultElement = element;
+
+        } catch (InterruptedException e) {
+            fStatus = Status.CANCEL_STATUS;
+        } catch (Exception e) {
+            fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, Messages.ImportTracePackagePage_ErrorReadingManifest, e);
+        }
+    }
+
+    /**
+     * Get the resulting element from extracting the manifest from the archive
+     *
+     * @return the resulting element
+     */
+    public TracePackageElement getResultElement() {
+        return fResultElement;
+    }
+
+    private static TracePackageElement loadElementsFromManifest(InputStream inputStream) throws IOException, SAXException, ParserConfigurationException {
+        TracePackageElement element = null;
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(inputStream);
+
+        // TODO: validate file
+
+        NodeList traceElements = doc.getDocumentElement().getElementsByTagName(ITracePackageConstants.TRACE_ELEMENT);
+        for (int i = 0; i < traceElements.getLength(); ++i) {
+            Node traceNode = traceElements.item(i);
+            if (traceNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element traceElement = (Element) traceNode;
+                String traceName = traceElement.getAttribute(ITracePackageConstants.TRACE_NAME_ATTRIB);
+                String traceType = traceElement.getAttribute(ITracePackageConstants.TRACE_TYPE_ATTRIB);
+                element = new TracePackageTraceElement(null, traceName, traceType);
+
+                List<TracePackageElement> children = new ArrayList<TracePackageElement>();
+                NodeList fileElements = traceElement.getElementsByTagName(ITracePackageConstants.TRACE_FILE_ELEMENT);
+                for (int j = 0; j < fileElements.getLength(); ++j) {
+                    Node fileNode = fileElements.item(j);
+                    if (fileNode.getNodeType() == Node.ELEMENT_NODE) {
+                        Element fileElement = (Element) fileNode;
+                        String fileName = fileElement.getAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB);
+                        children.add(new TracePackageFilesElement(element, fileName));
+                    }
+                }
+
+                TracePackageSupplFilesElement supplFilesElement = new TracePackageSupplFilesElement(element);
+
+                // Supplementary files
+                List<TracePackageSupplFileElement> suppFiles = new ArrayList<TracePackageSupplFileElement>();
+                NodeList suppFilesElements = traceElement.getElementsByTagName(ITracePackageConstants.SUPPLEMENTARY_FILE_ELEMENT);
+                for (int j = 0; j < suppFilesElements.getLength(); ++j) {
+                    Node suppFileNode = suppFilesElements.item(j);
+                    if (suppFileNode.getNodeType() == Node.ELEMENT_NODE) {
+                        Element suppFileElement = (Element) suppFileNode;
+                        String fileName = suppFileElement.getAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB);
+                        TracePackageSupplFileElement supplFile = new TracePackageSupplFileElement(fileName, supplFilesElement);
+                        suppFiles.add(supplFile);
+                    }
+                }
+
+                if (!suppFiles.isEmpty()) {
+                    supplFilesElement.setChildren(suppFiles.toArray(new TracePackageElement[] {}));
+                    children.add(supplFilesElement);
+                }
+
+                // bookmarks
+                List<TracePackageBookmarkElement.BookmarkInfo> bookmarkInfos = new ArrayList<TracePackageBookmarkElement.BookmarkInfo>();
+                NodeList bookmarksElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARKS_ELEMENT);
+                for (int j = 0; j < bookmarksElements.getLength(); ++j) {
+                    Node bookmarksNode = bookmarksElements.item(j);
+                    if (bookmarksNode.getNodeType() == Node.ELEMENT_NODE) {
+                        NodeList bookmarkElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARK_ELEMENT);
+                        for (int k = 0; k < bookmarkElements.getLength(); ++k) {
+                            Node bookmarkNode = bookmarkElements.item(k);
+                            if (bookmarkNode.getNodeType() == Node.ELEMENT_NODE) {
+                                Element bookmarkElement = (Element) bookmarkNode;
+                                NamedNodeMap attributesMap = bookmarkElement.getAttributes();
+                                Node locationNode = attributesMap.getNamedItem(IMarker.LOCATION);
+                                Node messageNode = attributesMap.getNamedItem(IMarker.MESSAGE);
+
+                                if (locationNode != null && messageNode != null) {
+                                    Attr locationAttr = (Attr) locationNode;
+                                    Integer location = Integer.valueOf(locationAttr.getValue());
+                                    Attr messageAttr = (Attr) messageNode;
+                                    bookmarkInfos.add(new TracePackageBookmarkElement.BookmarkInfo(location, messageAttr.getValue()));
+
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!bookmarkInfos.isEmpty()) {
+                    children.add(new TracePackageBookmarkElement(element, bookmarkInfos));
+                }
+
+                element.setChildren(children.toArray(new TracePackageElement[] {}));
+            }
+        }
+        return element;
     }
 
 }

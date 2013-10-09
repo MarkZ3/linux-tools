@@ -82,8 +82,9 @@ public class ExportTracePackageWizardPage extends WizardPage {
     static private final String ICON_PATH = "icons/wizban/export_wiz.png"; //$NON-NLS-1$
 
     // dialog store id constants
-    private final static String STORE_DESTINATION_NAMES_ID = "ExportTracePackageWizardPage1.STORE_DESTINATION_NAMES_ID"; //$NON-NLS-1$
-    private final static String STORE_COMPRESS_CONTENTS_ID = "ExportTracePackageWizardPage1.STORE_COMPRESS_CONTENTS_ID"; //$NON-NLS-1$
+    private static final String PAGE_NAME = "ExportTracePackageWizardPage1"; //$NON-NLS-1$
+    private final static String STORE_DESTINATION_NAMES_ID = PAGE_NAME + ".STORE_DESTINATION_NAMES_ID"; //$NON-NLS-1$
+    private final static String STORE_COMPRESS_CONTENTS_ID = PAGE_NAME + ".STORE_COMPRESS_CONTENTS_ID"; //$NON-NLS-1$
     private final static String STORE_FORMAT_ID = "ExportTracePackageWizardPage1.STORE_FORMAT_ID"; //$NON-NLS-1$
 
     private Combo fDestinationNameField;
@@ -100,15 +101,13 @@ public class ExportTracePackageWizardPage extends WizardPage {
     private Label fApproximateSizeLabel;
 
     /**
-     * Constructor for the export trace wizard page
+     * Constructor for the export trace package wizard page
      *
-     * @param pageName
-     *            the name of the page
      * @param selection
      *            the current object selection
      */
-    public ExportTracePackageWizardPage(String pageName, IStructuredSelection selection) {
-        super(pageName, Messages.ExportTracePackageWizardPage_Title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
+    public ExportTracePackageWizardPage(IStructuredSelection selection) {
+        super(PAGE_NAME, Messages.ExportTracePackageWizardPage_Title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
         fSelection = selection;
     }
 

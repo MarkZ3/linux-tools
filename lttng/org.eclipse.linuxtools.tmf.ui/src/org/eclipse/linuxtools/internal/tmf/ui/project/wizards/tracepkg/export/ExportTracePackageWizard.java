@@ -57,7 +57,7 @@ public class ExportTracePackageWizard extends Wizard implements IExportWizard {
     @Override
     public void addPages() {
         super.addPages();
-        page = new ExportTracePackageWizardPage("Page name", fSelection); //$NON-NLS-1$
+        page = new ExportTracePackageWizardPage(fSelection);
         addPage(page);
     }
 

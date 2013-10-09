@@ -15,16 +15,12 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -37,22 +33,17 @@ import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement.BookmarkInfo;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageLabelProvider;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFileElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
@@ -74,42 +65,37 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileManipulations;
-import org.eclipse.ui.internal.wizards.datatransfer.TarEntry;
-import org.eclipse.ui.internal.wizards.datatransfer.TarException;
-import org.eclipse.ui.internal.wizards.datatransfer.TarFile;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * Wizard page for the import trace package wizard
  *
  * @author Marc-Andre Laperle
  */
-@SuppressWarnings("restriction")
 public class ImportTracePackagePage extends WizardPage {
 
     static private final String ICON_PATH = "icons/wizban/trace_import_wiz.png"; //$NON-NLS-1$
     private static final int SIZING_TEXT_FIELD_WIDTH = 250;
-    private final static String STORE_SOURCE_NAMES_ID = "ImportTracePackagePage1.STORE_SOURCE_NAMES_ID"; //$NON-NLS-1$
+    private static final String PAGE_NAME = "ImportTracePackagePage1"; //$NON-NLS-1$
+    private final static String STORE_SOURCE_NAMES_ID = PAGE_NAME + ".STORE_SOURCE_NAMES_ID"; //$NON-NLS-1$
     private static final int COMBO_HISTORY_LENGTH = 5;
 
     IStructuredSelection fSelection;
     private CheckboxTreeViewer fTraceExportElementViewer;
 
-    private Combo fDestinationNameField;
+    private Combo fSourceNameField;
     private Button fSelectAllButton;
     private Button fDeselectAllButton;
 
-    private Button fDestinationBrowseButton;
+    private Button fSourceBrowseButton;
 
-    public ImportTracePackagePage(String pageName, IStructuredSelection selection) {
-        super(pageName, Messages.ImportTracePkgPage_title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
+    /**
+     * Constructor for the import trace package wizard page
+     *
+     * @param selection
+     *            the current object selection
+     */
+    public ImportTracePackagePage(IStructuredSelection selection) {
+        super(PAGE_NAME, Messages.ImportTracePkgPage_title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
         fSelection = selection;
     }
 
@@ -123,7 +109,7 @@ public class ImportTracePackagePage extends WizardPage {
                 | GridData.HORIZONTAL_ALIGN_FILL));
         composite.setFont(parent.getFont());
 
-        createDestinationGroup(composite);
+        createSourceGroup(composite);
         createTraceElementsGroup(composite);
         createButtonsGroup(composite);
 
@@ -161,7 +147,7 @@ public class ImportTracePackagePage extends WizardPage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 setAllChecked(true);
-                // updateWidgetEnablements();
+                updatePageCompletion();
             }
         };
         fSelectAllButton.addSelectionListener(listener);
@@ -175,7 +161,7 @@ public class ImportTracePackagePage extends WizardPage {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 setAllChecked(false);
-                // updateWidgetEnablements();
+                updatePageCompletion();
             }
         };
         fDeselectAllButton.addSelectionListener(listener);
@@ -215,7 +201,7 @@ public class ImportTracePackagePage extends WizardPage {
         fTraceExportElementViewer.addCheckStateListener(new ICheckStateListener() {
             @Override
             public void checkStateChanged(CheckStateChangedEvent event) {
-                // updatePageCompletion();
+                updatePageCompletion();
             }
         });
         GridData layoutData = new GridData(GridData.FILL_BOTH);
@@ -226,11 +212,7 @@ public class ImportTracePackagePage extends WizardPage {
 
     private void setTraceElements() {
 
-        class Container {
-            public TracePackageElement element;
-        }
-        final Container c = new Container();
-        final String fileName = getDestinationValue();
+        final TracePackageImportOperation op = new TracePackageImportOperation(getSourceValue());
 
         try {
             getContainer().run(true, true, new IRunnableWithProgress() {
@@ -238,181 +220,26 @@ public class ImportTracePackagePage extends WizardPage {
                 @Override
                 public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
                     monitor.beginTask(Messages.TraceImporter_ReadingPackage, 10);
-                    c.element = extractManifest(monitor, fileName);
+                    op.runExtractManifestOperation(monitor);
                     monitor.done();
                 }
 
             });
+
+            IStatus status = op.getStatus();
+            if (status.getSeverity() == IStatus.ERROR) {
+                String message = status.getMessage().length() > 0 ? status.getMessage() : Messages.ImportTracePackagePage_ErrorReadingManifest;
+                handleError(message, status.getException());
+            }
         } catch (InvocationTargetException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
+            handleError(Messages.ImportTracePackagePage_ErrorReadingManifest, e1);
         } catch (InterruptedException e1) {
             // Canceled
         }
 
-        TracePackageElement element = c.element;
-
-        if (element != null) {
-            fTraceExportElementViewer.setInput(new TracePackageElement[] { element });
+        if (op.getResultElement() != null) {
+            fTraceExportElementViewer.setInput(new TracePackageElement[] { op.getResultElement() });
         }
-    }
-
-    private static TracePackageElement extractManifest(IProgressMonitor monitor, String fileName) throws InterruptedException {
-        TracePackageElement element = null;
-        boolean isTarFile = ArchiveFileManipulations.isTarFile(fileName);
-        monitor.worked(1);
-        if (isTarFile) {
-            TarFile sourceTarFile = getSpecifiedTarSourceFile(fileName);
-            monitor.worked(1);
-            if (sourceTarFile == null) {
-                return null;
-            }
-
-            Enumeration<?> entries = sourceTarFile.entries();
-
-            while (entries.hasMoreElements()) {
-                ModalContext.checkCanceled(monitor);
-
-                TarEntry entry = (TarEntry) entries.nextElement();
-                if (entry.getName().equalsIgnoreCase(ITracePackageConstants.MANIFEST_FILENAME)) {
-                    try {
-                        InputStream inputStream = sourceTarFile.getInputStream(entry);
-                        element = loadElementsFromManifest(inputStream);
-
-                    } catch (TarException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                    break;
-                }
-
-                monitor.worked(1);
-            }
-
-            // sourceTarFile.
-            // ExportTraceTraceElement element ==
-            // element =
-            // return selectFiles(structureProvider.getRoot(),
-            // structureProvider);
-        }
-        return element;
-    }
-
-    private static TracePackageElement loadElementsFromManifest(InputStream inputStream) {
-        TracePackageElement element = null;
-        try {
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(inputStream);
-
-            // TODO: validate file
-
-            NodeList traceElements = doc.getDocumentElement().getElementsByTagName(ITracePackageConstants.TRACE_ELEMENT);
-            for (int i = 0; i < traceElements.getLength(); ++i) {
-                Node traceNode = traceElements.item(i);
-                if (traceNode.getNodeType() == Node.ELEMENT_NODE) {
-                    Element traceElement = (Element) traceNode;
-                    String traceName = traceElement.getAttribute(ITracePackageConstants.TRACE_NAME_ATTRIB);
-                    String traceType = traceElement.getAttribute(ITracePackageConstants.TRACE_TYPE_ATTRIB);
-                    element = new TracePackageTraceElement(null, traceName, traceType);
-
-                    List<TracePackageElement> children = new ArrayList<TracePackageElement>();
-                    NodeList fileElements = traceElement.getElementsByTagName(ITracePackageConstants.TRACE_FILE_ELEMENT);
-                    for (int j = 0; j < fileElements.getLength(); ++j) {
-                        Node fileNode = fileElements.item(j);
-                        if (fileNode.getNodeType() == Node.ELEMENT_NODE) {
-                            Element fileElement = (Element) fileNode;
-                            String fileName = fileElement.getAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB);
-                            children.add(new TracePackageFilesElement(element, fileName));
-                        }
-                    }
-
-                    TracePackageSupplFilesElement supplFilesElement = new TracePackageSupplFilesElement(element);
-
-                    // Supplementary files
-                    List<TracePackageSupplFileElement> suppFiles = new ArrayList<TracePackageSupplFileElement>();
-                    NodeList suppFilesElements = traceElement.getElementsByTagName(ITracePackageConstants.SUPPLEMENTARY_FILE_ELEMENT);
-                    for (int j = 0; j < suppFilesElements.getLength(); ++j) {
-                        Node suppFileNode = suppFilesElements.item(j);
-                        if (suppFileNode.getNodeType() == Node.ELEMENT_NODE) {
-                            Element suppFileElement = (Element) suppFileNode;
-                            String fileName = suppFileElement.getAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB);
-                            TracePackageSupplFileElement supplFile = new TracePackageSupplFileElement(fileName, supplFilesElement);
-                            suppFiles.add(supplFile);
-                        }
-                    }
-
-                    if (!suppFiles.isEmpty()) {
-                        supplFilesElement.setChildren(suppFiles.toArray(new TracePackageElement[] {}));
-                        children.add(supplFilesElement);
-                    }
-
-                    // bookmarks
-                    List<TracePackageBookmarkElement.BookmarkInfo> bookmarkInfos = new ArrayList<TracePackageBookmarkElement.BookmarkInfo>();
-                    NodeList bookmarksElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARKS_ELEMENT);
-                    for (int j = 0; j < bookmarksElements.getLength(); ++j) {
-                        Node bookmarksNode = bookmarksElements.item(j);
-                        if (bookmarksNode.getNodeType() == Node.ELEMENT_NODE) {
-                            NodeList bookmarkElements = traceElement.getElementsByTagName(ITracePackageConstants.BOOKMARK_ELEMENT);
-                            for (int k = 0; k < bookmarkElements.getLength(); ++k) {
-                                Node bookmarkNode = bookmarkElements.item(k);
-                                if (bookmarkNode.getNodeType() == Node.ELEMENT_NODE) {
-                                    Element bookmarkElement = (Element) bookmarkNode;
-                                    NamedNodeMap attributesMap = bookmarkElement.getAttributes();
-                                    Node locationNode = attributesMap.getNamedItem(IMarker.LOCATION);
-                                    Node messageNode = attributesMap.getNamedItem(IMarker.MESSAGE);
-
-                                    if (locationNode != null && messageNode != null) {
-                                        Attr locationAttr = (Attr) locationNode;
-                                        Integer location = Integer.valueOf(locationAttr.getValue());
-                                        Attr messageAttr = (Attr) messageNode;
-                                        bookmarkInfos.add(new TracePackageBookmarkElement.BookmarkInfo(location, messageAttr.getValue()));
-
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (!bookmarkInfos.isEmpty()) {
-                        children.add(new TracePackageBookmarkElement(element, bookmarkInfos));
-                    }
-
-                    element.setChildren(children.toArray(new TracePackageElement[] {}));
-                }
-            }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (SAXException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (ParserConfigurationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return element;
-    }
-
-    /**
-     * Answer a handle to the zip file currently specified as being the source.
-     * Return null if this file does not exist or is not of valid format.
-     */
-    private static TarFile getSpecifiedTarSourceFile(String fileName) {
-        if (fileName.length() == 0) {
-            return null;
-        }
-
-        try {
-            return new TarFile(fileName);
-        } catch (TarException e) {
-            // ignore
-        } catch (IOException e) {
-            // ignore
-        }
-
-        // sourceNameField.setFocus();
-        return null;
     }
 
     private void setAllChecked(boolean checked) {
@@ -423,62 +250,61 @@ public class ImportTracePackagePage extends WizardPage {
         }
     }
 
-    private void createDestinationGroup(Composite parent) {
+    private void createSourceGroup(Composite parent) {
 
         Font font = parent.getFont();
-        // destination specification group
-        Composite destinationSelectionGroup = new Composite(parent, SWT.NONE);
+        // source specification group
+        Composite sourceSelectionGroup = new Composite(parent, SWT.NONE);
         GridLayout layout = new GridLayout();
         layout.numColumns = 3;
-        destinationSelectionGroup.setLayout(layout);
-        destinationSelectionGroup.setLayoutData(new GridData(
+        sourceSelectionGroup.setLayout(layout);
+        sourceSelectionGroup.setLayoutData(new GridData(
                 GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_FILL));
-        destinationSelectionGroup.setFont(font);
+        sourceSelectionGroup.setFont(font);
 
-        Label destinationLabel = new Label(destinationSelectionGroup, SWT.NONE);
-        destinationLabel.setText(Messages.FileImport_FromArchive);
-        destinationLabel.setFont(font);
+        Label sourceLabel = new Label(sourceSelectionGroup, SWT.NONE);
+        sourceLabel.setText(Messages.FileImport_FromArchive);
+        sourceLabel.setFont(font);
 
-        // destination name entry field
-        fDestinationNameField = new Combo(destinationSelectionGroup, SWT.SINGLE
+        // source name entry field
+        fSourceNameField = new Combo(sourceSelectionGroup, SWT.SINGLE
                 | SWT.BORDER);
         GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL);
         data.widthHint = SIZING_TEXT_FIELD_WIDTH;
-        fDestinationNameField.setLayoutData(data);
-        fDestinationNameField.setFont(font);
-        fDestinationNameField.addSelectionListener(new SelectionAdapter() {
+        fSourceNameField.setLayoutData(data);
+        fSourceNameField.setFont(font);
+        fSourceNameField.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 updateWithSelection();
             }
         });
 
-        // destination browse button
-        fDestinationBrowseButton = new Button(destinationSelectionGroup,
-                SWT.PUSH);
-        fDestinationBrowseButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_Browse);
-        fDestinationBrowseButton.addListener(SWT.Selection, new Listener() {
+        // source browse button
+        fSourceBrowseButton = new Button(sourceSelectionGroup, SWT.PUSH);
+        fSourceBrowseButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_Browse);
+        fSourceBrowseButton.addListener(SWT.Selection, new Listener() {
             @Override
             public void handleEvent(Event event) {
-                handleDestinationBrowseButtonPressed();
+                handleSourceBrowseButtonPressed();
             }
         });
-        fDestinationBrowseButton.setFont(font);
-        setButtonLayoutData(fDestinationBrowseButton);
+        fSourceBrowseButton.setFont(font);
+        setButtonLayoutData(fSourceBrowseButton);
 
         new Label(parent, SWT.NONE); // vertical spacer
     }
 
     /**
-     * Open an appropriate destination browser so that the user can specify a
+     * Open an appropriate source browser so that the user can specify a
      * source to import from
      */
-    private void handleDestinationBrowseButtonPressed() {
+    private void handleSourceBrowseButtonPressed() {
         FileDialog dialog = new FileDialog(getContainer().getShell(), SWT.OPEN | SWT.SHEET);
         dialog.setFilterExtensions(new String[] { "*.zip;*.tar.gz;*.tar;*.tgz", "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
         dialog.setText(Messages.ArchiveImport_selectSourceTitle);
-        String currentSourceString = getDestinationValue();
+        String currentSourceString = getSourceValue();
         int lastSeparatorIndex = currentSourceString
                 .lastIndexOf(File.separator);
         if (lastSeparatorIndex != -1) {
@@ -489,7 +315,7 @@ public class ImportTracePackagePage extends WizardPage {
 
         if (selectedFileName != null) {
             setErrorMessage(null);
-            setDestinationValue(selectedFileName);
+            setSourceValue(selectedFileName);
 
             updateWithSelection();
         }
@@ -501,18 +327,42 @@ public class ImportTracePackagePage extends WizardPage {
         setAllChecked(true);
     }
 
-    private void setDestinationValue(String value) {
-        fDestinationNameField.setText(value);
+    private void setSourceValue(String value) {
+        fSourceNameField.setText(value);
+        updatePageCompletion();
     }
 
     /**
-     * Answer the contents of self's destination specification widget. If this
+     * Determine if the page is complete and update the page appropriately.
+     */
+    private void updatePageCompletion() {
+        boolean pageComplete = determinePageCompletion();
+        setPageComplete(pageComplete);
+        if (pageComplete) {
+            setErrorMessage(null);
+        }
+    }
+
+    private boolean determinePageCompletion() {
+        return validateTraceElementsGroup() && validateSourceGroup();
+    }
+
+    private boolean validateTraceElementsGroup() {
+        boolean traceElementSelected = fTraceExportElementViewer.getCheckedElements().length > 0;
+        return traceElementSelected;
+    }
+
+    private boolean validateSourceGroup() {
+        boolean traceElementSelected = !getSourceValue().isEmpty();
+        return traceElementSelected;
+    }
+
+    /**
+     * Answer the contents of self's source specification widget. If this
      * value does not have a suffix then add it first.
      */
-    private String getDestinationValue() {
-        String destinationText = fDestinationNameField.getText().trim();
-
-        return destinationText;
+    private String getSourceValue() {
+        return fSourceNameField.getText().trim();
     }
 
     private static void addToHistory(List<String> history, String newEntry) {
@@ -547,10 +397,9 @@ public class ImportTracePackagePage extends WizardPage {
                 return; // ie.- no settings stored
             }
 
-            // destination
-            //setDestinationValue(directoryNames[0]);
+            setSourceValue(directoryNames[0]);
             for (int i = 0; i < directoryNames.length; i++) {
-                fDestinationNameField.add(directoryNames[i]);
+                fSourceNameField.add(directoryNames[i]);
             }
         }
 
@@ -574,7 +423,7 @@ public class ImportTracePackagePage extends WizardPage {
                 directoryNames = new String[0];
             }
 
-            directoryNames = addToHistory(directoryNames, getDestinationValue());
+            directoryNames = addToHistory(directoryNames, getSourceValue());
             settings.put(STORE_SOURCE_NAMES_ID, directoryNames);
         }
     }
@@ -586,6 +435,12 @@ public class ImportTracePackagePage extends WizardPage {
     }
 
     private void displayErrorDialog(String message, Throwable exception) {
+        if (exception == null) {
+            final Status s = new Status(IStatus.ERROR, Activator.PLUGIN_ID, message);
+            ErrorDialog.openError(getContainer().getShell(), org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_InternalErrorTitle, null, s);
+            return;
+        }
+
         String exceptionMessage = exception.getMessage();
         // Some system exceptions have no message
         if (exceptionMessage == null) {
@@ -617,7 +472,7 @@ public class ImportTracePackagePage extends WizardPage {
     public boolean finish() {
         saveWidgetValues();
 
-        String fileName = getDestinationValue();
+        String fileName = getSourceValue();
         TmfTraceFolder tmfTraceFolder = (TmfTraceFolder) fSelection.getFirstElement();
 
         TracePackageElement[] input = (TracePackageElement[]) fTraceExportElementViewer.getInput();
@@ -646,13 +501,12 @@ public class ImportTracePackagePage extends WizardPage {
 
         IResource traceRes = tmfTraceFolder.getResource().findMember(exportTraceTraceElement.getText());
 
-        IStatus ret = Status.OK_STATUS;
+        TraceTypeHelper traceType = TmfTraceType.getInstance().getTraceType(exportTraceTraceElement.getTraceType());
         try {
-            TraceTypeHelper traceType = TmfTraceType.getInstance().getTraceType(exportTraceTraceElement.getTraceType());
-            ret = TmfTraceType.setTraceType(traceRes.getFullPath(), traceType);
+            TmfTraceType.setTraceType(traceRes.getFullPath(), traceType);
         } catch (CoreException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            // Only log errors from this point because they are non-fatal
+            Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorSettingTraceType, traceType.getCanonicalName(), traceRes.getName()), e);
         }
 
         // Add bookmarks
@@ -668,8 +522,7 @@ public class ImportTracePackagePage extends WizardPage {
                         try {
                             bookmarksFile = t.createBookmarksFile();
                         } catch (CoreException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
+                            Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorCreatingBookmarkFile, traceRes.getName()), e);
                         }
                         break;
                     }
@@ -687,16 +540,14 @@ public class ImportTracePackagePage extends WizardPage {
                     try {
                         createMarker = bookmarksFile.createMarker(IMarker.BOOKMARK);
                     } catch (CoreException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorCreatingBookmark, traceRes.getName()), e);
                     }
                     if (createMarker != null && createMarker.exists()) {
                         try {
                             createMarker.setAttribute(IMarker.MESSAGE, attrs.getMessage());
                             createMarker.setAttribute(IMarker.LOCATION, attrs.getLocation());
                         } catch (CoreException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
+                            Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorCreatingBookmark, traceRes.getName()), e);
                         }
 
                     }
@@ -706,7 +557,7 @@ public class ImportTracePackagePage extends WizardPage {
             }
         }
 
-        return exporter.getStatus().getSeverity() == IStatus.OK && ret.getSeverity() == IStatus.OK;
+        return exporter.getStatus().getSeverity() == IStatus.OK;
     }
 
 }
