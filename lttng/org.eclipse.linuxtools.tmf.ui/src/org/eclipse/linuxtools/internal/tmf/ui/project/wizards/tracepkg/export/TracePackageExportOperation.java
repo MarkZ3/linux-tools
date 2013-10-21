@@ -33,11 +33,11 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.AbstractTracePackageOperation;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.ITracePackageConstants;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
@@ -57,54 +57,46 @@ import org.w3c.dom.Node;
  * @author Marc-Andre Laperle
  */
 @SuppressWarnings("restriction")
-public class TracePackageExportOperation {
+public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
     private final TracePackageTraceElement[] fTraceExportElements;
     private final boolean fUseCompression;
     private final boolean fUseTar;
-    private final String fFileName;
     private final List<IResource> fResources;
-    private IStatus fStatus;
 
     /**
      * Constructs a new export operation
      *
-     * @param traceExportElements the trace elements to be exported
-     * @param useCompression whether or not to use compression
-     * @param useTar use tar format or zip
-     * @param fileName the output file name
+     * @param traceExportElements
+     *            the trace elements to be exported
+     * @param useCompression
+     *            whether or not to use compression
+     * @param useTar
+     *            use tar format or zip
+     * @param fileName
+     *            the output file name
      */
     public TracePackageExportOperation(TracePackageTraceElement[] traceExportElements, boolean useCompression, boolean useTar, String fileName) {
+        super(fileName);
         fTraceExportElements = traceExportElements;
         fUseCompression = useCompression;
         fUseTar = useTar;
-        fFileName = fileName;
         fResources = new ArrayList<IResource>();
     }
 
-    private int getTotalWork(TracePackageElement[] elements) {
-        int totalWork = 0;
-        for (TracePackageElement tracePackageElement : elements) {
-            if (tracePackageElement.getChildren() != null) {
-                totalWork += getTotalWork(tracePackageElement.getChildren());
-            } else if (tracePackageElement.isChecked()) {
-                ++totalWork;
-            }
-        }
-
-        return totalWork;
-    }
-
     /**
-     * Run the operation. The status (result) of the operation can be obtained with {@link #getStatus}
+     * Run the operation. The status (result) of the operation can be obtained
+     * with {@link #getStatus}
      *
-     * @param progressMonitor the progress monitor to use to display progress and receive
-     *   requests for cancellation
+     * @param progressMonitor
+     *            the progress monitor to use to display progress and receive
+     *            requests for cancellation
      */
+    @Override
     public void run(IProgressMonitor progressMonitor) {
 
         try {
-            int totalWork = getTotalWork(fTraceExportElements) * 2;
+            int totalWork = getNbCheckedElements(fTraceExportElements) * 2;
             progressMonitor.beginTask(Messages.ExportTracePackageWizardPage_GeneratingPackage, totalWork);
 
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
@@ -129,14 +121,14 @@ public class TracePackageExportOperation {
             IFile file = createManifest(content);
             fResources.add(file);
 
-            fStatus = exportToArchive(progressMonitor, totalWork);
+            setStatus(exportToArchive(progressMonitor, totalWork));
             progressMonitor.done();
 
         } catch (Exception e) {
             if (e instanceof InterruptedException) {
-                fStatus = Status.CANCEL_STATUS;
+                setStatus(Status.CANCEL_STATUS);
             } else {
-                fStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e);
+                setStatus(new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e));
             }
         }
     }
@@ -159,7 +151,7 @@ public class TracePackageExportOperation {
             } else if (element instanceof TracePackageBookmarkElement) {
                 exportBookmarks(monitor, traceNode, (TracePackageBookmarkElement) element);
             } else if (element instanceof TracePackageFilesElement) {
-                exportTraceFiles(monitor, traceNode, (TracePackageFilesElement) element);
+                exportTraceFiles(traceNode, (TracePackageFilesElement) element);
             }
 
             monitor.worked(1);
@@ -169,7 +161,7 @@ public class TracePackageExportOperation {
     private void exportSupplementaryFiles(IProgressMonitor monitor, Node traceNode, TracePackageSupplFilesElement element) throws InterruptedException {
         Document doc = traceNode.getOwnerDocument();
         for (TracePackageElement child : element.getChildren()) {
-            TracePackageSupplFileElement supplFile = (TracePackageSupplFileElement)child;
+            TracePackageSupplFileElement supplFile = (TracePackageSupplFileElement) child;
             ModalContext.checkCanceled(monitor);
             IResource res = supplFile.getResource();
             fResources.add(res);
@@ -179,21 +171,13 @@ public class TracePackageExportOperation {
         }
     }
 
-    private void exportTraceFiles(IProgressMonitor monitor, Node traceNode, TracePackageFilesElement element) throws CoreException, InterruptedException {
+    private void exportTraceFiles(Node traceNode, TracePackageFilesElement element) {
         Document doc = traceNode.getOwnerDocument();
         IResource resource = ((TracePackageTraceElement) element.getParent()).getTraceElement().getResource();
         fResources.add(resource);
         Element fileElement = doc.createElement(ITracePackageConstants.TRACE_FILE_ELEMENT);
         fileElement.setAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB, resource.getName());
-        Node fileNode = traceNode.appendChild(fileElement);
-        for (QualifiedName key : resource.getPersistentProperties().keySet()) {
-            ModalContext.checkCanceled(monitor);
-
-            Element singlePersistentPropertyElement = doc.createElement(ITracePackageConstants.PERSISTENT_PROPERTY_ELEMENT);
-            singlePersistentPropertyElement.setAttribute(ITracePackageConstants.PERSISTENT_PROPERTY_NAME_ATTRIB, key.getQualifier() + "." + key.getLocalName()); //$NON-NLS-1$
-            singlePersistentPropertyElement.setAttribute(ITracePackageConstants.PERSISTENT_PROPERTY_VALUE_ATTRIB, resource.getPersistentProperty(key));
-            fileNode.appendChild(singlePersistentPropertyElement);
-        }
+        traceNode.appendChild(fileElement);
     }
 
     private static void exportBookmarks(IProgressMonitor monitor, Node traceNode, TracePackageBookmarkElement element) throws CoreException, InterruptedException {
@@ -230,21 +214,12 @@ public class TracePackageExportOperation {
     }
 
     private IStatus exportToArchive(IProgressMonitor monitor, int totalWork) throws InvocationTargetException, InterruptedException {
-        ArchiveFileExportOperation op = new ArchiveFileExportOperation(fResources, fFileName);
+        ArchiveFileExportOperation op = new ArchiveFileExportOperation(fResources, getFileName());
         op.setCreateLeadupStructure(false);
         op.setUseCompression(fUseCompression);
         op.setUseTarFormat(fUseTar);
         op.run(new SubProgressMonitor(monitor, totalWork / 2, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
 
         return op.getStatus();
-    }
-
-    /**
-     * Returns the status of the operation (result)
-     *
-     * @return the status of the operation
-     */
-    public IStatus getStatus() {
-        return fStatus;
     }
 }

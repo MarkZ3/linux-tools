@@ -104,7 +104,7 @@ public class FilterListDialog extends Dialog {
         fViewer = view;
         fProvider = loader;
         fFilters = null;
-        setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+        setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL | SWT.RESIZE);
     }
 
     // ------------------------------------------------------------------------
@@ -145,11 +145,12 @@ public class FilterListDialog extends Dialog {
     @Override
     public Control createDialogArea(Composite parent) {
 
-        Group ret = new Group(parent, SWT.NONE);
+        Group ret = new Group(parent, SWT.FILL);
         ret.setText(Messages.SequenceDiagram_ListOfHideDisplayPatterns);
         RowLayout rowLayout = new RowLayout();
+        rowLayout.fill = true;
         rowLayout.wrap = false;
-        rowLayout.pack = true;
+        //rowLayout.pack = true;
         rowLayout.justify = false;
         rowLayout.type = SWT.HORIZONTAL;
         rowLayout.marginLeft = 4;
@@ -187,7 +188,7 @@ public class FilterListDialog extends Dialog {
             }
         }
 
-        Composite commands = new Composite(ret, SWT.NONE);
+        Composite commands = new Composite(ret, SWT.FILL);
         RowLayout rowLayoutCommands = new RowLayout();
         rowLayoutCommands.wrap = false;
         rowLayoutCommands.pack = false;

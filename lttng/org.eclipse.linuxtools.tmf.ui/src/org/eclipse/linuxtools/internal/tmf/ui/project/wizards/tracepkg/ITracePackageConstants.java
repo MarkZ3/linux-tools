@@ -18,6 +18,7 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg;
  * @author Marc-Andre Laperle
  */
 public interface ITracePackageConstants {
+
     /**
      * The file name for the package manifest file
      */
@@ -27,6 +28,7 @@ public interface ITracePackageConstants {
      * The root element of an export
      */
     public static final String TMF_EXPORT_ELEMENT = "tmf-export"; //$NON-NLS-1$
+
     /**
      * Element representing a single trace
      */
@@ -36,6 +38,7 @@ public interface ITracePackageConstants {
      * Attribute for the name of a trace
      */
     public static final String TRACE_NAME_ATTRIB = "name"; //$NON-NLS-1$
+
     /**
      * Attribute for the type of a trace
      */
@@ -55,28 +58,17 @@ public interface ITracePackageConstants {
      * Element representing a trace file or folder
      */
     public static final String TRACE_FILE_ELEMENT = "file"; //$NON-NLS-1$
+
     /**
      * Attribute for the name of the file
      */
     public static final String TRACE_FILE_NAME_ATTRIB = "name"; //$NON-NLS-1$
 
     /**
-     * Element representing a persistent property for a trace
-     */
-    public static final String PERSISTENT_PROPERTY_ELEMENT = "persistent-property"; //$NON-NLS-1$
-    /**
-     * Attribute for the name of a persistent property
-     */
-    public static final String PERSISTENT_PROPERTY_NAME_ATTRIB = "name"; //$NON-NLS-1$
-    /**
-     * Attribute for the value of a persistent property
-     */
-    public static final String PERSISTENT_PROPERTY_VALUE_ATTRIB = "value"; //$NON-NLS-1$
-
-    /**
      * Element representing the bookmarks of a trace
      */
     public static final String BOOKMARKS_ELEMENT = "bookmarks"; //$NON-NLS-1$
+
     /**
      * Element representing a single bookmark of a trace
      */

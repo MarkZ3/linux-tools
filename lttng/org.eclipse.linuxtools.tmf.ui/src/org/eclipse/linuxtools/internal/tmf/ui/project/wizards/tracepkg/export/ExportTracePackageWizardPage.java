@@ -12,21 +12,14 @@
 
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -35,8 +28,8 @@ import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewerColumn;
-import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
+import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.AbstractTracePackageWizard;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
@@ -61,16 +54,14 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.TreeItem;
 
 /**
  * Wizard page for the export trace package wizard
  *
  * @author Marc-Andre Laperle
  */
-public class ExportTracePackageWizardPage extends WizardPage {
+public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
 
-    private static final int COMBO_HISTORY_LENGTH = 5;
     private static final int CONTENT_COL_WIDTH = 300;
     private static final int SIZE_COL_WIDTH = 100;
 
@@ -96,8 +87,6 @@ public class ExportTracePackageWizardPage extends WizardPage {
     private CheckboxTreeViewer fTraceExportElementViewer;
     private Button fSelectAllButton;
     private Button fDeselectAllButton;
-
-    private IStructuredSelection fSelection;
     private Label fApproximateSizeLabel;
 
     /**
@@ -107,8 +96,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
      *            the current object selection
      */
     public ExportTracePackageWizardPage(IStructuredSelection selection) {
-        super(PAGE_NAME, Messages.ExportTracePackageWizardPage_Title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH));
-        fSelection = selection;
+        super(PAGE_NAME, Messages.ExportTracePackageWizardPage_Title, Activator.getDefault().getImageDescripterFromPath(ICON_PATH), selection);
     }
 
     @Override
@@ -208,7 +196,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
                 if (!element.isEnabled()) {
                     fTraceExportElementViewer.setChecked(element, element.isChecked());
                 } else {
-                    setSubtreeChecked(element, true, event.getChecked());
+                    setSubtreeChecked(fTraceExportElementViewer, element, true, event.getChecked());
                 }
 
                 maintainCheckIntegrity(element);
@@ -278,7 +266,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
         setTraceElementsInput();
         fTraceExportElementViewer.expandToLevel(2);
 
-        setAllChecked(false, true);
+        setAllChecked(fTraceExportElementViewer, false, true);
     }
 
     private void updateApproximateSize() {
@@ -313,30 +301,8 @@ public class ExportTracePackageWizardPage extends WizardPage {
         return Long.toString(curSize) + " " + humanSuffix[suffixIndex]; //$NON-NLS-1$
     }
 
-    /**
-     * A version of setSubtreeChecked that is aware of isEnabled
-     *
-     * @param element
-     *            the element
-     * @param state
-     *            true if the item should be checked, and false if it should be
-     *            unchecked
-     * @param checked
-     */
-    private void setSubtreeChecked(TracePackageElement element, boolean enabledOnly, boolean checked) {
-        if (!enabledOnly || element.isEnabled()) {
-            fTraceExportElementViewer.setChecked(element, checked);
-            element.setChecked(checked);
-            if (element.getChildren() != null) {
-                for (TracePackageElement child : element.getChildren()) {
-                    setSubtreeChecked(child, enabledOnly, checked);
-                }
-            }
-        }
-    }
-
     private void setTraceElementsInput() {
-        Object[] selectedElements = fSelection.toArray();
+        Object[] selectedElements = getSelection().toArray();
         List<TracePackageTraceElement> traceElements = new ArrayList<TracePackageTraceElement>();
         for (Object selectedElement : selectedElements) {
             if (selectedElement instanceof TmfTraceElement) {
@@ -396,7 +362,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
         SelectionListener listener = new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                setAllChecked(true, true);
+                setAllChecked(fTraceExportElementViewer, true, true);
                 updateApproximateSize();
                 updatePageCompletion();
             }
@@ -409,7 +375,7 @@ public class ExportTracePackageWizardPage extends WizardPage {
         listener = new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                setAllChecked(true, false);
+                setAllChecked(fTraceExportElementViewer, true, false);
                 updateApproximateSize();
                 updatePageCompletion();
             }
@@ -422,43 +388,9 @@ public class ExportTracePackageWizardPage extends WizardPage {
         fApproximateSizeLabel.setLayoutData(layoutData);
     }
 
-    /**
-     * Sets all items in the element viewer to be checked or unchecked
-     *
-     * @param checked
-     *            whether or not items should be checked
-     */
-    private void setAllChecked(boolean enabledOnly, boolean checked) {
-        TreeItem[] items = fTraceExportElementViewer.getTree().getItems();
-        for (int i = 0; i < items.length; i++) {
-            Object element = items[i].getData();
-            setSubtreeChecked((TracePackageElement) element, enabledOnly, checked);
-        }
-    }
-
-    /**
-     * Determine if the page is complete and update the page appropriately.
-     */
-    private void updatePageCompletion() {
-        boolean pageComplete = determinePageCompletion();
-        setPageComplete(pageComplete);
-        if (pageComplete) {
-            setErrorMessage(null);
-        }
-    }
-
-    private boolean determinePageCompletion() {
-        return validateSourceGroup() && validateDestinationGroup();
-    }
-
-    private boolean validateSourceGroup() {
-        boolean traceElementSelected = fTraceExportElementViewer.getCheckedElements().length > 0;
-        return traceElementSelected;
-    }
-
-    private boolean validateDestinationGroup() {
-        boolean traceElementSelected = !getDestinationValue().isEmpty();
-        return traceElementSelected;
+    @Override
+    protected boolean determinePageCompletion() {
+        return fTraceExportElementViewer.getCheckedElements().length > 0 && !getDestinationValue().isEmpty();
     }
 
     private void createDestinationGroup(Composite parent) {
@@ -479,7 +411,6 @@ public class ExportTracePackageWizardPage extends WizardPage {
         GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL);
         data.grabExcessHorizontalSpace = true;
-        data.widthHint = 50;
         fDestinationNameField.setLayoutData(data);
 
         // destination browse button
@@ -525,51 +456,6 @@ public class ExportTracePackageWizardPage extends WizardPage {
     private void setDestinationValue(String value) {
         fDestinationNameField.setText(value);
         updatePageCompletion();
-    }
-
-    private void handleError(String message, Throwable exception) {
-        Activator.getDefault().logError(message, exception);
-
-        String exceptionMessage = exception.getMessage();
-        // Some system exceptions have no message
-        if (exceptionMessage == null) {
-            exceptionMessage = exception.toString();
-        }
-
-        String stackMessage = exceptionMessage;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos);
-        exception.printStackTrace(ps);
-        ps.flush();
-        try {
-            baos.flush();
-            stackMessage = baos.toString();
-        } catch (IOException e) {
-        }
-
-        // ErrorDialog only prints the call stack for a CoreException
-        CoreException coreException = new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, stackMessage, exception));
-        final Status s = new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.ERROR, exceptionMessage, coreException);
-        ErrorDialog.openError(getContainer().getShell(), org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_InternalErrorTitle, message, s);
-    }
-
-    private static void addToHistory(List<String> history, String newEntry) {
-        history.remove(newEntry);
-        history.add(0, newEntry);
-
-        // since only one new item was added, we can be over the limit
-        // by at most one item
-        if (history.size() > COMBO_HISTORY_LENGTH) {
-            history.remove(COMBO_HISTORY_LENGTH);
-        }
-    }
-
-    private static String[] addToHistory(String[] history, String newEntry) {
-        ArrayList<String> l = new ArrayList<String>(Arrays.asList(history));
-        addToHistory(l, newEntry);
-        String[] r = new String[l.size()];
-        l.toArray(r);
-        return r;
     }
 
     /**
@@ -664,5 +550,4 @@ public class ExportTracePackageWizardPage extends WizardPage {
 
         return exporter.getStatus().getSeverity() == IStatus.OK;
     }
-
 }
