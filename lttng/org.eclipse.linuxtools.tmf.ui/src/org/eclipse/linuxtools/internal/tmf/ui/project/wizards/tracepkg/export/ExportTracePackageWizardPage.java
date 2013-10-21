@@ -22,16 +22,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.AbstractTracePackageWizard;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageBookmarkElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageLabelProvider;
@@ -42,7 +38,6 @@ import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -84,9 +79,6 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
     private Button fCompressContentsCheckbox;
     private Button fZipFormatButton;
     private Button fTargzFormatButton;
-    private CheckboxTreeViewer fTraceExportElementViewer;
-    private Button fSelectAllButton;
-    private Button fDeselectAllButton;
     private Label fApproximateSizeLabel;
 
     /**
@@ -186,45 +178,11 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         fCompressContentsCheckbox.addSelectionListener(listener);
     }
 
-    private void createTraceElementsGroup(Composite parent) {
-        fTraceExportElementViewer = new CheckboxTreeViewer(parent, SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER | SWT.CHECK);
+    @Override
+    protected void createTraceElementsGroup(Composite parent) {
+        super.createTraceElementsGroup(parent);
 
-        fTraceExportElementViewer.addCheckStateListener(new ICheckStateListener() {
-            @Override
-            public void checkStateChanged(CheckStateChangedEvent event) {
-                TracePackageElement element = (TracePackageElement) event.getElement();
-                if (!element.isEnabled()) {
-                    fTraceExportElementViewer.setChecked(element, element.isChecked());
-                } else {
-                    setSubtreeChecked(fTraceExportElementViewer, element, true, event.getChecked());
-                }
-
-                maintainCheckIntegrity(element);
-                updateApproximateSize();
-                updatePageCompletion();
-            }
-
-            private void maintainCheckIntegrity(final TracePackageElement element) {
-                TracePackageElement parentElement = element.getParent();
-                boolean allChecked = true;
-                if (parentElement != null) {
-                    if (parentElement.getChildren() != null) {
-                        for (TracePackageElement child : parentElement.getChildren()) {
-                            allChecked &= fTraceExportElementViewer.getChecked(child);
-                        }
-                    }
-                    fTraceExportElementViewer.setChecked(parentElement, allChecked);
-                    maintainCheckIntegrity(parentElement);
-                }
-            }
-        });
-
-        GridData layoutData = new GridData(GridData.FILL_BOTH);
         fTraceExportElementViewer.getTree().setHeaderVisible(true);
-        fTraceExportElementViewer.getTree().setLayoutData(layoutData);
-        fTraceExportElementViewer.setContentProvider(new TracePackageContentProvider());
-        fTraceExportElementViewer.setLabelProvider(new TracePackageLabelProvider());
-
         // Content column
         TreeViewerColumn column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
         column.getColumn().setWidth(CONTENT_COL_WIDTH);
@@ -269,7 +227,8 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         setAllChecked(fTraceExportElementViewer, false, true);
     }
 
-    private void updateApproximateSize() {
+    @Override
+    protected void updateApproximateSize() {
         long checkedSize = 0;
         TracePackageElement[] tracePackageElements = (TracePackageElement[]) fTraceExportElementViewer.getInput();
         for (TracePackageElement element : tracePackageElements) {
@@ -339,53 +298,16 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         fTraceExportElementViewer.setInput(traceElements.toArray(new TracePackageTraceElement[] {}));
     }
 
-    /**
-     * Creates the buttons for selecting all or none of the elements.
-     *
-     * @param parent
-     *            the parent control
-     */
-    private final void createButtonsGroup(Composite parent) {
+    @Override
+    protected final Composite createButtonsGroup(Composite parent) {
+        Composite buttonGroup = super.createButtonsGroup(parent);
 
-        // top level group
-        Composite buttonComposite = new Composite(parent, SWT.NONE);
-
-        GridLayout layout = new GridLayout();
-        layout.numColumns = 3;
-        buttonComposite.setLayout(layout);
-        buttonComposite.setLayoutData(new GridData(GridData.VERTICAL_ALIGN_FILL
-                | GridData.HORIZONTAL_ALIGN_FILL));
-
-        fSelectAllButton = new Button(buttonComposite, SWT.PUSH);
-        fSelectAllButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_SelectAll);
-
-        SelectionListener listener = new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                setAllChecked(fTraceExportElementViewer, true, true);
-                updateApproximateSize();
-                updatePageCompletion();
-            }
-        };
-        fSelectAllButton.addSelectionListener(listener);
-
-        fDeselectAllButton = new Button(buttonComposite, SWT.PUSH);
-        fDeselectAllButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_DeselectAll);
-
-        listener = new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                setAllChecked(fTraceExportElementViewer, true, false);
-                updateApproximateSize();
-                updatePageCompletion();
-            }
-        };
-        fDeselectAllButton.addSelectionListener(listener);
-
-        fApproximateSizeLabel = new Label(buttonComposite, SWT.SINGLE | SWT.RIGHT);
+        fApproximateSizeLabel = new Label(buttonGroup, SWT.SINGLE | SWT.RIGHT);
         GridData layoutData = new GridData(GridData.FILL_HORIZONTAL);
         layoutData.grabExcessHorizontalSpace = true;
         fApproximateSizeLabel.setLayoutData(layoutData);
+
+        return buttonGroup;
     }
 
     @Override
@@ -424,8 +346,6 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
             }
         });
         setButtonLayoutData(fDestinationBrowseButton);
-
-        new Label(parent, SWT.NONE); // vertical spacer
     }
 
     private String getDestinationValue() {

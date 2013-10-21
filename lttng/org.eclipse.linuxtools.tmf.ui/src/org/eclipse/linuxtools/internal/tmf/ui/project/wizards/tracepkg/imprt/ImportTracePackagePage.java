@@ -19,16 +19,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTreeViewer;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.linuxtools.internal.tmf.ui.Activator;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.AbstractTracePackageWizard;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageContentProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageFilesElement;
-import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageLabelProvider;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.swt.SWT;
@@ -36,7 +31,6 @@ import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -58,11 +52,7 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
     private static final String PAGE_NAME = "ImportTracePackagePage1"; //$NON-NLS-1$
     private final static String STORE_SOURCE_NAMES_ID = PAGE_NAME + ".STORE_SOURCE_NAMES_ID"; //$NON-NLS-1$
 
-    private CheckboxTreeViewer fTraceExportElementViewer;
-
     private Combo fSourceNameField;
-    private Button fSelectAllButton;
-    private Button fDeselectAllButton;
 
     private Button fSourceBrowseButton;
 
@@ -91,89 +81,10 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
         createButtonsGroup(composite);
 
         restoreWidgetValues();
+        setMessage(Messages.ImportTracePackagePage_Title);
         updatePageCompletion();
 
         setControl(composite);
-    }
-
-    /**
-     * Creates the buttons for selecting specific types or selecting all or none
-     * of the elements.
-     *
-     * @param parent
-     *            the parent control
-     */
-    private final void createButtonsGroup(Composite parent) {
-
-        // top level group
-        Composite buttonComposite = new Composite(parent, SWT.NONE);
-
-        GridLayout layout = new GridLayout();
-        layout.numColumns = 3;
-        layout.makeColumnsEqualWidth = true;
-        buttonComposite.setLayout(layout);
-        buttonComposite.setLayoutData(new GridData(GridData.VERTICAL_ALIGN_FILL
-                | GridData.HORIZONTAL_ALIGN_FILL));
-
-        fSelectAllButton = new Button(buttonComposite, SWT.PUSH);
-        fSelectAllButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_SelectAll);
-
-        SelectionListener listener = new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                setAllChecked(fTraceExportElementViewer, true, true);
-                updatePageCompletion();
-            }
-        };
-        fSelectAllButton.addSelectionListener(listener);
-        setButtonLayoutData(fSelectAllButton);
-
-        fDeselectAllButton = new Button(buttonComposite, SWT.PUSH);
-        fDeselectAllButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_DeselectAll);
-
-        listener = new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                setAllChecked(fTraceExportElementViewer, true, false);
-                updatePageCompletion();
-            }
-        };
-        fDeselectAllButton.addSelectionListener(listener);
-        setButtonLayoutData(fDeselectAllButton);
-    }
-
-    private void createTraceElementsGroup(Composite parent) {
-        fTraceExportElementViewer = new CheckboxTreeViewer(parent, SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER | SWT.CHECK);
-
-        fTraceExportElementViewer.addCheckStateListener(new ICheckStateListener() {
-            @Override
-            public void checkStateChanged(CheckStateChangedEvent event) {
-                TracePackageElement element = (TracePackageElement) event.getElement();
-                if (!element.isEnabled()) {
-                    fTraceExportElementViewer.setChecked(element, element.isChecked());
-                }
-                maintainCheckIntegrity(element);
-                updatePageCompletion();
-            }
-        });
-        GridData layoutData = new GridData(GridData.FILL_BOTH);
-        fTraceExportElementViewer.getTree().setLayoutData(layoutData);
-        fTraceExportElementViewer.setContentProvider(new TracePackageContentProvider());
-        fTraceExportElementViewer.setLabelProvider(new TracePackageLabelProvider());
-    }
-
-    private void maintainCheckIntegrity(final TracePackageElement element) {
-        TracePackageElement parentElement = element.getParent();
-        boolean allChecked = true;
-        if (parentElement != null) {
-            if (parentElement.getChildren() != null) {
-                for (TracePackageElement child : parentElement.getChildren()) {
-                    allChecked &= fTraceExportElementViewer.getChecked(child);
-                }
-            }
-            fTraceExportElementViewer.setChecked(parentElement, allChecked);
-            maintainCheckIntegrity(parentElement);
-        }
     }
 
     private void setTraceElements() {
@@ -218,7 +129,6 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
 
     private void createSourceGroup(Composite parent) {
 
-        // source specification group
         Composite sourceSelectionGroup = new Composite(parent, SWT.NONE);
         GridLayout layout = new GridLayout();
         layout.numColumns = 3;
@@ -241,14 +151,6 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
                 updateWithSelection();
             }
         });
-        fSourceNameField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.keyCode == '\r') {
-                    updateWithSelection();
-                }
-            }
-        });
 
         // source browse button
         fSourceBrowseButton = new Button(sourceSelectionGroup, SWT.PUSH);
@@ -260,11 +162,21 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
             }
         });
         setButtonLayoutData(fSourceBrowseButton);
+
+        // User can type-in path and press return to validate
+        fSourceNameField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.keyCode == '\r') {
+                    updateWithSelection();
+                }
+            }
+        });
     }
 
     /**
-     * Open an appropriate source browser so that the user can specify a
-     * source to import from
+     * Open an appropriate source browser so that the user can specify a source
+     * to import from
      */
     private void handleSourceBrowseButtonPressed() {
         FileDialog dialog = new FileDialog(getContainer().getShell(), SWT.OPEN | SWT.SHEET);
@@ -314,8 +226,8 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
     }
 
     /**
-     * Answer the contents of self's source specification widget. If this
-     * value does not have a suffix then add it first.
+     * Answer the contents of self's source specification widget. If this value
+     * does not have a suffix then add it first.
      */
     private String getSourceValue() {
         return fSourceNameField.getText().trim();
@@ -338,12 +250,6 @@ public class ImportTracePackagePage extends AbstractTracePackageWizard {
                 fSourceNameField.add(directoryNames[i]);
             }
         }
-
-        updateMessage();
-    }
-
-    private void updateMessage() {
-        setMessage(Messages.ImportTracePackagePage_Title);
     }
 
     /**
