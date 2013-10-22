@@ -164,7 +164,7 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
     @Override
     public void run(IProgressMonitor progressMonitor) {
         int totalWork = getNbCheckedElements(new TracePackageElement[] { fImportTraceElement }) * 2;
-        progressMonitor.beginTask(Messages.TraceImporter_ImportingPackage, totalWork);
+        progressMonitor.beginTask(Messages.TracePackageImportOperation_ImportingPackage, totalWork);
         try {
             setStatus(Status.OK_STATUS);
             TracePackageElement[] children = fImportTraceElement.getChildren();
@@ -192,7 +192,7 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                 TmfTraceType.setTraceType(traceRes.getFullPath(), traceType);
             } catch (CoreException e) {
                 // Only log errors from this point because they are non-fatal
-                Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorSettingTraceType, traceType.getCanonicalName(), traceRes.getName()), e);
+                Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackageWizardPage_ErrorSettingTraceType, traceType.getCanonicalName(), traceRes.getName()), e);
             }
 
             importBookmarks(traceRes);
@@ -216,7 +216,7 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                         try {
                             bookmarksFile = t.createBookmarksFile();
                         } catch (CoreException e) {
-                            Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorCreatingBookmarkFile, traceRes.getName()), e);
+                            Activator.getDefault().logError(MessageFormat.format(Messages.TracePackageImportOperation_ErrorCreatingBookmarkFile, traceRes.getName()), e);
                         }
                         break;
                     }
@@ -234,14 +234,14 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                     try {
                         createMarker = bookmarksFile.createMarker(IMarker.BOOKMARK);
                     } catch (CoreException e) {
-                        Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorCreatingBookmark, traceRes.getName()), e);
+                        Activator.getDefault().logError(MessageFormat.format(Messages.TracePackageImportOperation_ErrorCreatingBookmark, traceRes.getName()), e);
                     }
                     if (createMarker != null && createMarker.exists()) {
                         try {
                             createMarker.setAttribute(IMarker.MESSAGE, attrs.getMessage());
                             createMarker.setAttribute(IMarker.LOCATION, attrs.getLocation());
                         } catch (CoreException e) {
-                            Activator.getDefault().logError(MessageFormat.format(Messages.ImportTracePackagePage_ErrorCreatingBookmark, traceRes.getName()), e);
+                            Activator.getDefault().logError(MessageFormat.format(Messages.TracePackageImportOperation_ErrorCreatingBookmark, traceRes.getName()), e);
                         }
 
                     }

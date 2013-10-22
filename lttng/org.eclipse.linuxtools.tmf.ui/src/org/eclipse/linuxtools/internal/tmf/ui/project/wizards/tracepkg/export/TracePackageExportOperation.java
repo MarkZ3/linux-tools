@@ -97,7 +97,7 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
         try {
             int totalWork = getNbCheckedElements(fTraceExportElements) * 2;
-            progressMonitor.beginTask(Messages.ExportTracePackageWizardPage_GeneratingPackage, totalWork);
+            progressMonitor.beginTask(Messages.TracePackageExportOperation_GeneratingPackage, totalWork);
 
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element createElement = doc.createElement(ITracePackageConstants.TMF_EXPORT_ELEMENT);

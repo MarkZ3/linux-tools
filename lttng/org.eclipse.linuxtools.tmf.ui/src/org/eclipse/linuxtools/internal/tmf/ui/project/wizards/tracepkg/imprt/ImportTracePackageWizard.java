@@ -28,7 +28,7 @@ public class ImportTracePackageWizard extends Wizard implements IExportWizard {
 
     private static final String STORE_IMPORT_TRACE_PKG_WIZARD = "ImportTracePackageWizard"; //$NON-NLS-1$
     private IStructuredSelection fSelection;
-    private ImportTracePackagePage page;
+    private ImportTracePackageWizardPage page;
 
     ImportTracePackageWizard() {
         IDialogSettings workbenchSettings = Activator.getDefault().getDialogSettings();
@@ -54,7 +54,7 @@ public class ImportTracePackageWizard extends Wizard implements IExportWizard {
     @Override
     public void addPages() {
         super.addPages();
-        page = new ImportTracePackagePage(fSelection);
+        page = new ImportTracePackageWizardPage(fSelection);
         addPage(page);
     }
 }

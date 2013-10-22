@@ -106,7 +106,7 @@ public class TracePackageExtractManifestOperation extends AbstractTracePackageOp
                 setStatus(Status.OK_STATUS);
             }
             else {
-                setStatus(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format(Messages.ImportTracePackagePage_ErrorManifestNotFound, ITracePackageConstants.MANIFEST_FILENAME)));
+                setStatus(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format(Messages.TracePackageExtractManifestOperation_ErrorManifestNotFound, ITracePackageConstants.MANIFEST_FILENAME)));
             }
 
             fResultElement = element;
@@ -114,7 +114,7 @@ public class TracePackageExtractManifestOperation extends AbstractTracePackageOp
         } catch (InterruptedException e) {
             setStatus(Status.CANCEL_STATUS);
         } catch (Exception e) {
-            setStatus(new Status(IStatus.ERROR, Activator.PLUGIN_ID, Messages.ImportTracePackagePage_ErrorReadingManifest, e));
+            setStatus(new Status(IStatus.ERROR, Activator.PLUGIN_ID, Messages.TracePackageExtractManifestOperation_ErrorReadingManifest, e));
         }
     }
 

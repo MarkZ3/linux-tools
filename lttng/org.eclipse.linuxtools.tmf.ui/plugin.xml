@@ -595,11 +595,11 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command"
-               label="Export Trace Package..."
-               mnemonic="E"
+               commandId="org.eclipse.linuxtools.tmf.ui.command.exporttracepkg"
+               label="%command.export_trace_package"
+               mnemonic="%command.export_trace_package.mnemonic"
                style="push"
-               tooltip="Export">
+               tooltip="%command.export_trace_package.description">
             <visibleWhen
                   checkEnabled="false">
                <with
@@ -620,11 +620,11 @@
             </visibleWhen>
          </command>
         <command
-               commandId="org.eclipse.linuxtools.tmf.ui.import.tracepkg.command"
-               label="Import..."
-               mnemonic="E"
+               commandId="org.eclipse.linuxtools.tmf.ui.command.importtracepkg"
+               label="%command.import_trace_package"
+               mnemonic="%command.import_trace_package.mnemonic"
                style="push"
-               tooltip="Import">
+               tooltip="%command.import_trace_package.description">
             <visibleWhen
                   checkEnabled="false">
                <with
@@ -809,13 +809,13 @@
       </command>
       <command
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
-            id="org.eclipse.linuxtools.tmf.ui.export.trace.command"
-            name="Export...">
+            id="org.eclipse.linuxtools.tmf.ui.command.exporttracepkg"
+            name="%command.export_trace_package">
       </command>
       <command
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
-            id="org.eclipse.linuxtools.tmf.ui.import.tracepkg.command"
-            name="Import...">
+            id="org.eclipse.linuxtools.tmf.ui.command.importtracepkg"
+            name="%command.import_trace_package">
       </command>
       <command
             categoryId="org.eclipse.linuxtools.tmf.ui.commands.category"
@@ -1080,7 +1080,7 @@
       </handler>
       <handler
             class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTracePackageHandler"
-            commandId="org.eclipse.linuxtools.tmf.ui.export.trace.command">
+            commandId="org.eclipse.linuxtools.tmf.ui.command.exporttracepkg">
          <activeWhen>
             <and>
                <count
@@ -1097,7 +1097,7 @@
       </handler>
       <handler
             class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt.ImportTracePackageHandler"
-            commandId="org.eclipse.linuxtools.tmf.ui.import.tracepkg.command">
+            commandId="org.eclipse.linuxtools.tmf.ui.command.importtracepkg">
          <activeWhen>
             <and>
                <count
@@ -1367,28 +1367,4 @@
          </selectionEnablement>
       </linkHelper>
    </extension>
-   
-   <extension point="org.eclipse.ui.exportWizards">
-         <category
-            id="org.eclipse.linuxtools.tmf.export.category"
-            name="%project.new.category.name">
-      </category>
-   <wizard
-         category="org.eclipse.linuxtools.tmf.export.category"
-         class="org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export.ExportTracePackageWizard"
-         icon="icons/elcl16/trace.gif"
-         id="org.eclipse.linuxtools.tmf.ui.export.trace"
-         name="Trace">
-     <description>Export Trace and related files</description>
-     <selection class="org.eclipse.core.resources.IResource" /> 
-   </wizard>
- </extension>
- <!--
-             category="org.eclipse.linuxtools.tmf.import.category"
-            class="org.eclipse.linuxtools.tmf.ui.project.wizards.importtrace.BatchImportTraceWizard"
-            icon="icons/etool16/import.gif"
-            id="org.eclipse.linuxtools.tmf.ui.batch_import"
-            
-            
--->
 </plugin>

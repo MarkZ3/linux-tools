@@ -12,7 +12,6 @@
 
 package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.export;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +21,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewerColumn;
@@ -42,13 +42,9 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 
 /**
  * Wizard page for the export trace package wizard
@@ -69,13 +65,9 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
 
     // dialog store id constants
     private static final String PAGE_NAME = "ExportTracePackageWizardPage1"; //$NON-NLS-1$
-    private final static String STORE_DESTINATION_NAMES_ID = PAGE_NAME + ".STORE_DESTINATION_NAMES_ID"; //$NON-NLS-1$
     private final static String STORE_COMPRESS_CONTENTS_ID = PAGE_NAME + ".STORE_COMPRESS_CONTENTS_ID"; //$NON-NLS-1$
     private final static String STORE_FORMAT_ID = "ExportTracePackageWizardPage1.STORE_FORMAT_ID"; //$NON-NLS-1$
 
-    private Combo fDestinationNameField;
-
-    private Button fDestinationBrowseButton;
     private Button fCompressContentsCheckbox;
     private Button fZipFormatButton;
     private Button fTargzFormatButton;
@@ -100,18 +92,16 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         composite.setLayout(new GridLayout());
         composite.setLayoutData(new GridData(GridData.VERTICAL_ALIGN_FILL | GridData.HORIZONTAL_ALIGN_FILL));
 
-        createTraceElementsGroup(composite);
+        createElementViewer(composite);
         createButtonsGroup(composite);
-        createDestinationGroup(composite);
+        createFilePathGroup(composite, Messages.ExportTracePackageWizardPage_ToArchive);
         createOptionsGroup(composite);
 
-        updateApproximateSize();
-
         restoreWidgetValues();
-        updateMessage();
+        setMessage(Messages.ExportTracePackageWizardPage_ChooseContent);
 
+        updateApproximateSelectedSize();
         updatePageCompletion();
-        setPageComplete(determinePageCompletion());
 
         setControl(composite);
     }
@@ -120,29 +110,20 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
      * Restore widget values to the values that they held last time this wizard
      * was used to completion.
      */
-    private void restoreWidgetValues() {
+    @Override
+    protected void restoreWidgetValues() {
+        super.restoreWidgetValues();
+
         IDialogSettings settings = getDialogSettings();
         if (settings != null) {
-            String[] directoryNames = settings.getArray(STORE_DESTINATION_NAMES_ID);
-            if (directoryNames == null || directoryNames.length == 0) {
-                // No settings stored
-                return;
+            if (getFilePathCombo().getItemCount() > 0) {
+                setFilePathValue(getFilePathCombo().getItem(0));
+                updateWithFilePathSelection();
             }
-
-            // destination
-            setDestinationValue(directoryNames[0]);
-            for (int i = 0; i < directoryNames.length; i++) {
-                fDestinationNameField.add(directoryNames[i]);
-            }
-
             fCompressContentsCheckbox.setSelection(settings.getBoolean(STORE_COMPRESS_CONTENTS_ID));
             fZipFormatButton.setSelection(settings.getBoolean(STORE_FORMAT_ID));
             fTargzFormatButton.setSelection(!settings.getBoolean(STORE_FORMAT_ID));
         }
-    }
-
-    private void updateMessage() {
-        setMessage(Messages.ExportTracePackageWizardPage_ChooseContent);
     }
 
     private void createOptionsGroup(Composite parent) {
@@ -156,7 +137,7 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         SelectionAdapter listener = new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                updateFileNameWithFormat();
+                updateWithFilePathSelection();
             }
         };
 
@@ -179,18 +160,19 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
     }
 
     @Override
-    protected void createTraceElementsGroup(Composite parent) {
-        super.createTraceElementsGroup(parent);
+    protected void createElementViewer(Composite parent) {
+        super.createElementViewer(parent);
 
-        fTraceExportElementViewer.getTree().setHeaderVisible(true);
+        CheckboxTreeViewer elementViewer = getElementViewer();
+        elementViewer.getTree().setHeaderVisible(true);
         // Content column
-        TreeViewerColumn column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
+        TreeViewerColumn column = new TreeViewerColumn(elementViewer, SWT.NONE);
         column.getColumn().setWidth(CONTENT_COL_WIDTH);
         column.getColumn().setText(Messages.ExportTracePackageWizardPage_ContentColumnName);
         column.setLabelProvider(new TracePackageLabelProvider());
 
         // Size column
-        column = new TreeViewerColumn(fTraceExportElementViewer, SWT.NONE);
+        column = new TreeViewerColumn(elementViewer, SWT.NONE);
         column.getColumn().setWidth(SIZE_COL_WIDTH);
         column.getColumn().setText(Messages.ExportTracePackageWizardPage_SizeColumnName);
         column.setLabelProvider(new ColumnLabelProvider() {
@@ -221,16 +203,15 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
             }
         });
 
-        setTraceElementsInput();
-        fTraceExportElementViewer.expandToLevel(2);
-
-        setAllChecked(fTraceExportElementViewer, false, true);
+        elementViewer.setInput(createElementViewerInput());
+        elementViewer.expandToLevel(2);
+        setAllChecked(elementViewer, false, true);
     }
 
     @Override
-    protected void updateApproximateSize() {
+    protected void updateApproximateSelectedSize() {
         long checkedSize = 0;
-        TracePackageElement[] tracePackageElements = (TracePackageElement[]) fTraceExportElementViewer.getInput();
+        TracePackageElement[] tracePackageElements = (TracePackageElement[]) getElementViewer().getInput();
         for (TracePackageElement element : tracePackageElements) {
             checkedSize += element.getSize(true);
         }
@@ -260,7 +241,8 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         return Long.toString(curSize) + " " + humanSuffix[suffixIndex]; //$NON-NLS-1$
     }
 
-    private void setTraceElementsInput() {
+    @Override
+    protected Object createElementViewerInput() {
         Object[] selectedElements = getSelection().toArray();
         List<TracePackageTraceElement> traceElements = new ArrayList<TracePackageTraceElement>();
         for (Object selectedElement : selectedElements) {
@@ -295,13 +277,14 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
             }
         }
 
-        fTraceExportElementViewer.setInput(traceElements.toArray(new TracePackageTraceElement[] {}));
+        return traceElements.toArray(new TracePackageTraceElement[] {});
     }
 
     @Override
     protected final Composite createButtonsGroup(Composite parent) {
         Composite buttonGroup = super.createButtonsGroup(parent);
 
+        // Add the label on the same row of the select/deselect all buttons
         fApproximateSizeLabel = new Label(buttonGroup, SWT.SINGLE | SWT.RIGHT);
         GridData layoutData = new GridData(GridData.FILL_HORIZONTAL);
         layoutData.grabExcessHorizontalSpace = true;
@@ -310,89 +293,15 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         return buttonGroup;
     }
 
-    @Override
-    protected boolean determinePageCompletion() {
-        return fTraceExportElementViewer.getCheckedElements().length > 0 && !getDestinationValue().isEmpty();
-    }
-
-    private void createDestinationGroup(Composite parent) {
-
-        Composite destinationSelectionGroup = new Composite(parent, SWT.NONE);
-        GridLayout layout = new GridLayout();
-        layout.numColumns = 3;
-        destinationSelectionGroup.setLayout(layout);
-        destinationSelectionGroup.setLayoutData(new GridData(
-                GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_FILL));
-
-        Label destinationLabel = new Label(destinationSelectionGroup, SWT.NONE);
-        destinationLabel.setText(Messages.ExportTracePackageWizardPage_ToArchive);
-
-        // destination name entry field
-        fDestinationNameField = new Combo(destinationSelectionGroup, SWT.SINGLE
-                | SWT.BORDER);
-        GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL
-                | GridData.GRAB_HORIZONTAL);
-        data.grabExcessHorizontalSpace = true;
-        fDestinationNameField.setLayoutData(data);
-
-        // destination browse button
-        fDestinationBrowseButton = new Button(destinationSelectionGroup,
-                SWT.PUSH);
-        fDestinationBrowseButton.setText(org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_Browse);
-        fDestinationBrowseButton.addListener(SWT.Selection, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                handleDestinationBrowseButtonPressed();
-            }
-        });
-        setButtonLayoutData(fDestinationBrowseButton);
-    }
-
-    private String getDestinationValue() {
-        return fDestinationNameField.getText().trim();
-    }
-
-    /**
-     * Open an appropriate destination browser so that the user can specify a
-     * source to import from
-     */
-    private void handleDestinationBrowseButtonPressed() {
-        FileDialog dialog = new FileDialog(getContainer().getShell(), SWT.SAVE | SWT.SHEET);
-        dialog.setFilterExtensions(new String[] { "*.zip;*.tar.gz;*.tar;*.tgz", "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
-        dialog.setText(Messages.ExportTracePackageWizardPage_SelectDestinationTitle);
-        String currentSourceString = getDestinationValue();
-        int lastSeparatorIndex = currentSourceString.lastIndexOf(File.separator);
-        if (lastSeparatorIndex != -1) {
-            dialog.setFilterPath(currentSourceString.substring(0, lastSeparatorIndex));
-        }
-        String selectedFileName = dialog.open();
-
-        if (selectedFileName != null) {
-            setDestinationValue(selectedFileName);
-            updateFileNameWithFormat();
-        }
-    }
-
-    private void setDestinationValue(String value) {
-        fDestinationNameField.setText(value);
-        updatePageCompletion();
-    }
-
     /**
      * Save widget values to Dialog settings
      */
-    private void saveWidgetValues() {
+    @Override
+    protected void saveWidgetValues() {
+        super.saveWidgetValues();
+
         IDialogSettings settings = getDialogSettings();
         if (settings != null) {
-            // update directory names history
-            String[] directoryNames = settings.getArray(STORE_DESTINATION_NAMES_ID);
-            if (directoryNames == null) {
-                directoryNames = new String[0];
-            }
-
-            directoryNames = addToHistory(directoryNames, getDestinationValue());
-            settings.put(STORE_DESTINATION_NAMES_ID, directoryNames);
-
             settings.put(STORE_COMPRESS_CONTENTS_ID, fCompressContentsCheckbox.getSelection());
             settings.put(STORE_FORMAT_ID, fZipFormatButton.getSelection());
         }
@@ -408,16 +317,17 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
         }
     }
 
-    private void updateFileNameWithFormat() {
-        String destinationValue = getDestinationValue();
-        if (destinationValue.isEmpty()) {
+    @Override
+    protected void updateWithFilePathSelection() {
+        String filePathValue = getFilePathValue();
+        if (filePathValue.isEmpty()) {
             return;
         }
 
-        destinationValue = stripKnownExtension(destinationValue);
-        destinationValue = destinationValue.concat(getOutputExtension());
+        filePathValue = stripKnownExtension(filePathValue);
+        filePathValue = filePathValue.concat(getOutputExtension());
 
-        setDestinationValue(destinationValue);
+        setFilePathValue(filePathValue);
     }
 
     private static String stripKnownExtension(String str) {
@@ -439,13 +349,12 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizard {
      * @return true on success
      */
     public boolean finish() {
-
         saveWidgetValues();
 
-        TracePackageTraceElement[] traceExportElements = (TracePackageTraceElement[]) fTraceExportElementViewer.getInput();
+        TracePackageTraceElement[] traceExportElements = (TracePackageTraceElement[]) getElementViewer().getInput();
         boolean useCompression = fCompressContentsCheckbox.getSelection();
         boolean useTar = fTargzFormatButton.getSelection();
-        String fileName = getDestinationValue();
+        String fileName = getFilePathValue();
         final TracePackageExportOperation exporter = new TracePackageExportOperation(traceExportElements, useCompression, useTar, fileName);
 
         try {

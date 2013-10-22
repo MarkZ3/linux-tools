@@ -15,6 +15,7 @@ package org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.imprt;
 import org.eclipse.osgi.util.NLS;
 
 /**
+ * Messages for the trace package import wizard
  *
  * @author Marc-Andre Laperle
  */
@@ -24,33 +25,66 @@ public class Messages extends NLS {
     /**
      * Title for the import page
      */
-    public static String ImportTracePkgPage_title;
-
-    /**
-     * Title for the browse file dialog
-     */
-    public static String ArchiveImport_selectSourceTitle;
+    public static String ImportTracePackageWizardPage_Title;
 
     /**
      * Text for the source archive label
      */
-    public static String FileImport_FromArchive;
-    public static String ImportTracePackagePage_ErrorCreatingBookmark;
+    public static String ImportTracePackageWizardPage_FromArchive;
 
-    public static String ImportTracePackagePage_ErrorCreatingBookmarkFile;
+    /**
+     * Text for the reading package job
+     */
+    public static String ImportTracePackageWizardPage_ReadingPackage;
 
-    public static String ImportTracePackagePage_ErrorManifestNotFound;
+    /**
+     * Message when file is not found
+     */
+    public static String ImportTracePackageWizardPage_ErrorFileNotFound;
 
-    public static String ImportTracePackagePage_ErrorOperation;
+    /**
+     * Message when trace type could not be set
+     */
+    public static String ImportTracePackageWizardPage_ErrorSettingTraceType;
 
-    public static String ImportTracePackagePage_ErrorReadingManifest;
-    public static String ImportTracePackagePage_ErrorFileNotFound;
+    /**
+     * The message displayed under the title
+     */
+    public static String ImportTracePackageWizardPage_Message;
 
-    public static String ImportTracePackagePage_ErrorSettingTraceType;
-    public static String ImportTracePackagePage_Title;
-    public static String TraceImporter_ReadingPackage;
-    public static String TraceImporter_ImportingPackage;
+    /**
+     * Generic error message for the import operation
+     */
+    public static String ImportTracePackageWizardPage_ErrorOperation;
 
+    /**
+     * Text when error occurs creating a bookmark
+     */
+    public static String TracePackageImportOperation_ErrorCreatingBookmark;
+
+    /**
+     * Text when error occurs creating a bookmark file
+     */
+    public static String TracePackageImportOperation_ErrorCreatingBookmarkFile;
+
+    /**
+     * Text for the importing package job
+     */
+    public static String TracePackageImportOperation_ImportingPackage;
+
+    /**
+     * Text when error occurs when the manifest is not found in the archive
+     */
+    public static String TracePackageExtractManifestOperation_ErrorManifestNotFound;
+
+    /**
+     * Generic error message when reading the manifest
+     */
+    public static String TracePackageExtractManifestOperation_ErrorReadingManifest;
+
+    /**
+     * Error message when the file is an invalid format
+     */
     public static String TracePackageExtractManifestOperation_InvalidFormat;
 
     static {
