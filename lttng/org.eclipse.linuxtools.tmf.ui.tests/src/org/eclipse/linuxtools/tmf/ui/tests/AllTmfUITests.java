@@ -28,7 +28,8 @@ import org.junit.runners.Suite;
     org.eclipse.linuxtools.tmf.ui.tests.statistics.AllTests.class,
     org.eclipse.linuxtools.tmf.ui.tests.views.uml2sd.dialogs.AllTests.class,
     org.eclipse.linuxtools.tmf.ui.tests.views.uml2sd.load.AllTests.class,
-    org.eclipse.linuxtools.tmf.ui.tests.views.uml2sd.loader.AllTests.class
+    org.eclipse.linuxtools.tmf.ui.tests.views.uml2sd.loader.AllTests.class,
+    org.eclipse.linuxtools.tmf.ui.tests.swtbot.AllTests.class
 })
 public class AllTmfUITests {
 
