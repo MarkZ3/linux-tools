@@ -26,10 +26,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -45,7 +44,9 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePack
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFileElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
+import org.eclipse.linuxtools.tmf.core.TmfCommonConstants;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
+import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileExportOperation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -59,10 +60,13 @@ import org.w3c.dom.Node;
 @SuppressWarnings("restriction")
 public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
+    private static final String TRACE_EXPORT_TEMP_FOLDER = ".traceExport"; //$NON-NLS-1$
+
     private final TracePackageTraceElement[] fTraceExportElements;
     private final boolean fUseCompression;
     private final boolean fUseTar;
     private final List<IResource> fResources;
+    private IFolder fExportFolder;
 
     /**
      * Constructs a new export operation
@@ -99,6 +103,8 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
             int totalWork = getNbCheckedElements(fTraceExportElements) * 2;
             progressMonitor.beginTask(Messages.TracePackageExportOperation_GeneratingPackage, totalWork);
 
+            fExportFolder = createExportFolder(progressMonitor);
+
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element createElement = doc.createElement(ITracePackageConstants.TMF_EXPORT_ELEMENT);
             Node tmfNode = doc.appendChild(createElement);
@@ -118,10 +124,12 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
             ModalContext.checkCanceled(progressMonitor);
 
-            IFile file = createManifest(content);
-            fResources.add(file);
+            exportManifest(content);
 
             setStatus(exportToArchive(progressMonitor, totalWork));
+
+            fExportFolder.delete(true, new SubProgressMonitor(progressMonitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
+
             progressMonitor.done();
 
         } catch (Exception e) {
@@ -131,6 +139,15 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
                 setStatus(new Status(IStatus.ERROR, Activator.PLUGIN_ID, org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.Messages.TracePackage_ErrorOperation, e));
             }
         }
+    }
+
+    private IFolder createExportFolder(IProgressMonitor monitor) throws CoreException {
+        IFolder folder = fTraceExportElements[0].getTraceElement().getProject().getResource().getFolder(TRACE_EXPORT_TEMP_FOLDER);
+        if (folder.exists()) {
+            folder.delete(true, null);
+        }
+        folder.create(IResource.FORCE | IResource.HIDDEN, true, new SubProgressMonitor(monitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
+        return folder;
     }
 
     private void exportTrace(IProgressMonitor monitor, Node tmfNode, TracePackageTraceElement tracePackageElement) throws InterruptedException, CoreException {
@@ -147,38 +164,73 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
             }
 
             if (element instanceof TracePackageSupplFilesElement) {
-                exportSupplementaryFiles(monitor, traceNode, (TracePackageSupplFilesElement) element);
+                exportSupplementaryFiles(monitor, traceNode, traceElement, (TracePackageSupplFilesElement) element);
             } else if (element instanceof TracePackageBookmarkElement) {
                 exportBookmarks(monitor, traceNode, (TracePackageBookmarkElement) element);
             } else if (element instanceof TracePackageFilesElement) {
-                exportTraceFiles(traceNode, (TracePackageFilesElement) element);
+                exportTraceFiles(monitor, traceNode, (TracePackageFilesElement) element);
             }
 
             monitor.worked(1);
         }
     }
 
-    private void exportSupplementaryFiles(IProgressMonitor monitor, Node traceNode, TracePackageSupplFilesElement element) throws InterruptedException, CoreException {
+    private void exportSupplementaryFiles(IProgressMonitor monitor, Node traceNode, TmfTraceElement traceElement, TracePackageSupplFilesElement element) throws InterruptedException, CoreException {
         Document doc = traceNode.getOwnerDocument();
-        for (TracePackageElement child : element.getChildren()) {
-            TracePackageSupplFileElement supplFile = (TracePackageSupplFileElement) child;
-            ModalContext.checkCanceled(monitor);
-            IResource res = supplFile.getResource();
-            res.refreshLocal(0, new SubProgressMonitor(monitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
-            fResources.add(res);
-            Element suppFileElement = doc.createElement(ITracePackageConstants.SUPPLEMENTARY_FILE_ELEMENT);
-            suppFileElement.setAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB, res.getName());
-            traceNode.appendChild(suppFileElement);
+        if (element.getChildren().length > 0) {
+            IFolder suppFilesFolder = fExportFolder.getFolder(TmfCommonConstants.TRACE_SUPPLEMENATARY_FOLDER_NAME);
+            if (!suppFilesFolder.exists()) {
+                suppFilesFolder.create(IResource.FORCE, true, new SubProgressMonitor(monitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
+            }
+            IFolder traceSuppFilesFolder = suppFilesFolder.getFolder(traceElement.getResource().getName());
+            traceSuppFilesFolder.create(IResource.FORCE, true, new SubProgressMonitor(monitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
+
+            for (TracePackageElement child : element.getChildren()) {
+                TracePackageSupplFileElement supplFile = (TracePackageSupplFileElement) child;
+                ModalContext.checkCanceled(monitor);
+                IResource res = supplFile.getResource();
+                res.refreshLocal(0, new SubProgressMonitor(monitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
+                createExportResource(traceSuppFilesFolder, res);
+                Element suppFileElement = doc.createElement(ITracePackageConstants.SUPPLEMENTARY_FILE_ELEMENT);
+                suppFileElement.setAttribute(ITracePackageConstants.SUPPLEMENTARY_FILE_NAME_ATTRIB, res.getName());
+                traceNode.appendChild(suppFileElement);
+            }
+
+            fResources.add(suppFilesFolder);
         }
     }
 
-    private void exportTraceFiles(Node traceNode, TracePackageFilesElement element) {
+    private void exportTraceFiles(IProgressMonitor monitor, Node traceNode, TracePackageFilesElement element) throws CoreException {
         Document doc = traceNode.getOwnerDocument();
         IResource resource = ((TracePackageTraceElement) element.getParent()).getTraceElement().getResource();
-        fResources.add(resource);
+        IFolder folder = fExportFolder.getFolder(TmfTraceFolder.TRACE_FOLDER_NAME);
+        if (!folder.exists()) {
+            folder.create(IResource.FORCE, true, new SubProgressMonitor(monitor, 1, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
+        }
+
+        createExportResource(folder, resource);
         Element fileElement = doc.createElement(ITracePackageConstants.TRACE_FILE_ELEMENT);
         fileElement.setAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB, resource.getName());
         traceNode.appendChild(fileElement);
+        fResources.add(folder);
+    }
+
+    /**
+     * Creates a linked resource in the specified folder
+     *
+     * @param exportFolder the folder that will contain the linked resource
+     * @param res the resource to export
+     * @throws CoreException when createLink fails
+     */
+    private static void createExportResource(IFolder exportFolder, IResource res) throws CoreException {
+        // Note: The resources cannot be HIDDEN or else they are ignored by ArchiveFileExportOperation
+        if (res instanceof IFolder) {
+            IFolder folder = exportFolder.getFolder(res.getName());
+            folder.createLink(res.getLocationURI(), IResource.NONE, null);
+        } else if (res instanceof IFile) {
+            IFile file = exportFolder.getFile(res.getName());
+            file.createLink(res.getLocationURI(), IResource.NONE, null);
+        }
     }
 
     private static void exportBookmarks(IProgressMonitor monitor, Node traceNode, TracePackageBookmarkElement element) throws CoreException, InterruptedException {
@@ -204,24 +256,20 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
         }
     }
 
-    private IFile createManifest(String content) throws CoreException {
-        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-        // The file has to be in the workspace so that it can be included in the
-        // archive.
-        // Ideally, this would be created in a temporary workspace directory.
-        IFile file = root.getFile(fTraceExportElements[0].getTraceElement().getSupplementaryFolderParent().getFullPath().append(ITracePackageConstants.MANIFEST_FILENAME));
+    private void exportManifest(String content) throws CoreException {
+        IFile file = fExportFolder.getFile(ITracePackageConstants.MANIFEST_FILENAME);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes());
         if (file.exists()) {
             file.setContents(inputStream, IResource.FORCE, null);
         } else {
             file.create(inputStream, IResource.FORCE | IResource.HIDDEN, null);
         }
-        return file;
+        fResources.add(file);
     }
 
     private IStatus exportToArchive(IProgressMonitor monitor, int totalWork) throws InvocationTargetException, InterruptedException {
         ArchiveFileExportOperation op = new ArchiveFileExportOperation(fResources, getFileName());
-        op.setCreateLeadupStructure(true);
+        op.setCreateLeadupStructure(false);
         op.setUseCompression(fUseCompression);
         op.setUseTarFormat(fUseTar);
         op.run(new SubProgressMonitor(monitor, totalWork / 2, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));

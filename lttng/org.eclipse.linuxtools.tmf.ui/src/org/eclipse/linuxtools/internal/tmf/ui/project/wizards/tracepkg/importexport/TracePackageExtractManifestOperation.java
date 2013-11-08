@@ -99,9 +99,6 @@ public class TracePackageExtractManifestOperation extends AbstractTracePackageOp
 
             Enumeration<?> entries = archiveFile.entries();
 
-            IPath manifestPath = new Path(".tracing");
-            manifestPath = manifestPath.append(ITracePackageConstants.MANIFEST_FILENAME);
-
             boolean found = false;
             while (entries.hasMoreElements()) {
                 ModalContext.checkCanceled(progressMonitor);
@@ -111,7 +108,7 @@ public class TracePackageExtractManifestOperation extends AbstractTracePackageOp
                 //Remove project name
                 p = p.removeFirstSegments(1);
 
-                if (entry.getName().endsWith(manifestPath.toString())) {
+                if (entry.getName().endsWith(ITracePackageConstants.MANIFEST_FILENAME)) {
                     found = true;
                     InputStream inputStream = archiveFile.getInputStream(entry);
                     validateManifest(inputStream);

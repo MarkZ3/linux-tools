@@ -39,6 +39,7 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePack
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFileElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
+import org.eclipse.linuxtools.tmf.core.TmfCommonConstants;
 import org.eclipse.linuxtools.tmf.ui.editors.TmfEventsEditor;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfNavigatorContentProvider;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
@@ -298,7 +299,7 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
 
     private IStatus importTraceFiles(IProgressMonitor monitor, TracePackageFilesElement traceFilesElement) {
         List<String> fileNames = new ArrayList<String>();
-        IPath prefix = new Path("Traces");
+        IPath prefix = new Path(TmfTraceFolder.TRACE_FOLDER_NAME);
         fileNames.add(traceFilesElement.getFileName());
         IPath containerPath = fTmfTraceFolder.getPath();
         IStatus status = importFiles(getSpecifiedArchiveFile(), fileNames, prefix, containerPath, monitor);
@@ -329,26 +330,34 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                 ArchiveFile archiveFile = getSpecifiedArchiveFile();
                 traceElement.refreshSupplementaryFolder();
                 String traceName = traceElement.getResource().getName();
-                IPath prefix = new Path(".tracing").append(traceName);
-                IPath containerPath = traceElement.getTraceSupplementaryFolder(traceName).getFullPath();
-                return importFiles(archiveFile, fileNames, prefix, containerPath, monitor);
+                // Project/.tracing/tracename
+                IPath destinationContainerPath = traceElement.getTraceSupplementaryFolder(traceName).getFullPath();
+                // .tracing/tracename
+                IPath pathInArchive = new Path(TmfCommonConstants.TRACE_SUPPLEMENATARY_FOLDER_NAME).append(traceName);
+                return importFiles(archiveFile, fileNames, pathInArchive, destinationContainerPath, monitor);
             }
         }
 
         return Status.OK_STATUS;
     }
 
-    private IStatus importFiles(ArchiveFile archiveFile, List<String> fileNames, IPath prefix, IPath destinationPath, IProgressMonitor monitor) {
+    private IStatus importFiles(ArchiveFile archiveFile, List<String> fileNames, IPath pathInArchive, IPath destinationContainerPath, IProgressMonitor monitor) {
         List<ArchiveProviderElement> objects = new ArrayList<ArchiveProviderElement>();
         Enumeration<?> entries = archiveFile.entries();
         while (entries.hasMoreElements()) {
             ArchiveEntry entry = (ArchiveEntry) entries.nextElement();
-            IPath p = new Path(entry.getName());
-            p = p.removeFirstSegments(1);
             for (String fileName : fileNames) {
-                if (fileNameMatches(prefix.append(fileName).toString(), p.toString())) {
-                    IPath blah = p.removeFirstSegments(prefix.segmentCount());
-                    ArchiveProviderElement pe = new ArchiveProviderElement(blah.toString(), p.lastSegment(), archiveFile, entry);
+                // Check if this archive entry matches the searched file name at this archive location
+                IPath searchedArchivePath = pathInArchive.append(fileName);
+                if (fileNameMatches(searchedArchivePath.toString(), entry.getName())) {
+                    // Traces/kernel/metadata
+                    IPath fullArchivePath = new Path(entry.getName());
+                    // kernel/metadata, the ImportOperation will take care of creating the kernel folder
+                    IPath destinationPath = fullArchivePath.removeFirstSegments(pathInArchive.segmentCount());
+                    // metadata
+                    String resourceLabel = fullArchivePath.lastSegment();
+
+                    ArchiveProviderElement pe = new ArchiveProviderElement(destinationPath.toString(), resourceLabel, archiveFile, entry);
                     objects.add(pe);
                     break;
                 }
@@ -357,7 +366,7 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
 
         ImportProvider provider = new ImportProvider();
 
-        ImportOperation operation = new ImportOperation(destinationPath,
+        ImportOperation operation = new ImportOperation(destinationContainerPath,
                 null, provider, this,
                 objects);
         operation.setCreateContainerStructure(true);
