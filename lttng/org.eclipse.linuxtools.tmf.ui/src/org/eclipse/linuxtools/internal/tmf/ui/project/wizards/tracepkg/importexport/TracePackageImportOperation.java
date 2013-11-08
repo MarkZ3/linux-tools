@@ -40,6 +40,7 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePack
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageSupplFilesElement;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
 import org.eclipse.linuxtools.tmf.ui.editors.TmfEventsEditor;
+import org.eclipse.linuxtools.tmf.ui.project.model.TmfNavigatorContentProvider;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceType;
@@ -183,8 +184,8 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                 ModalContext.checkCanceled(progressMonitor);
 
                 if (element instanceof TracePackageFilesElement) {
-                    TracePackageFilesElement exportTraceFilesElement = (TracePackageFilesElement) element;
-                    setStatus(importTraceFiles(progressMonitor, exportTraceFilesElement));
+                    TracePackageFilesElement traceFilesElement = (TracePackageFilesElement) element;
+                    setStatus(importTraceFiles(progressMonitor, traceFilesElement));
 
                 } else if (element instanceof TracePackageSupplFilesElement) {
                     TracePackageSupplFilesElement suppFilesElement = (TracePackageSupplFilesElement) element;
@@ -247,10 +248,8 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                         try {
                             bookmarksFile = t.createBookmarksFile();
 
-                            // Make sure that if a bookmark is double-clicked
-                            // first
-                            // before opening the trace, it opens the right
-                            // editor
+                            // Make sure that if a bookmark is double-clicked first
+                            // before opening the trace, it opens the right editor
 
                             // Get the editor id from the extension point
                             String traceEditorId = t.getEditorId();
@@ -268,9 +267,9 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
                     break;
                 }
 
-                TracePackageBookmarkElement exportTraceBookmarkElement = (TracePackageBookmarkElement) o;
+                TracePackageBookmarkElement bookmarkElement = (TracePackageBookmarkElement) o;
 
-                List<TracePackageBookmarkElement.BookmarkInfo> bookmarks = exportTraceBookmarkElement.getBookmarks();
+                List<TracePackageBookmarkElement.BookmarkInfo> bookmarks = bookmarkElement.getBookmarks();
                 for (BookmarkInfo attrs : bookmarks) {
                     IMarker createMarker = null;
                     try {
@@ -297,11 +296,16 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
         return fileMatch || folderMatch;
     }
 
-    private IStatus importTraceFiles(IProgressMonitor monitor, TracePackageFilesElement exportTraceFilesElement) {
+    private IStatus importTraceFiles(IProgressMonitor monitor, TracePackageFilesElement traceFilesElement) {
         List<String> fileNames = new ArrayList<String>();
-        fileNames.add(exportTraceFilesElement.getFileName());
+        IPath prefix = new Path("Traces");
+        fileNames.add(traceFilesElement.getFileName());
         IPath containerPath = fTmfTraceFolder.getPath();
-        return importFiles(getSpecifiedArchiveFile(), fileNames, containerPath, monitor);
+        IStatus status = importFiles(getSpecifiedArchiveFile(), fileNames, prefix, containerPath, monitor);
+        if (status.isOK()) {
+            new TmfNavigatorContentProvider().getChildren(fTmfTraceFolder);
+        }
+        return status;
     }
 
     private IStatus importSupplFiles(IProgressMonitor monitor, TracePackageSupplFilesElement suppFilesElement) {
@@ -317,30 +321,36 @@ public class TracePackageImportOperation extends AbstractTracePackageOperation i
             for (TmfTraceElement t : traces) {
                 if (t.getName().equals(fImportTraceElement.getText())) {
                     traceElement = t;
+                    break;
                 }
             }
 
             if (traceElement != null) {
                 ArchiveFile archiveFile = getSpecifiedArchiveFile();
                 traceElement.refreshSupplementaryFolder();
-                IPath containerPath = traceElement.getTraceSupplementaryFolder(traceElement.getResource().getName()).getFullPath();
-                return importFiles(archiveFile, fileNames, containerPath, monitor);
+                String traceName = traceElement.getResource().getName();
+                IPath prefix = new Path(".tracing").append(traceName);
+                IPath containerPath = traceElement.getTraceSupplementaryFolder(traceName).getFullPath();
+                return importFiles(archiveFile, fileNames, prefix, containerPath, monitor);
             }
         }
 
         return Status.OK_STATUS;
     }
 
-    private IStatus importFiles(ArchiveFile archiveFile, List<String> fileNames, IPath destinationPath, IProgressMonitor monitor) {
+    private IStatus importFiles(ArchiveFile archiveFile, List<String> fileNames, IPath prefix, IPath destinationPath, IProgressMonitor monitor) {
         List<ArchiveProviderElement> objects = new ArrayList<ArchiveProviderElement>();
         Enumeration<?> entries = archiveFile.entries();
         while (entries.hasMoreElements()) {
             ArchiveEntry entry = (ArchiveEntry) entries.nextElement();
+            IPath p = new Path(entry.getName());
+            p = p.removeFirstSegments(1);
             for (String fileName : fileNames) {
-                if (fileNameMatches(fileName, entry.getName())) {
-                    Path path = new Path(entry.getName());
-                    ArchiveProviderElement pe = new ArchiveProviderElement(entry.getName(), path.lastSegment(), archiveFile, entry);
+                if (fileNameMatches(prefix.append(fileName).toString(), p.toString())) {
+                    IPath blah = p.removeFirstSegments(prefix.segmentCount());
+                    ArchiveProviderElement pe = new ArchiveProviderElement(blah.toString(), p.lastSegment(), archiveFile, entry);
                     objects.add(pe);
+                    break;
                 }
             }
         }

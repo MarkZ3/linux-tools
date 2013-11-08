@@ -644,13 +644,9 @@
                      <iterate
                            ifEmpty="false"
                            operator="and">
-                        <and>
-                           <or>
-                              <instanceof
-                                    value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder">
-                              </instanceof>
-                           </or>
-                        </and>
+                        <instanceof
+                              value="org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceFolder">
+                        </instanceof>
                      </iterate>
                   </and>
                </with>

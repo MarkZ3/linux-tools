@@ -127,7 +127,7 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizardPage
 
         createElementViewer(composite);
         createButtonsGroup(composite);
-        createFilePathGroup(composite, Messages.ExportTracePackageWizardPage_ToArchive);
+        createFilePathGroup(composite, Messages.ExportTracePackageWizardPage_ToArchive, SWT.SAVE);
         createOptionsGroup(composite);
 
         restoreWidgetValues();
@@ -313,7 +313,7 @@ public class ExportTracePackageWizardPage extends AbstractTracePackageWizardPage
         Composite buttonGroup = super.createButtonsGroup(parent);
 
         // Add the label on the same row of the select/deselect all buttons
-        fApproximateSizeLabel = new Label(buttonGroup, SWT.SINGLE | SWT.RIGHT);
+        fApproximateSizeLabel = new Label(buttonGroup, SWT.RIGHT);
         GridData layoutData = new GridData(GridData.FILL_HORIZONTAL);
         layoutData.grabExcessHorizontalSpace = true;
         fApproximateSizeLabel.setLayoutData(layoutData);

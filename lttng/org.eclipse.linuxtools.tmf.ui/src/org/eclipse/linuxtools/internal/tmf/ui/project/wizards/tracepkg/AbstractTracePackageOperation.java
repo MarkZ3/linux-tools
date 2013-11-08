@@ -108,7 +108,7 @@ abstract public class AbstractTracePackageOperation {
 
         try {
             TarFile tarFile = new TarFile(fFileName);
-            return new TarAchiveFile(tarFile);
+            return new TarArchiveFile(tarFile);
         } catch (TarException e) {
             // ignore
         } catch (IOException e) {
@@ -183,7 +183,7 @@ abstract public class AbstractTracePackageOperation {
     /**
      * Adapter for TarFile to ArchiveFile
      */
-    protected class TarAchiveFile implements ArchiveFile {
+    protected class TarArchiveFile implements ArchiveFile {
 
         private TarFile fTarFile;
 
@@ -193,7 +193,7 @@ abstract public class AbstractTracePackageOperation {
          * @param tarFile
          *            the TarFile
          */
-        public TarAchiveFile(TarFile tarFile) {
+        public TarArchiveFile(TarFile tarFile) {
             this.fTarFile = tarFile;
         }
 

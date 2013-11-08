@@ -30,6 +30,7 @@ import javax.xml.validation.Validator;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
@@ -98,12 +99,19 @@ public class TracePackageExtractManifestOperation extends AbstractTracePackageOp
 
             Enumeration<?> entries = archiveFile.entries();
 
+            IPath manifestPath = new Path(".tracing");
+            manifestPath = manifestPath.append(ITracePackageConstants.MANIFEST_FILENAME);
+
             boolean found = false;
             while (entries.hasMoreElements()) {
                 ModalContext.checkCanceled(progressMonitor);
 
                 ArchiveEntry entry = (ArchiveEntry) entries.nextElement();
-                if (entry.getName().equalsIgnoreCase(ITracePackageConstants.MANIFEST_FILENAME)) {
+                IPath p = new Path(entry.getName());
+                //Remove project name
+                p = p.removeFirstSegments(1);
+
+                if (entry.getName().endsWith(manifestPath.toString())) {
                     found = true;
                     InputStream inputStream = archiveFile.getInputStream(entry);
                     validateManifest(inputStream);

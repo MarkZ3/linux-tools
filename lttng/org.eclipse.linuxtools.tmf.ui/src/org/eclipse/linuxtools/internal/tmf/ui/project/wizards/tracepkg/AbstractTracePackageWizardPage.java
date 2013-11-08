@@ -56,10 +56,9 @@ import org.eclipse.swt.widgets.TreeItem;
 abstract public class AbstractTracePackageWizardPage extends WizardPage {
 
     private static final int COMBO_HISTORY_LENGTH = 5;
-
-    private final String fStoreFilePathId;
     private static final String STORE_FILE_PATHS_ID = ".STORE_FILEPATHS_ID"; //$NON-NLS-1$
 
+    private final String fStoreFilePathId;
     private final IStructuredSelection fSelection;
 
     private CheckboxTreeViewer fElementViewer;
@@ -113,13 +112,21 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
             private void maintainCheckIntegrity(final TracePackageElement element) {
                 TracePackageElement parentElement = element.getParent();
                 boolean allChecked = true;
+                boolean oneChecked = false;
                 if (parentElement != null) {
                     if (parentElement.getChildren() != null) {
                         for (TracePackageElement child : parentElement.getChildren()) {
-                            allChecked &= fElementViewer.getChecked(child);
+                            boolean checked = fElementViewer.getChecked(child) && !fElementViewer.getGrayed(child);
+                            oneChecked |= checked;
+                            allChecked &= checked;
                         }
                     }
-                    fElementViewer.setChecked(parentElement, allChecked);
+                    if (oneChecked && !allChecked) {
+                        fElementViewer.setGrayChecked(parentElement, true);
+                    } else {
+                        fElementViewer.setGrayed(parentElement, false);
+                        fElementViewer.setChecked(parentElement, allChecked);
+                    }
                     maintainCheckIntegrity(parentElement);
                 }
             }
@@ -145,8 +152,10 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
      *            the parent composite
      * @param label
      *            the label to describe the file path (i.e. import/export)
+     * @param fileDialogStyle
+     *            SWT.OPEN or SWT.SAVE
      */
-    protected void createFilePathGroup(Composite parent, String label) {
+    protected void createFilePathGroup(Composite parent, String label, final int fileDialogStyle) {
 
         Composite filePathSelectionGroup = new Composite(parent, SWT.NONE);
         GridLayout layout = new GridLayout();
@@ -171,7 +180,7 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
         fBrowseButton.addListener(SWT.Selection, new Listener() {
             @Override
             public void handleEvent(Event event) {
-                handleFilePathBrowseButtonPressed();
+                handleFilePathBrowseButtonPressed(fileDialogStyle);
             }
         });
         setButtonLayoutData(fBrowseButton);
@@ -306,7 +315,7 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
         for (IStatus childStatus : status.getChildren()) {
             StringBuilder childSb = new StringBuilder();
             if (!childStatus.getMessage().isEmpty()) {
-                childSb.append(childStatus.getMessage() + "\n"); //$NON-NLS-1$
+                childSb.append(childStatus.getMessage() + '\n');
             }
 
             Throwable childException = childStatus.getException();
@@ -326,7 +335,7 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
             }
 
             if (childSb.length() > 0) {
-                childSb.insert(0, "\n"); //$NON-NLS-1$
+                childSb.insert(0, '\n');
                 sb.append(childSb.toString());
             }
         }
@@ -407,6 +416,9 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
     protected static void setSubtreeChecked(CheckboxTreeViewer viewer, TracePackageElement element, boolean enabledOnly, boolean checked) {
         if (!enabledOnly || element.isEnabled()) {
             viewer.setChecked(element, checked);
+            if (checked) {
+                viewer.setGrayed(element, false);
+            }
             element.setChecked(checked);
             if (element.getChildren() != null) {
                 for (TracePackageElement child : element.getChildren()) {
@@ -456,9 +468,10 @@ abstract public class AbstractTracePackageWizardPage extends WizardPage {
     /**
      * Open an appropriate file dialog so that the user can specify a file to
      * import/export
+     * @param fileDialogStyle
      */
-    private void handleFilePathBrowseButtonPressed() {
-        FileDialog dialog = new FileDialog(getContainer().getShell(), SWT.SAVE | SWT.SHEET);
+    private void handleFilePathBrowseButtonPressed(int fileDialogStyle) {
+        FileDialog dialog = new FileDialog(getContainer().getShell(), fileDialogStyle | SWT.SHEET);
         dialog.setFilterExtensions(new String[] { "*.zip;*.tar.gz;*.tar;*.tgz", "*.*" }); //$NON-NLS-1$ //$NON-NLS-2$
         dialog.setText(Messages.TracePackage_FileDialogTitle);
         String currentSourceString = getFilePathValue();

@@ -183,20 +183,23 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
     private static void exportBookmarks(IProgressMonitor monitor, Node traceNode, TracePackageBookmarkElement element) throws CoreException, InterruptedException {
         Document doc = traceNode.getOwnerDocument();
-        IMarker[] findMarkers = ((TracePackageTraceElement) element.getParent()).getTraceElement().getBookmarksFile().findMarkers(IMarker.BOOKMARK, false, IResource.DEPTH_ZERO);
-        if (findMarkers.length > 0) {
-            Element bookmarksXmlElement = doc.createElement(ITracePackageConstants.BOOKMARKS_ELEMENT);
-            Node bookmarksNode = traceNode.appendChild(bookmarksXmlElement);
+        IFile bookmarksFile = ((TracePackageTraceElement) element.getParent()).getTraceElement().getBookmarksFile();
+        if (bookmarksFile != null && bookmarksFile.exists()) {
+            IMarker[] findMarkers = bookmarksFile.findMarkers(IMarker.BOOKMARK, false, IResource.DEPTH_ZERO);
+            if (findMarkers.length > 0) {
+                Element bookmarksXmlElement = doc.createElement(ITracePackageConstants.BOOKMARKS_ELEMENT);
+                Node bookmarksNode = traceNode.appendChild(bookmarksXmlElement);
 
-            for (IMarker marker : findMarkers) {
-                ModalContext.checkCanceled(monitor);
+                for (IMarker marker : findMarkers) {
+                    ModalContext.checkCanceled(monitor);
 
-                Element singleBookmarkXmlElement = doc.createElement(ITracePackageConstants.BOOKMARK_ELEMENT);
-                for (String key : marker.getAttributes().keySet()) {
-                    singleBookmarkXmlElement.setAttribute(key, marker.getAttribute(key).toString());
+                    Element singleBookmarkXmlElement = doc.createElement(ITracePackageConstants.BOOKMARK_ELEMENT);
+                    for (String key : marker.getAttributes().keySet()) {
+                        singleBookmarkXmlElement.setAttribute(key, marker.getAttribute(key).toString());
+                    }
+
+                    bookmarksNode.appendChild(singleBookmarkXmlElement);
                 }
-
-                bookmarksNode.appendChild(singleBookmarkXmlElement);
             }
         }
     }
@@ -218,7 +221,7 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
     private IStatus exportToArchive(IProgressMonitor monitor, int totalWork) throws InvocationTargetException, InterruptedException {
         ArchiveFileExportOperation op = new ArchiveFileExportOperation(fResources, getFileName());
-        op.setCreateLeadupStructure(false);
+        op.setCreateLeadupStructure(true);
         op.setUseCompression(fUseCompression);
         op.setUseTarFormat(fUseTar);
         op.run(new SubProgressMonitor(monitor, totalWork / 2, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK));
