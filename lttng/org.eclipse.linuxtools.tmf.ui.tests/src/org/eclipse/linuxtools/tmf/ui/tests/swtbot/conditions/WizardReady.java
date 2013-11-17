@@ -18,22 +18,20 @@ import org.eclipse.swtbot.swt.finder.waits.ICondition;
 
 /**
  * Is a given wizard ready?
+ *
  * @author Matthew Khouzam
  */
 class WizardReady implements ICondition {
 
-    private final Wizard[] fWizard;
+    private final Wizard fWizard;
 
-    public WizardReady(Wizard[] wizard) {
+    public WizardReady(Wizard wizard) {
         fWizard = wizard;
     }
 
     @Override
     public boolean test() throws Exception {
-        if (fWizard[0] == null) {
-            return false;
-        }
-        if (fWizard[0].getShell() == null) {
+        if (fWizard.getShell() == null) {
             return false;
         }
         return true;

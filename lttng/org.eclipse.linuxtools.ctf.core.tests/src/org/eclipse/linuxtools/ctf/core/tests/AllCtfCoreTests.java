@@ -27,9 +27,6 @@ import org.junit.runners.Suite;
     CtfCorePluginTest.class,
     org.eclipse.linuxtools.ctf.core.tests.ctftestsuite.TestAll.class,
     org.eclipse.linuxtools.ctf.core.tests.event.TestAll.class,
-    org.eclipse.linuxtools.ctf.core.tests.io.TestAll.class,
-    org.eclipse.linuxtools.ctf.core.tests.trace.TestAll.class,
-    org.eclipse.linuxtools.ctf.core.tests.types.TestAll.class
 })
 public class AllCtfCoreTests {
 

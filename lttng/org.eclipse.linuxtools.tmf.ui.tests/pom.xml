@@ -44,7 +44,7 @@
           <testSuite>org.eclipse.linuxtools.tmf.ui.tests</testSuite>
           <testClass>org.eclipse.linuxtools.tmf.ui.tests.AllTmfUITests</testClass>
           <useUIHarness>true</useUIHarness>
-          <useUIThread>true</useUIThread>
+          <useUIThread>false</useUIThread>
           <product>org.eclipse.platform.ide</product>
         </configuration>
       </plugin>

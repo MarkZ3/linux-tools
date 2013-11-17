@@ -52,13 +52,13 @@ public abstract class ConditionHelpers {
     }
 
     /**
-     * Checks if a view is null and then if it's shell is null
+     * Checks if the wizard's shell is null
      *
      * @param wizard
      *            the null
      * @return false if either are null
      */
-    public static ICondition isWizardReady(Wizard[] wizard) {
+    public static ICondition isWizardReady(Wizard wizard) {
         return new WizardReady(wizard);
     }
 
