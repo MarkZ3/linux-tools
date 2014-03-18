@@ -16,7 +16,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,7 +59,7 @@ public class StreamTest {
         fixture.setEventHeader(new StructDeclaration(1L));
         fixture.setId(1L);
         fixture.addInput(new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, new File("")));
+                new File(testTrace.getPath() + "/channel0_0")));
     }
 
     /**

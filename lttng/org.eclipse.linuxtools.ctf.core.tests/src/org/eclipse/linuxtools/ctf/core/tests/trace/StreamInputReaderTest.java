@@ -16,7 +16,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
-import java.nio.channels.FileChannel;
 import java.util.Set;
 
 import org.eclipse.linuxtools.ctf.core.event.EventDefinition;
@@ -96,7 +95,7 @@ public class StreamInputReaderTest {
     @Test(expected = CTFReaderException.class)
     public void testStreamInputReader_invalid() throws CTFReaderException {
         StreamInput streamInput = new StreamInput(
-                new Stream(new CTFTrace("")), (FileChannel) null, new File(""));
+                new Stream(new CTFTrace("")), new File(""));
 
         StreamInputReader result = new StreamInputReader(streamInput);
         assertNotNull(result);
@@ -140,27 +139,31 @@ public class StreamInputReaderTest {
 
     /**
      * Run the void goToLastEvent() method test.
-     * @throws CTFReaderException error
+     *
+     * @throws CTFReaderException
+     *             error
      */
     @Test
     public void testGoToLastEvent1() throws CTFReaderException {
         final long endTimestamp = goToEnd();
         final long endTime = 4287422460315L;
-        assertEquals(endTime , endTimestamp  );
+        assertEquals(endTime, endTimestamp);
     }
 
     /**
      * Run the void goToLastEvent() method test.
-     * @throws CTFReaderException error
+     *
+     * @throws CTFReaderException
+     *             error
      */
     @Test
     public void testGoToLastEvent2() throws CTFReaderException {
         long timestamp = -1;
-        while(fixture.readNextEvent().equals(CTFResponse.OK)) {
+        while (fixture.readNextEvent().equals(CTFResponse.OK)) {
             timestamp = fixture.getCurrentEvent().getTimestamp();
         }
         long endTimestamp = goToEnd();
-        assertEquals(0 , timestamp- endTimestamp );
+        assertEquals(0, timestamp - endTimestamp);
     }
 
     private long goToEnd() throws CTFReaderException {
@@ -170,7 +173,9 @@ public class StreamInputReaderTest {
 
     /**
      * Run the boolean readNextEvent() method test.
-     * @throws CTFReaderException error
+     *
+     * @throws CTFReaderException
+     *             error
      */
     @Test
     public void testReadNextEvent() throws CTFReaderException {
@@ -179,7 +184,9 @@ public class StreamInputReaderTest {
 
     /**
      * Run the void seek(long) method test. Seek by direct timestamp
-     * @throws CTFReaderException error
+     *
+     * @throws CTFReaderException
+     *             error
      */
     @Test
     public void testSeek_timestamp() throws CTFReaderException {

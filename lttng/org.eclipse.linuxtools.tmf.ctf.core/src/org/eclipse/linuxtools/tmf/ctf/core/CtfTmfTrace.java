@@ -490,4 +490,7 @@ public class CtfTmfTrace extends TmfTrace
     public ITmfLocation restoreLocation(ByteBuffer bufferIn) {
         return new CtfLocation(bufferIn);
     }
+
+
+
 }

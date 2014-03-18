@@ -13,6 +13,8 @@
 package org.eclipse.linuxtools.ctf.core.trace;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -81,6 +83,8 @@ public class StreamInput implements IDefinitionScope {
      */
     private long fLostSoFar = 0;
 
+    private final FileInputStream fFileInputStream;
+
     // ------------------------------------------------------------------------
     // Constructors
     // ------------------------------------------------------------------------
@@ -90,16 +94,29 @@ public class StreamInput implements IDefinitionScope {
      *
      * @param stream
      *            The stream to which this StreamInput belongs to.
-     * @param fileChannel
-     *            The FileChannel to the trace file.
      * @param file
      *            Information about the trace file (for debugging purposes).
+     * @throws CTFReaderException
+     *             The file must exist
+     * @since 3.0
      */
-    public StreamInput(Stream stream, FileChannel fileChannel, File file) {
+    public StreamInput(Stream stream, File file) throws CTFReaderException {
         fStream = stream;
-        fFileChannel = fileChannel;
         fFile = file;
+        try {
+            fFileInputStream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            throw new CTFReaderException(e);
+        }
+
+        fFileChannel = fFileInputStream.getChannel();
         fIndex = new StreamInputPacketIndex();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        fFileInputStream.close();
+        super.finalize();
     }
 
     // ------------------------------------------------------------------------
@@ -436,7 +453,6 @@ public class StreamInput implements IDefinitionScope {
             packetIndex.setContentSizeBits((int) (fileSizeBytes * 8));
         }
 
-
         /* Read the packet size in bits */
         if (packetSize != null) {
             packetIndex.setPacketSizeBits(packetSize.intValue());
@@ -445,7 +461,6 @@ public class StreamInput implements IDefinitionScope {
         } else {
             packetIndex.setPacketSizeBits((int) (fileSizeBytes * 8));
         }
-
 
         /* Read the begin timestamp */
         if (tsBegin != null) {

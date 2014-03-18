@@ -605,7 +605,8 @@ public class CTFTrace implements IDefinitionScope, AutoCloseable {
         }
 
         /* Create the stream input */
-        StreamInput streamInput = new StreamInput(stream, fc, streamFile);
+        StreamInput streamInput;
+        streamInput = new StreamInput(stream, streamFile);
 
         /* Add a reference to the streamInput in the stream */
         stream.addInput(streamInput);
@@ -925,6 +926,25 @@ public class CTFTrace implements IDefinitionScope, AutoCloseable {
             return candidates.floor(dummyCs);
         }
         return callsite;
+    }
+
+    /**
+     * Add a new stream
+     *
+     * @param id
+     *            the ID of the stream
+     * @param streamFile
+     *            new file in the stream
+     * @throws CTFReaderException
+     *             The file must exist
+     * @since 3.0
+     */
+    public void addStream(long id, File streamFile) throws CTFReaderException {
+        if (!fStreams.containsKey(id)) {
+            fStreams.put(id, new Stream(this));
+        }
+        Stream stream = fStreams.get(id);
+        stream.addInput(new StreamInput(stream, streamFile));
     }
 }
 

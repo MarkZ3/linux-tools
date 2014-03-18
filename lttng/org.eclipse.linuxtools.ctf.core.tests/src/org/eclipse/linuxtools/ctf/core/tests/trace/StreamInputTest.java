@@ -19,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
-import java.nio.channels.FileChannel;
 
 import org.eclipse.linuxtools.ctf.core.event.types.Definition;
 import org.eclipse.linuxtools.ctf.core.tests.shared.CtfTestTrace;
@@ -52,12 +51,12 @@ public class StreamInputTest {
     public void setUp() throws CTFReaderException {
         assumeTrue(testTrace.exists());
         fixture = new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, createFile());
+                createFile());
         fixture.setTimestampEnd(1L);
     }
 
     private static File createFile() {
-        return new File("Tests/traces/trace20m/channel_0");
+        return new File(testTrace.getPath() + "/channel0_0");
     }
 
     /**
@@ -125,34 +124,35 @@ public class StreamInputTest {
     StreamInput s1;
     StreamInput s2;
 
-
     @Test
-    public void testEquals1() throws CTFReaderException{
+    public void testEquals1() throws CTFReaderException {
         s1 = new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, createFile());
+                createFile());
         assertFalse(s1.equals(null));
     }
 
     @Test
-    public void testEquals2() throws CTFReaderException{
+    public void testEquals2() throws CTFReaderException {
         s1 = new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, createFile());
+                createFile());
         assertFalse(s1.equals(new Long(23L)));
 
     }
+
     @Test
-    public void testEquals3() throws CTFReaderException{
+    public void testEquals3() throws CTFReaderException {
         s1 = new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, createFile());
-        assertEquals(s1,s1);
+                createFile());
+        assertEquals(s1, s1);
 
     }
+
     @Test
-    public void testEquals4() throws CTFReaderException{
+    public void testEquals4() throws CTFReaderException {
         s1 = new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, createFile());
+                createFile());
         s2 = new StreamInput(new Stream(testTrace.getTrace()),
-                (FileChannel) null, createFile());
-        assertEquals(s1,s2);
+                createFile());
+        assertEquals(s1, s2);
     }
 }
