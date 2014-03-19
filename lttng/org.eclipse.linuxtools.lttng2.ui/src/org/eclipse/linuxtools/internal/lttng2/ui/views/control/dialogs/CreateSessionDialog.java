@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (c) 2012, 2013 Ericsson
+ * Copyright (c) 2012, 2014 Ericsson
  *
  * All rights reserved. This program and the accompanying materials are
  * made available under the terms of the Eclipse Public License v1.0 which
@@ -9,6 +9,7 @@
  * Contributors:
  *   Bernd Hufmann - Initial API and implementation
  *   Bernd Hufmann - Updated for support of LTTng Tools 2.1
+ *   Marc-Andre Laperle - Support for creating a live session
  **********************************************************************/
 package org.eclipse.linuxtools.internal.lttng2.ui.views.control.dialogs;
 
@@ -109,17 +110,34 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
      */
     private Text fSessionPathText = null;
     /**
+     * The button widget to select a normal session
+     */
+    private Button fNormalModeButton = null;
+    /**
      * The button widget to select a snapshot session
      */
     private Button fSnapshotButton = null;
     /**
-     * The Group for stream configuration.
+     * The group that contains the mutually exclusive mode buttons
      */
-    private Group fMainStreamingGroup = null;
+    private Group fModeButtonGroup = null;
     /**
-     * The button to show streaming options.
+     * The button widget to select a live session
      */
-    private Button fConfigureStreamingButton = null;
+    private Button fLiveButton = null;
+
+    /**
+     * The text widget to set a live delay
+     */
+    private Text fLiveDelayText = null;
+    /**
+     * The Group for advanced configuration.
+     */
+    private Group fAdvancedGroup = null;
+    /**
+     * The button to show advanced options.
+     */
+    private Button fAdvancedButton = null;
     /**
      * The composite with streaming configuration parameter.
      */
@@ -183,7 +201,7 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
     /**
      * The session name string.
      */
-    private String fSessionName = null;
+    private String fSessionName = ""; //$NON-NLS-1$
     /**
      * The  session path string.
      */
@@ -193,13 +211,21 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
      */
     private boolean fIsSnapshot = false;
     /**
+     * Flag whether the session is live or not
+     */
+    private boolean fIsLive = false;
+    /**
+     * The live delay
+     */
+    private Integer fLiveDelay = 0;
+    /**
      * Flag whether default location (path) shall be used or not
      */
     private boolean fIsDefaultPath = true;
     /**
-     * Flag whether the trace is streamed or not
+     * Flag whether the advanced options are enabled or not
      */
-    private boolean fIsStreamedTrace = false;
+    private boolean fIsAdvancedEnabled = false;
     /**
      * The network URL in case control and data is configured together.
      * If set, fControlUrl and fDataUrl will be null.
@@ -219,6 +245,7 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
      * The trace path string.
      */
     private String fTracePath = null;
+    private Group fliveGroup = null;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -240,11 +267,15 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
     public void initialize(TraceSessionGroup group) {
        fParent = group;
        fStreamingComposite = null;
-       fSessionName = null;
+       fliveGroup = null;
+       fLiveButton = null;
+       fIsLive = false;
+       fSnapshotButton = null;
+       fSessionName = ""; //$NON-NLS-1$
        fSessionPath = null;
        fIsSnapshot = false;
        fIsDefaultPath = true;
-       fIsStreamedTrace = false;
+       fIsAdvancedEnabled = false;
        fNetworkUrl = null;
        fControlUrl = null;
        fDataUrl = null;
@@ -283,33 +314,64 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
         fSessionNameText = new Text(sessionGroup, SWT.NONE);
         fSessionNameText.setToolTipText(Messages.TraceControl_CreateSessionNameTooltip);
         fSessionNameText.addModifyListener(fUpdateEnablementModifyListener);
+        GridData data = new GridData(GridData.FILL_HORIZONTAL);
+        data.horizontalSpan = 3;
+        fSessionNameText.setLayoutData(data);
 
         fSessionPathLabel = new Label(sessionGroup, SWT.RIGHT);
         fSessionPathLabel.setText(Messages.TraceControl_CreateSessionPathLabel);
         fSessionPathText = new Text(sessionGroup, SWT.NONE);
         fSessionPathText.setToolTipText(Messages.TraceControl_CreateSessionPathTooltip);
-        fSessionPathText.addModifyListener(fUpdateEnablementModifyListener);
-
-        if (fParent.isSnapshotSupported()) {
-            fSnapshotButton = new Button(sessionGroup, SWT.CHECK);
-            fSnapshotButton.setText(Messages.TraceControl_CreateSessionSnapshotLabel);
-            fSnapshotButton.setToolTipText(Messages.TraceControl_CreateSessionSnapshotTooltip);
-            GridData data = new GridData(GridData.FILL_HORIZONTAL);
-            data.horizontalSpan = 4;
-            fSnapshotButton.setData(data);
-        }
-
-        // layout widgets
-        GridData data = new GridData(GridData.FILL_HORIZONTAL);
-        data.horizontalSpan = 3;
-
-        fSessionNameText.setLayoutData(data);
-
         data = new GridData(GridData.FILL_HORIZONTAL);
         data.horizontalSpan = 3;
         fSessionPathText.setLayoutData(data);
+        fSessionPathText.addModifyListener(fUpdateEnablementModifyListener);
 
-        if (fParent.isNetworkStreamingSupported()) {
+        if (fParent.isSnapshotSupported() || fParent.isLiveSupported()) {
+            fModeButtonGroup = new Group(sessionGroup, SWT.NONE);
+            data = new GridData(GridData.FILL_HORIZONTAL);
+            data.horizontalSpan = 4;
+            fModeButtonGroup.setLayoutData(data);
+            fModeButtonGroup.setLayout(new GridLayout(3, true));
+
+            SelectionAdapter modeChangedListener = new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    if (fLiveButton != null) {
+                        if (fLiveButton.getSelection()) {
+                            createAdvancedLiveGroup();
+                            updateSessionPathEnablement();
+                        } else {
+                            disposeLiveGroup();
+                            updateSessionPathEnablement();
+                        }
+                    }
+                    updateEnablement();
+                }
+            };
+
+            fNormalModeButton = new Button(fModeButtonGroup, SWT.RADIO);
+            fNormalModeButton.setText(Messages.TraceControl_CreateSessionNormalLabel);
+            fNormalModeButton.setToolTipText(Messages.TraceControl_CreateSessionNormalTooltip);
+            fNormalModeButton.setSelection(true);
+            fNormalModeButton.addSelectionListener(modeChangedListener);
+
+            if (fParent.isSnapshotSupported()) {
+                fSnapshotButton = new Button(fModeButtonGroup, SWT.RADIO);
+                fSnapshotButton.setText(Messages.TraceControl_CreateSessionSnapshotLabel);
+                fSnapshotButton.setToolTipText(Messages.TraceControl_CreateSessionSnapshotTooltip);
+                fSnapshotButton.addSelectionListener(modeChangedListener);
+            }
+
+            if (fParent.isLiveSupported()) {
+                fLiveButton = new Button(fModeButtonGroup, SWT.RADIO);
+                fLiveButton.setText(Messages.TraceControl_CreateSessionLiveLabel);
+                fLiveButton.setToolTipText(Messages.TraceControl_CreateSessionLiveTooltip);
+                fLiveButton.addSelectionListener(modeChangedListener);
+            }
+        }
+
+        if (fParent.isNetworkStreamingSupported() || fParent.isLiveSupported()) {
             createAdvancedOptionsComposite();
         }
 
@@ -318,31 +380,41 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
 
     private void createAdvancedOptionsComposite() {
 
-        fMainStreamingGroup = new Group(fDialogComposite, SWT.SHADOW_NONE);
-        fMainStreamingGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
-        fMainStreamingGroup.setLayout(new GridLayout(1, true));
+        fAdvancedGroup = new Group(fDialogComposite, SWT.SHADOW_NONE);
+        fAdvancedGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
+        fAdvancedGroup.setLayout(new GridLayout(1, true));
 
-        fConfigureStreamingButton = new Button(fMainStreamingGroup, SWT.PUSH);
-        fConfigureStreamingButton.setText(Messages.TraceControl_CreateSessionConfigureStreamingButtonText + " >>>"); //$NON-NLS-1$
-        fConfigureStreamingButton.setToolTipText(Messages.TraceControl_CreateSessionConfigureStreamingButtonTooltip);
-        fConfigureStreamingButton.addSelectionListener(new SelectionAdapter() {
+        fAdvancedButton = new Button(fAdvancedGroup, SWT.PUSH);
+        fAdvancedButton.setText(Messages.TraceControl_CreateSessionConfigureStreamingButtonText + " >>>"); //$NON-NLS-1$
+        fAdvancedButton.setToolTipText(Messages.TraceControl_CreateSessionConfigureStreamingButtonTooltip);
+        fAdvancedButton.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                if (fIsStreamedTrace) {
-                    fIsStreamedTrace = false;
-                    fConfigureStreamingButton.setText(">>> " + Messages.TraceControl_CreateSessionConfigureStreamingButtonText); //$NON-NLS-1$
-                    fConfigureStreamingButton.setToolTipText(Messages.TraceControl_CreateSessionConfigureStreamingButtonTooltip);
-                    fSessionPathText.setEnabled(true);
-                    fSessionPathLabel.setText(Messages.TraceControl_CreateSessionPathLabel);
-                    disposeConfigureStreamingComposite();
+                if (fIsAdvancedEnabled) {
+                    fIsAdvancedEnabled = false;
+                    fAdvancedButton.setText(">>> " + Messages.TraceControl_CreateSessionConfigureStreamingButtonText); //$NON-NLS-1$
+                    fAdvancedButton.setToolTipText(Messages.TraceControl_CreateSessionConfigureStreamingButtonTooltip);
+
+                    if (fParent.isNetworkStreamingSupported()) {
+                        updateSessionPathEnablement();
+                        disposeConfigureStreamingComposite();
+                    }
+
+                    if (fParent.isLiveSupported()) {
+                        disposeLiveGroup();
+                    }
                 } else {
-                    fIsStreamedTrace = true;
-                    fConfigureStreamingButton.setText("<<< " + Messages.TraceControl_CreateSessionNoStreamingButtonText); //$NON-NLS-1$
-                    fConfigureStreamingButton.setToolTipText(Messages.TraceControl_CreateSessionNoStreamingButtonTooltip);
-                    fSessionPathText.setEnabled(false);
-                    fSessionPathText.setText(""); //$NON-NLS-1$
-                    fSessionPathLabel.setText(""); //$NON-NLS-1$
-                    createConfigureStreamingComposite();
+                    fIsAdvancedEnabled = true;
+                    fAdvancedButton.setText("<<< " + Messages.TraceControl_CreateSessionNoStreamingButtonText); //$NON-NLS-1$
+                    fAdvancedButton.setToolTipText(Messages.TraceControl_CreateSessionNoStreamingButtonTooltip);
+
+                    if (fParent.isNetworkStreamingSupported()) {
+                        updateSessionPathEnablement();
+                        createConfigureStreamingComposite();
+                    }
+                    if (fLiveButton != null && fLiveButton.getSelection()) {
+                        createAdvancedLiveGroup();
+                    }
                 }
 
                 updateEnablement();
@@ -351,21 +423,31 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
         });
     }
 
+    private void updateSessionPathEnablement() {
+        if (fIsAdvancedEnabled || fIsLive) {
+            fSessionPathText.setEnabled(false);
+            fSessionPathText.setText(""); //$NON-NLS-1$
+            fSessionPathLabel.setText(""); //$NON-NLS-1$
+        } else {
+            fSessionPathText.setEnabled(true);
+            fSessionPathLabel.setText(Messages.TraceControl_CreateSessionPathLabel);
+        }
+    }
+
     private void createConfigureStreamingComposite() {
         if (fStreamingComposite == null) {
-            fStreamingComposite = new Composite(fMainStreamingGroup, SWT.NONE);
+            fStreamingComposite = new Group(fAdvancedGroup, SWT.SHADOW_NONE);
             GridLayout layout = new GridLayout(1, true);
             fStreamingComposite.setLayout(layout);
             fStreamingComposite.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-            Group urlGroup = new Group(fStreamingComposite, SWT.SHADOW_NONE);
             layout = new GridLayout(7, true);
-            urlGroup.setLayout(layout);
-            urlGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
+            fStreamingComposite.setLayout(layout);
+            fStreamingComposite.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-            Label tracePathLabel = new Label(urlGroup, SWT.RIGHT);
+            Label tracePathLabel = new Label(fStreamingComposite, SWT.RIGHT);
             tracePathLabel.setText(Messages.TraceControl_CreateSessionTracePathText);
-            fTracePathText = new Text(urlGroup, SWT.NONE);
+            fTracePathText = new Text(fStreamingComposite, SWT.NONE);
             fTracePathText.setToolTipText(Messages.TraceControl_CreateSessionTracePathTooltip);
 
             // layout widgets
@@ -374,7 +456,7 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
             fTracePathText.setLayoutData(data);
             fTracePathText.addModifyListener(fUpdateEnablementModifyListener);
 
-            fLinkDataWithControlButton = new Button(urlGroup, SWT.CHECK);
+            fLinkDataWithControlButton = new Button(fStreamingComposite, SWT.CHECK);
             fLinkDataWithControlButton.setText(Messages.TraceControl_CreateSessionLinkButtonText);
             fLinkDataWithControlButton.setToolTipText(Messages.TraceControl_CreateSessionLinkButtonTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
@@ -382,63 +464,63 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
             fLinkDataWithControlButton.setLayoutData(data);
             fLinkDataWithControlButton.setSelection(true);
 
-            Label label = new Label(urlGroup, SWT.NONE);
+            Label label = new Label(fStreamingComposite, SWT.NONE);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             label.setLayoutData(data);
 
-            label = new Label(urlGroup, SWT.NONE);
+            label = new Label(fStreamingComposite, SWT.NONE);
             label.setText(Messages.TraceControl_CreateSessionProtocolLabelText);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             label.setLayoutData(data);
 
-            label = new Label(urlGroup, SWT.NONE);
+            label = new Label(fStreamingComposite, SWT.NONE);
             label.setText(Messages.TraceControl_CreateSessionAddressLabelText);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 4;
             label.setLayoutData(data);
 
-            label = new Label(urlGroup, SWT.NONE);
+            label = new Label(fStreamingComposite, SWT.NONE);
             label.setText(Messages.TraceControl_CreateSessionPortLabelText);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             label.setLayoutData(data);
 
-            label = new Label(urlGroup, SWT.RIGHT);
+            label = new Label(fStreamingComposite, SWT.RIGHT);
             label.setText(Messages.TraceControl_CreateSessionControlUrlLabel);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             label.setLayoutData(data);
 
-            fControlProtocolCombo = new CCombo(urlGroup, SWT.READ_ONLY);
+            fControlProtocolCombo = new CCombo(fStreamingComposite, SWT.READ_ONLY);
             fControlProtocolCombo.setToolTipText(Messages.TraceControl_CreateSessionCommonProtocolTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             fControlProtocolCombo.setLayoutData(data);
             fControlProtocolCombo.addModifyListener(fUpdateEnablementModifyListener);
 
-            fControlHostAddressText = new Text(urlGroup, SWT.NONE);
+            fControlHostAddressText = new Text(fStreamingComposite, SWT.NONE);
             fControlHostAddressText.setToolTipText(Messages.TraceControl_CreateSessionControlAddressTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 4;
             fControlHostAddressText.setLayoutData(data);
             fControlHostAddressText.addModifyListener(fUpdateEnablementModifyListener);
 
-            fControlPortText = new Text(urlGroup, SWT.NONE);
+            fControlPortText = new Text(fStreamingComposite, SWT.NONE);
             fControlPortText.setToolTipText(Messages.TraceControl_CreateSessionControlPortTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             fControlPortText.setLayoutData(data);
             fControlPortText.addModifyListener(fUpdateEnablementModifyListener);
 
-            label = new Label(urlGroup, SWT.RIGHT);
+            label = new Label(fStreamingComposite, SWT.RIGHT);
             label.setText(Messages.TraceControl_CreateSessionDataUrlLabel);
             data = new GridData(GridData.FILL_HORIZONTAL);
             data.horizontalSpan = 1;
             label.setLayoutData(data);
 
-            fDataProtocolCombo = new CCombo(urlGroup, SWT.READ_ONLY);
+            fDataProtocolCombo = new CCombo(fStreamingComposite, SWT.READ_ONLY);
             fDataProtocolCombo.setEnabled(false);
             fDataProtocolCombo.setToolTipText(Messages.TraceControl_CreateSessionProtocolTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
@@ -453,7 +535,7 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
             fControlProtocolCombo.setItems(items);
             fDataProtocolCombo.setItems(items);
 
-            fDataHostAddressText = new Text(urlGroup, SWT.NONE);
+            fDataHostAddressText = new Text(fStreamingComposite, SWT.NONE);
             fDataHostAddressText.setEnabled(false);
             fDataHostAddressText.setToolTipText(Messages.TraceControl_CreateSessionDataAddressTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
@@ -461,7 +543,7 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
             fDataHostAddressText.setLayoutData(data);
             fDataHostAddressText.addModifyListener(fUpdateEnablementModifyListener);
 
-            fDataPortText = new Text(urlGroup, SWT.NONE);
+            fDataPortText = new Text(fStreamingComposite, SWT.NONE);
             fDataPortText.setEnabled(true);
             fDataPortText.setToolTipText(Messages.TraceControl_CreateSessionDataPortTooltip);
             data = new GridData(GridData.FILL_HORIZONTAL);
@@ -568,6 +650,35 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
         }
     }
 
+    private void createAdvancedLiveGroup() {
+        if (fliveGroup == null && fIsAdvancedEnabled) {
+            GridLayout layout = new GridLayout(2, false);
+            fliveGroup = new Group(fAdvancedGroup, SWT.NONE);
+            fliveGroup.setLayout(layout);
+            fliveGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
+
+            Label liveDelayLabel = new Label(fliveGroup, SWT.NONE);
+            liveDelayLabel.setText(Messages.TraceControl_CreateSessionLiveDelayLabel);
+            fLiveDelayText = new Text(fliveGroup, SWT.NONE);
+            fLiveDelayText.setText(Integer.toString(SessionInfo.DEFAULT_LIVE_DELAY));
+            fLiveDelayText.addModifyListener(new ModifyListener() {
+                @Override
+                public void modifyText(ModifyEvent event) {
+                    updateEnablement();
+                }
+            });
+            getShell().pack();
+        }
+    }
+
+    private void disposeLiveGroup() {
+        if (fliveGroup != null) {
+            fliveGroup.dispose();
+            fliveGroup = null;
+            getShell().pack();
+        }
+    }
+
     private void disposeConfigureStreamingComposite() {
         if (fStreamingComposite != null) {
             fStreamingComposite.dispose();
@@ -592,9 +703,14 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
         fSessionPath = fSessionPathText.getText();
         setErrorMessage(null);
 
+        if (fParent.isLiveSupported() && fLiveButton != null) {
+            fIsLive = fLiveButton.getSelection();
+            fLiveDelay = SessionInfo.DEFAULT_LIVE_DELAY;
+        }
+
         if (!"".equals(fSessionPath)) { //$NON-NLS-1$
             // validate sessionPath
-            if (!fIsStreamedTrace) {
+            if (!fIsAdvancedEnabled && !fIsLive) {
                 TargetNodeComponent node = (TargetNodeComponent)fParent.getParent();
                 IRemoteSystemProxy proxy = node.getRemoteSystemProxy();
                 IFileServiceSubSystem fsss = proxy.getFileServiceSubSystem();
@@ -628,8 +744,22 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
         fControlUrl = null;
         fDataUrl = null;
 
-        if (fIsStreamedTrace && fStreamingComposite != null) {
+        if (fIsAdvancedEnabled && fStreamingComposite != null) {
             // Validate input data
+
+            if (fIsLive && fliveGroup != null) {
+                try {
+                    fLiveDelay = Integer.valueOf(fLiveDelayText.getText());
+                    if (fLiveDelay < 0) {
+                        setErrorMessage(Messages.TraceControl_InvalidLiveDelayError);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    setErrorMessage(Messages.TraceControl_InvalidLiveDelayError);
+                    return;
+                }
+            }
+
             fTracePath = fTracePathText.getText();
 
             if (fControlProtocolCombo.getSelectionIndex() < 0) {
@@ -671,6 +801,10 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
                         fDataPortText.getText(),
                         fTracePath);
             }
+        }
+
+        if (fIsLive && fNetworkUrl == null && fControlUrl == null && fDataUrl == null) {
+            fNetworkUrl = SessionInfo.DEFAULT_LIVE_NETWORK_URK;
         }
 
         // Check for invalid names
@@ -768,7 +902,8 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
     public ISessionInfo getParameters() {
         ISessionInfo sessionInfo = new SessionInfo(fSessionName);
 
-        if (fIsStreamedTrace) {
+        boolean isStreaming = (fIsAdvancedEnabled && fStreamingComposite != null) || fIsLive;
+        if (isStreaming) {
             sessionInfo.setNetworkUrl(fNetworkUrl);
             sessionInfo.setControlUrl(fControlUrl);
             sessionInfo.setDataUrl(fDataUrl);
@@ -777,6 +912,8 @@ public class CreateSessionDialog extends TitleAreaDialog implements ICreateSessi
             sessionInfo.setSessionPath(fSessionPath);
         }
 
+        sessionInfo.setLive(fIsLive);
+        sessionInfo.setLiveDelay(fLiveDelay);
         sessionInfo.setSnapshot(fIsSnapshot);
 
         return sessionInfo;
