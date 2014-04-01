@@ -428,4 +428,13 @@ public interface ITmfTrace extends ITmfEventProvider {
      */
     ITmfTimestamp createTimestamp(long ts);
 
+    /**
+     * @since 3.0
+     */
+    boolean isLive();
+
+    /**
+     * @since 3.0
+     */
+    void setLive(boolean isLive);
 }

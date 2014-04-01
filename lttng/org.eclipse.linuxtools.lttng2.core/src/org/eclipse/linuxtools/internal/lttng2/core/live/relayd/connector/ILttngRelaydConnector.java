@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.AttachSessionResponse;
+import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.CreateSessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.IndexResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.SessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.StreamResponse;
@@ -37,9 +38,13 @@ public interface ILttngRelaydConnector {
      */
     public List<SessionResponse> getSessions() throws IOException;
 
+    public CreateSessionResponse createSession() throws IOException;
+
     public AttachSessionResponse attachToSession(SessionResponse lttng_viewer_session) throws IOException;
 
     public String getMetadata(AttachSessionResponse attachedSession) throws IOException;
+
+    public IndexResponse getNextIndex(StreamResponse stream) throws IOException;
 
     public TracePacketResponse getNextPacket(StreamResponse stream) throws IOException;
 

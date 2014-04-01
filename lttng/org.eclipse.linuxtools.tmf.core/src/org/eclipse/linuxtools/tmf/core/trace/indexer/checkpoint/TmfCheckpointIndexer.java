@@ -208,7 +208,9 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
             public void handleSuccess() {
                 fTraceIndex.setTimeRange(fTrace.getTimeRange());
                 fTraceIndex.setNbEvents(fTrace.getNbEvents());
-                fTraceIndex.setIndexComplete();
+                if (!fTrace.isLive()) {
+                    fTraceIndex.setIndexComplete();
+                }
                 updateTraceStatus();
             }
 

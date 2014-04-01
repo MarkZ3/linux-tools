@@ -38,6 +38,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.linuxtools.internal.lttng2.core.control.model.TraceSessionState;
+import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.LttngRelaydConsumer;
 import org.eclipse.linuxtools.internal.lttng2.ui.Activator;
 import org.eclipse.linuxtools.internal.lttng2.ui.views.control.ControlView;
 import org.eclipse.linuxtools.internal.lttng2.ui.views.control.dialogs.IImportDialog;
@@ -109,7 +110,10 @@ public class ImportHandler extends BaseControlViewHandler {
             // create default project
             IProject project = TmfProjectRegistry.createProject(DEFAULT_REMOTE_PROJECT_NAME, null, null);
 
-            if (param.getSession().isStreamedTrace()) {
+            if (param.getSession().isLiveTrace()) {
+                new LttngRelaydConsumer("127.0.0.1", 5344, param.getSession().getName(), project);
+                return null;
+            } else if (param.getSession().isStreamedTrace()) {
                 // Streamed trace
                 TmfProjectElement projectElement = TmfProjectRegistry.getProject(project, true);
                 TmfTraceFolder traceFolder = projectElement.getTracesFolder();
@@ -213,7 +217,7 @@ public class ImportHandler extends BaseControlViewHandler {
                 if (element instanceof TraceSessionComponent) {
                     // Add only TraceSessionComponents that are inactive and not destroyed
                     TraceSessionComponent tmpSession = (TraceSessionComponent) element;
-                    if (((tmpSession.isSnapshotSession()) || (tmpSession.getSessionState() == TraceSessionState.INACTIVE)) && (!tmpSession.isDestroyed())) {
+                    if ((tmpSession.isSnapshotSession() || tmpSession.isLiveTrace() || (tmpSession.getSessionState() == TraceSessionState.INACTIVE)) && (!tmpSession.isDestroyed())) {
                         session = tmpSession;
                     }
                 }

@@ -23,9 +23,10 @@ import java.nio.ByteOrder;
  * @since 3.0
  *
  */
-public class CreateSessionResponse implements IRelayResponse {
     /* enum lttng_viewer_create_session_return_code */
-    CreateSessionReturnCode status;
+public class CreateSessionResponse implements IRelayResponse, IFixedSize {
+    /** enum lttng_viewer_create_session_return_code */
+    public CreateSessionReturnCode status;
 
     @Override
     public void populate(byte[] data) {
@@ -33,5 +34,10 @@ public class CreateSessionResponse implements IRelayResponse {
         bb.order(ByteOrder.BIG_ENDIAN);
         status = CreateSessionReturnCode.values()[bb.getInt() - 1];
 
+    }
+
+    @Override
+    public int size() {
+        return 4;
     }
 }

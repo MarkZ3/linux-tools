@@ -24,6 +24,7 @@ import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngvi
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.AttachSessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.Command;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.ConnectResponse;
+import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.CreateSessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.GetMetadata;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.GetNextIndex;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.GetPacket;
@@ -85,6 +86,20 @@ public class LttngRelayDConnector_2_4 implements ILttngRelaydConnector {
         }
 
         return temp;
+    }
+
+    @Override
+    public CreateSessionResponse createSession() throws IOException {
+        ViewerCommand listSessionsCmd = new ViewerCommand();
+        listSessionsCmd.cmd = Command.VIEWER_CREATE_SESSION;
+        fOutNet.write(listSessionsCmd.getBytes());
+
+        CreateSessionResponse createSessionResponse = new CreateSessionResponse();
+        byte[] data = new byte[createSessionResponse.size()];
+        fInNet.readFully(data, 0, data.length);
+        createSessionResponse.populate(data);
+
+        return createSessionResponse;
     }
 
     @Override
@@ -167,16 +182,27 @@ public class LttngRelayDConnector_2_4 implements ILttngRelaydConnector {
         if (tracePacket.status == GetPacketReturnCode.VIEWER_GET_PACKET_OK) {
             tracePacket.data = new byte[tracePacket.len];
             fInNet.readFully(tracePacket.data, 0, tracePacket.len);
-            return tracePacket;
         }
 
-        return null;
+        return tracePacket;
     }
 
     @Override
     public TracePacketResponse getNextPacket(StreamResponse stream) throws IOException {
-        TracePacketResponse packet = null;
 
+        IndexResponse indexReply = getNextIndex(stream);
+
+        TracePacketResponse packet = null;
+        if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_OK) {
+            packet = getPacketFromStream(indexReply, stream.id);
+        } else {
+            System.out.println(indexReply.status);
+        }
+        return packet;
+    }
+
+    @Override
+    public IndexResponse getNextIndex(StreamResponse stream) throws IOException {
         issueCommand(Command.VIEWER_GET_NEXT_INDEX);
 
         GetNextIndex indexRequest = new GetNextIndex();
@@ -188,13 +214,7 @@ public class LttngRelayDConnector_2_4 implements ILttngRelaydConnector {
         byte[] data = new byte[indexReply.size()];
         fInNet.readFully(data, 0, indexReply.size());
         indexReply.populate(data);
-
-        // Nothing else supported for now
-
-        if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_OK) {
-            packet = getPacketFromStream(indexReply, stream.id);
-        }
-        return packet;
+        return indexReply;
     }
 
     @Override

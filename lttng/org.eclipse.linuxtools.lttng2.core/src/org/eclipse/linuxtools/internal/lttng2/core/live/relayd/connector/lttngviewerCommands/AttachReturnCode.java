@@ -27,7 +27,9 @@ public enum AttachReturnCode implements IBaseCommand {
     /** If the session is not live. */
     VIEWER_ATTACH_NOT_LIVE(4),
     /** Seek error. */
-    VIEWER_ATTACH_SEEK_ERR(5);
+    VIEWER_ATTACH_SEEK_ERR(5),
+    /** No session */
+    VIEWER_ATTACH_NO_SESSION(6);
     private final int code;
 
     private AttachReturnCode(int c) {

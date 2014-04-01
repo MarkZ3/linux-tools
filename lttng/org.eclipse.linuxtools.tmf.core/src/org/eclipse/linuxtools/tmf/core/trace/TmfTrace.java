@@ -124,6 +124,8 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
     private final Map<String, IAnalysisModule> fAnalysisModules =
             Collections.synchronizedMap(new LinkedHashMap<String, IAnalysisModule>());
 
+    private boolean fIsLive = false;
+
     private static final String SYNCHRONIZATION_FORMULA_FILE = "sync_formula"; //$NON-NLS-1$
 
     // ------------------------------------------------------------------------
@@ -874,4 +876,19 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
                 + ", fEndTime=" + fEndTime + ", fStreamingInterval=" + fStreamingInterval + "]";
     }
 
+    /**
+     * @since 3.0
+     */
+    @Override
+    public boolean isLive() {
+        return fIsLive;
+    }
+
+    /**
+     * @since 3.0
+     */
+    @Override
+    public void setLive(boolean isLive) {
+        fIsLive = isLive;
+    }
 }

@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.ILttngRelaydConnector;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.AttachSessionResponse;
+import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.CreateSessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.IndexResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.SessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.StreamResponse;
@@ -60,4 +61,13 @@ public class LttngRelayDConnector_NOTSUPPORTED implements ILttngRelaydConnector 
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public CreateSessionResponse createSession() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IndexResponse getNextIndex(StreamResponse stream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

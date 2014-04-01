@@ -207,7 +207,20 @@ public class TmfOpenTraceHelper {
         if (found == null) {
             return new Status(IStatus.ERROR, Activator.PLUGIN_ID, NLS.bind(Messages.TmfOpenTraceHelper_TraceNotFound, traceName));
         }
-        openTraceFromElement(found);
+
+        final TmfTraceElement finalFound = found;
+        if (Thread.currentThread() != Display.getDefault().getThread()) {
+            Display.getDefault().syncExec(new Runnable() {
+
+                @Override
+                public void run() {
+                    openTraceFromElement(finalFound);
+                }
+            });
+
+        } else {
+            openTraceFromElement(found);
+        }
         return Status.OK_STATUS;
     }
 
