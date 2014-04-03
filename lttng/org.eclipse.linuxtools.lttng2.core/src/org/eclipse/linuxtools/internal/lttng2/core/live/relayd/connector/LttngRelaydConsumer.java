@@ -53,6 +53,9 @@ import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfTmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfTmfTrace;
 import org.eclipse.linuxtools.tmf.core.project.model.TmfTraceType;
 import org.eclipse.linuxtools.tmf.core.project.model.TraceTypeHelper;
+import org.eclipse.linuxtools.tmf.core.signal.TmfSignalHandler;
+import org.eclipse.linuxtools.tmf.core.signal.TmfSignalManager;
+import org.eclipse.linuxtools.tmf.core.signal.TmfTraceClosedSignal;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfOpenTraceHelper;
@@ -105,6 +108,8 @@ public class LttngRelaydConsumer {
         fProject = project;
         fTimestampEnd = 0;
 
+        TmfSignalManager.register(this);
+
         fConsumerJob = new Job("RelayD consumer") { //$NON-NLS-1$
 
             @Override
@@ -152,6 +157,7 @@ public class LttngRelaydConsumer {
                     while (!monitor.isCanceled()) {
 
                         List<StreamResponse> attachedStreams = Arrays.asList(attachedSession.stream_list);
+                        boolean active = true;
                         for (StreamResponse stream : attachedStreams) {
                             if (!fInitialized) {
                                 initializeTraceResource(stream);
@@ -163,13 +169,24 @@ public class LttngRelaydConsumer {
                                 IndexResponse indexReply = relayd.getNextIndex(stream);
                                 if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_OK) {
                                     packet = relayd.getPacketFromStream(indexReply, stream.id);
-                                    if (indexReply.timestamp_end > fTimestampEnd) {
-                                        TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(indexReply.timestamp_end)));
-                                        fTimestampEnd = indexReply.timestamp_end;
+                                    long nanoTimeStamp = fCtfTrace.getCTFTrace().timestampCyclesToNanos(indexReply.timestamp_end);
+                                    if (nanoTimeStamp > fTimestampEnd) {
+                                        TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(nanoTimeStamp)));
+                                        fTimestampEnd = nanoTimeStamp;
+
+                                        long nanoTimeStampBeg = fCtfTrace.getCTFTrace().timestampCyclesToNanos(indexReply.timestamp_begin);
+                                        System.out.println("new end: " + new CtfTmfTimestamp(nanoTimeStampBeg) + ", " + new CtfTmfTimestamp(fTimestampEnd));
                                         fCtfTrace.broadcastAsync(signal);
                                     }
-                                } else {
+                                    active = true;
+                                } else if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_HUP) {
+                                    fCtfTrace.setLive(false);
+                                    TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(fTimestampEnd)));
+                                    fCtfTrace.broadcastAsync(signal);
+                                    return Status.OK_STATUS;
+                                } else if (indexReply.status != NextIndexReturnCode.VIEWER_INDEX_RETRY) {
                                     System.out.println(indexReply.status);
+                                    active = true;
                                 }
 
                                 //TracePacketResponse packet = relayd.getNextPacket(stream);
@@ -204,6 +221,10 @@ public class LttngRelaydConsumer {
                             }
                         }
 
+                        if (!active) {
+                            TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(fTimestampEnd)));
+                            fCtfTrace.broadcastAsync(signal);
+                        }
                     }
 
                 } catch (IOException | CTFReaderException | CoreException e) {
@@ -214,6 +235,7 @@ public class LttngRelaydConsumer {
                 return Status.OK_STATUS;
             }
         };
+        fConsumerJob.setSystem(true);
         fConsumerJob.schedule();
     }
 
@@ -282,6 +304,18 @@ public class LttngRelaydConsumer {
             for (StreamInput si : s.getStreamInputs()) {
                 fStreams.put(si.getStream().getId(), new File(si.getPath()));
             }
+        }
+    }
+
+    /**
+     * Listen to trace closed so that we can stop the relayd job
+     *
+     * @param signal
+     */
+    @TmfSignalHandler
+    public void traceOpened(TmfTraceClosedSignal signal) {
+        if (signal.getTrace() == fCtfTrace) {
+            fConsumerJob.cancel();
         }
     }
 

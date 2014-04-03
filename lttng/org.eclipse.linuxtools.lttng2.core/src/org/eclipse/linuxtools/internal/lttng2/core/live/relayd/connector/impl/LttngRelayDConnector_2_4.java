@@ -196,7 +196,7 @@ public class LttngRelayDConnector_2_4 implements ILttngRelaydConnector {
         if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_OK) {
             packet = getPacketFromStream(indexReply, stream.id);
         } else {
-            System.out.println(indexReply.status);
+//            System.out.println(indexReply.status);
         }
         return packet;
     }

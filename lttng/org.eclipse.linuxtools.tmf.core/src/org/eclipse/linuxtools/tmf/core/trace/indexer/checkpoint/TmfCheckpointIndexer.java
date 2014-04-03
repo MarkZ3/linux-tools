@@ -186,6 +186,7 @@ public class TmfCheckpointIndexer implements ITmfTraceIndexer {
                 return Status.OK_STATUS;
             }
         };
+        job.setSystem(fTrace.isLive());
         job.schedule();
 
         // Build a background request for all the trace data. The index is
