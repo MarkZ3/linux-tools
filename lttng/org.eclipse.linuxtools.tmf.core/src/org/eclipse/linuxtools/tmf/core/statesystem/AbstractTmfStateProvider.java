@@ -206,8 +206,10 @@ public abstract class AbstractTmfStateProvider implements ITmfStateProvider {
                     }
                     event = eventsQueue.take();
                 }
-                /* We've received the last event, clean up */
-                closeStateSystem();
+                if (!getTrace().isLive()) {
+                    /* We've received the last event, clean up */
+                    closeStateSystem();
+                }
             } catch (InterruptedException e) {
                 /* We've been interrupted abnormally */
                 System.out.println("Event handler interrupted!"); //$NON-NLS-1$
