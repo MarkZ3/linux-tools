@@ -36,6 +36,8 @@ import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.linuxtools.tmf.core.request.ITmfEventRequest;
 import org.eclipse.linuxtools.tmf.core.request.TmfEventRequest;
+import org.eclipse.linuxtools.tmf.core.signal.TmfSignalHandler;
+import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTraceManager;
@@ -392,8 +394,12 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         private final ITmfTrace trace;
 
         public StateSystemEventRequest(ITmfStateProvider sp) {
+            this(sp, TmfTimeRange.ETERNITY);
+        }
+
+        public StateSystemEventRequest(ITmfStateProvider sp, TmfTimeRange timeRange) {
             super(sp.getExpectedEventType(),
-                    TmfTimeRange.ETERNITY,
+                    timeRange,
                     0,
                     ITmfEventRequest.ALL_DATA,
                     ITmfEventRequest.ExecutionType.BACKGROUND);
@@ -451,5 +457,28 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         @SuppressWarnings("null")
         @NonNull Iterable<ITmfStateSystem> ret = Collections.singleton((ITmfStateSystem) fStateSystem);
         return ret;
+    }
+
+    /**
+     * Signal handler for the TmfTraceRangeUpdatedSignal signal
+     *
+     * @param signal The incoming signal
+     * @since 2.0
+     */
+    @TmfSignalHandler
+    public void traceRangeUpdated(final TmfTraceRangeUpdatedSignal signal) {
+//        ITmfStateProvider stateProvider = fStateProvider;
+//        if (stateProvider != null && signal.getTrace() == getTrace()) {
+//            synchronized (fRequest) {
+//                ITmfEventRequest request = fRequest;
+//                if ((request != null) && (!request.isCompleted())) {
+//                    request.cancel();
+//                }
+//
+//                request = new StateSystemEventRequest(stateProvider, signal.getRange());
+//                stateProvider.getTrace().sendRequest(request);
+//                fRequest = request;
+//            }
+//        }
     }
 }

@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.linuxtools.ctf.core.trace.CTFReaderException;
+import org.eclipse.linuxtools.ctf.core.trace.CTFTrace;
 import org.eclipse.linuxtools.ctf.core.trace.Metadata;
 import org.eclipse.linuxtools.ctf.core.trace.Stream;
 import org.eclipse.linuxtools.ctf.core.trace.StreamInput;
@@ -55,6 +56,7 @@ import org.eclipse.linuxtools.tmf.core.project.model.TmfTraceType;
 import org.eclipse.linuxtools.tmf.core.project.model.TraceTypeHelper;
 import org.eclipse.linuxtools.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.linuxtools.tmf.core.signal.TmfSignalManager;
+import org.eclipse.linuxtools.tmf.core.signal.TmfSignalThrottler;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceClosedSignal;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
@@ -80,11 +82,13 @@ public class LttngRelaydConsumer {
     private final String fAddress;
     private final int fPort;
     private final String fSessionName;
-    private CtfTmfTrace fCtfTrace;
+    private CtfTmfTrace fCtfTmfTrace;
+    private CTFTrace fCtfTrace;
     private Map<Long, File> fStreams;
     private boolean fInitialized;
     protected IProject fProject;
     private long fTimestampEnd;
+    protected TmfSignalThrottler fSignalThrottler;
 
     /**
      * Start a lttng consumer
@@ -122,7 +126,7 @@ public class LttngRelaydConsumer {
                     for (SessionResponse session : sessions) {
                         String asessionName = nullTerminatedByteArrayToString(session.session_name);
 
-                        System.out.println(asessionName);
+                        //System.out.println(asessionName);
                         if (asessionName.equals(fSessionName)) {
                             selectedSession = session;
                             break;
@@ -151,7 +155,7 @@ public class LttngRelaydConsumer {
                             return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error, trace has no metadata.");
                         }
 
-                        System.out.println("metadata: " + metadata);
+                        //System.out.println("metadata: " + metadata);
                     }
 
                     while (!monitor.isCanceled()) {
@@ -161,6 +165,8 @@ public class LttngRelaydConsumer {
                         for (StreamResponse stream : attachedStreams) {
                             if (!fInitialized) {
                                 initializeTraceResource(stream);
+                                fCtfTrace = fCtfTmfTrace.getCTFTrace();
+                                fSignalThrottler = new TmfSignalThrottler(fCtfTmfTrace, 500);
                                 fInitialized = true;
                             }
 
@@ -169,23 +175,25 @@ public class LttngRelaydConsumer {
                                 IndexResponse indexReply = relayd.getNextIndex(stream);
                                 if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_OK) {
                                     packet = relayd.getPacketFromStream(indexReply, stream.id);
-                                    long nanoTimeStamp = fCtfTrace.getCTFTrace().timestampCyclesToNanos(indexReply.timestamp_end);
+                                    long nanoTimeStamp = fCtfTrace.timestampCyclesToNanos(indexReply.timestamp_end);
                                     if (nanoTimeStamp > fTimestampEnd) {
-                                        TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(nanoTimeStamp)));
+                                        TmfTimeRange range = new TmfTimeRange(fCtfTmfTrace.getStartTime(), new CtfTmfTimestamp(nanoTimeStamp));
+                                        TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTmfTrace, range);
                                         fTimestampEnd = nanoTimeStamp;
 
-                                        long nanoTimeStampBeg = fCtfTrace.getCTFTrace().timestampCyclesToNanos(indexReply.timestamp_begin);
-                                        System.out.println("new end: " + new CtfTmfTimestamp(nanoTimeStampBeg) + ", " + new CtfTmfTimestamp(fTimestampEnd));
-                                        fCtfTrace.broadcastAsync(signal);
+                                        System.out.println("new range: " + range);
+                                        fSignalThrottler.queue(signal);
+                                        //fCtfTmfTrace.broadcastAsync(signal);
                                     }
                                     active = true;
                                 } else if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_HUP) {
-                                    fCtfTrace.setLive(false);
-                                    TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(fTimestampEnd)));
-                                    fCtfTrace.broadcastAsync(signal);
+                                    fCtfTmfTrace.setLive(false);
+                                    TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTmfTrace, new TmfTimeRange(fCtfTmfTrace.getStartTime(), new CtfTmfTimestamp(fTimestampEnd)));
+                                    fCtfTmfTrace.broadcastAsync(signal);
+                                    fSignalThrottler.dispose();
                                     return Status.OK_STATUS;
                                 } else if (indexReply.status != NextIndexReturnCode.VIEWER_INDEX_RETRY) {
-                                    System.out.println(indexReply.status);
+                                    //System.out.println(indexReply.status);
                                     active = true;
                                 }
 
@@ -196,11 +204,11 @@ public class LttngRelaydConsumer {
                                         List<StreamResponse> newStreams = relayd.getNewStreams();
                                         for (StreamResponse streamToAdd : newStreams) {
 
-                                            File f = new File(fCtfTrace.getPath() + File.separator + streamToAdd.path_name + streamToAdd.channel_name);
+                                            File f = new File(fCtfTmfTrace.getPath() + File.separator + streamToAdd.path_name + streamToAdd.channel_name);
                                             // touch the file
                                             f.setLastModified(System.currentTimeMillis());
                                             fStreams.put(Long.valueOf(streamToAdd.id), f);
-                                            fCtfTrace.getCTFTrace().addStream(streamToAdd.id, f);
+                                            fCtfTrace.addStream(streamToAdd.id, f);
 
                                         }
 
@@ -208,7 +216,7 @@ public class LttngRelaydConsumer {
                                     // more metadata
                                     if ((packet.flags & LTTngViewerCommands.NEW_METADATA) == LTTngViewerCommands.NEW_METADATA) {
                                         String metaData = relayd.getMetadata(attachedSession);
-                                        (new Metadata(fCtfTrace.getCTFTrace())).parseTextFragment(metaData);
+                                        (new Metadata(fCtfTrace)).parseTextFragment(metaData);
                                     }
 
                                     // try (FileOutputStream fos = new
@@ -222,16 +230,18 @@ public class LttngRelaydConsumer {
                         }
 
                         if (!active) {
-                            TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(fTimestampEnd)));
-                            fCtfTrace.broadcastAsync(signal);
+                            TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTmfTrace, new TmfTimeRange(new CtfTmfTimestamp(fTimestampEnd), new CtfTmfTimestamp(fTimestampEnd)));
+                            fCtfTmfTrace.broadcastAsync(signal);
                         }
                     }
 
                 } catch (IOException | CTFReaderException | CoreException e) {
                     Activator.getDefault().logError("Error during live trace reading", e); //$NON-NLS-1$
+                    fSignalThrottler.dispose();
                     return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error during live trace reading." + e.getMessage());
                 }
 
+                fSignalThrottler.dispose();
                 return Status.OK_STATUS;
             }
         };
@@ -251,7 +261,7 @@ public class LttngRelaydConsumer {
 
     private void initializeTraceResource(StreamResponse stream) throws UnsupportedEncodingException, CoreException {
         String pathName = nullTerminatedByteArrayToString(stream.path_name);
-        System.out.println(pathName);
+        //System.out.println(pathName);
         IFolder folder = fProject.getFolder(TmfTraceFolder.TRACE_FOLDER_NAME);
         IFolder traceFolder = folder.getFolder(fSessionName);
         Path location = new Path(pathName);
@@ -288,19 +298,19 @@ public class LttngRelaydConsumer {
             throw new IllegalStateException("Could not find CtfTmfTrace");
         }
 
-        while (fCtfTrace == null) {
-            fCtfTrace = (CtfTmfTrace) found.getTrace();
+        while (fCtfTmfTrace == null) {
+            fCtfTmfTrace = (CtfTmfTrace) found.getTrace();
             try {
                 Thread.sleep(10);
-                System.out.println("sleeping");
+                //System.out.println("sleeping");
             } catch (InterruptedException e) {
                 throw new IllegalStateException("Could not find CtfTmfTrace");
             }
         }
 
-        fCtfTrace.setLive(true);
+        fCtfTmfTrace.setLive(true);
 
-        for (Stream s : fCtfTrace.getCTFTrace().getStreams()) {
+        for (Stream s : fCtfTmfTrace.getCTFTrace().getStreams()) {
             for (StreamInput si : s.getStreamInputs()) {
                 fStreams.put(si.getStream().getId(), new File(si.getPath()));
             }
@@ -314,7 +324,7 @@ public class LttngRelaydConsumer {
      */
     @TmfSignalHandler
     public void traceOpened(TmfTraceClosedSignal signal) {
-        if (signal.getTrace() == fCtfTrace) {
+        if (signal.getTrace() == fCtfTmfTrace) {
             fConsumerJob.cancel();
         }
     }
