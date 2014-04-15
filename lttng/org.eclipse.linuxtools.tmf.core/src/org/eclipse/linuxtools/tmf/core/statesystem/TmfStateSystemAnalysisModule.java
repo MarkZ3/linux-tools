@@ -423,13 +423,17 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         @Override
         public void handleSuccess() {
             super.handleSuccess();
-            disposeProvider(false);
+            if (!trace.isLive()) {
+                disposeProvider(false);
+            }
         }
 
         @Override
         public void handleCancel() {
             super.handleCancel();
-            disposeProvider(true);
+            if (!trace.isLive()) {
+                disposeProvider(true);
+            }
         }
 
         @Override
@@ -467,18 +471,18 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
      */
     @TmfSignalHandler
     public void traceRangeUpdated(final TmfTraceRangeUpdatedSignal signal) {
-//        ITmfStateProvider stateProvider = fStateProvider;
-//        if (stateProvider != null && signal.getTrace() == getTrace()) {
-//            synchronized (fRequest) {
-//                ITmfEventRequest request = fRequest;
-//                if ((request != null) && (!request.isCompleted())) {
-//                    request.cancel();
-//                }
-//
-//                request = new StateSystemEventRequest(stateProvider, signal.getRange());
-//                stateProvider.getTrace().sendRequest(request);
-//                fRequest = request;
-//            }
-//        }
+        ITmfStateProvider stateProvider = fStateProvider;
+        if (signal.getTrace() == getTrace() && stateProvider != null && stateProvider.getAssignedStateSystem() != null) {
+            synchronized (fRequest) {
+                ITmfEventRequest request = fRequest;
+                if ((request != null) && (!request.isCompleted())) {
+                    request.cancel();
+                }
+
+                request = new StateSystemEventRequest(stateProvider, signal.getRange());
+                stateProvider.getTrace().sendRequest(request);
+                fRequest = request;
+            }
+        }
     }
 }

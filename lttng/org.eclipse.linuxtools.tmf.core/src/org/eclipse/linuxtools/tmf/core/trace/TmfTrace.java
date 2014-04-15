@@ -718,11 +718,13 @@ public abstract class TmfTrace extends TmfEventProvider implements ITmfTrace {
                 return;
             }
 
-            final TmfTimeRange timeRange = new TmfTimeRange(getStartTime(), TmfTimestamp.BIG_CRUNCH);
-            final TmfTraceRangeUpdatedSignal rangeUpdatedsignal = new TmfTraceRangeUpdatedSignal(this, this, timeRange);
+            if (!isLive()) {
+                final TmfTimeRange timeRange = new TmfTimeRange(getStartTime(), TmfTimestamp.BIG_CRUNCH);
+                final TmfTraceRangeUpdatedSignal rangeUpdatedsignal = new TmfTraceRangeUpdatedSignal(this, this, timeRange);
 
-            // Broadcast in separate thread to prevent deadlock
-            broadcastAsync(rangeUpdatedsignal);
+                // Broadcast in separate thread to prevent deadlock
+                broadcastAsync(rangeUpdatedsignal);
+            }
             return;
         }
     }

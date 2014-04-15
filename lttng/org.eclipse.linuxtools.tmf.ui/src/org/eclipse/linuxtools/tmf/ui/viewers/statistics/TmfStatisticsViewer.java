@@ -593,13 +593,6 @@ public class TmfStatisticsViewer extends TmfViewer {
                         }
 
                         /*
-                         * The generic statistics are stored in nanoseconds, so
-                         * we must make sure the time range is scaled correctly.
-                         */
-                        long start = timeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
-                        long end = timeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
-
-                        /*
                          * Wait on the state system object we are going to query.
                          *
                          * TODO Eventually this could be exposed through the
@@ -613,16 +606,31 @@ public class TmfStatisticsViewer extends TmfViewer {
                         }
 
                         /*
+                         * The generic statistics are stored in nanoseconds, so
+                         * we must make sure the time range is scaled correctly.
+                         */
+                        long start = timeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
+                        long end = timeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
+
+                        /*
                          * Periodically update the statistics while they are
                          * being built (or, if the back-end is already completely
                          * built, it will skip over the while() immediately.
                          */
                         while(!ss.waitUntilBuilt(LIVE_UPDATE_DELAY)) {
                             Map<String, Long> map = stats.getEventTypesInRange(start, end);
+                            System.out.println("size not built" + map.size());
                             updateStats(aTrace, isGlobal, map);
+                            /*
+                             * The generic statistics are stored in nanoseconds, so
+                             * we must make sure the time range is scaled correctly.
+                             */
+                            start = timeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
+                            end = timeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
                         }
                         /* Query one last time for the final values */
                         Map<String, Long> map = stats.getEventTypesInRange(start, end);
+                        System.out.println("size built" + map.size());
                         updateStats(aTrace, isGlobal, map);
                     }
                 };
