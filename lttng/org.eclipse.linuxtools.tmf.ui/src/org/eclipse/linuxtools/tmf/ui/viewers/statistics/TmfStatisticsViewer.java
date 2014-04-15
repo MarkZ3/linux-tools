@@ -14,9 +14,14 @@
 
 package org.eclipse.linuxtools.tmf.ui.viewers.statistics;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
@@ -108,6 +113,13 @@ public class TmfStatisticsViewer extends TmfViewer {
     /** Reference to the trace manager */
     private final TmfTraceManager fTraceManager;
 
+    private final HashMap<ITmfTrace, Job> fUpdateJobsPartial;
+    private final HashMap<ITmfTrace, Job> fUpdateJobsGlobal;
+
+    private TmfTimeRange fTimeRange;
+
+    private TmfTimeRange fTimeRangePartial;
+
     /**
      * Create a basic statistics viewer. To be used in conjunction with
      * {@link TmfStatisticsViewer#init(Composite, String, ITmfTrace)}
@@ -123,6 +135,8 @@ public class TmfStatisticsViewer extends TmfViewer {
     public TmfStatisticsViewer(Composite parent, String viewerName, ITmfTrace trace) {
         init(parent, viewerName, trace);
         fTraceManager = TmfTraceManager.getInstance();
+        fUpdateJobsPartial = new HashMap<>();
+        fUpdateJobsGlobal = new HashMap<>();
     }
 
     /**
@@ -154,6 +168,14 @@ public class TmfStatisticsViewer extends TmfViewer {
         super.dispose();
         if (fWaitCursor != null) {
             fWaitCursor.dispose();
+        }
+
+        for (Job j : fUpdateJobsGlobal.values()) {
+            j.cancel();
+        }
+
+        for (Job j : fUpdateJobsPartial.values()) {
+            j.cancel();
         }
 
         // Clean the model for this viewer
@@ -609,6 +631,15 @@ public class TmfStatisticsViewer extends TmfViewer {
             return;
         }
 
+        HashMap<ITmfTrace, Job> updateJobs;
+        if (isGlobal) {
+            updateJobs = fUpdateJobsGlobal;
+            fTimeRange = timeRange;
+        } else {
+            updateJobs = fUpdateJobsPartial;
+            fTimeRangePartial = timeRange;
+        }
+
         synchronized (statsData) {
             if (isGlobal) {
                 statTree.resetGlobalValue();
@@ -628,65 +659,86 @@ public class TmfStatisticsViewer extends TmfViewer {
                     continue;
                 }
 
-                /* Run the potentially long queries in a separate thread */
-                Thread statsThread = new Thread("Statistics update") { //$NON-NLS-1$
-                    @Override
-                    public void run() {
-                        /* Wait until the analysis is ready to be queried */
-                        statsMod.waitForInitialization();
-                        ITmfStatistics stats = statsMod.getStatistics();
-                        if (stats == null) {
-                            /* It should have worked, but didn't */
-                            throw new IllegalStateException();
-                        }
-
-                        /*
-                         * Wait on the state system object we are going to query.
-                         *
-                         * TODO Eventually this could be exposed through the
-                         * TmfStateSystemAnalysisModule directly.
-                         */
-                        ITmfStateSystem ss = statsMod.getStateSystem(TmfStatisticsEventTypesModule.ID);
-                        if (ss == null) {
-                            /*
-                             * It should be instantiated after the
-                             * statsMod.waitForInitialization() above.
-                             */
-                            throw new IllegalStateException();
-                        }
-
-                        /*
-                         * The generic statistics are stored in nanoseconds, so
-                         * we must make sure the time range is scaled correctly.
-                         */
-                        long start = timeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
-                        long end = timeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
-
-                        /*
-                         * Periodically update the statistics while they are
-                         * being built (or, if the back-end is already
-                         * completely built, it will skip over the while() immediately.
-                         */
-                        while (!ss.waitUntilBuilt(LIVE_UPDATE_DELAY)) {
-                            Map<String, Long> map = stats.getEventTypesInRange(start, end);
-                            System.out.println("size not built" + map.size());
-                            updateStats(aTrace, isGlobal, map);
-                            /*
-                             * The generic statistics are stored in nanoseconds, so
-                             * we must make sure the time range is scaled correctly.
-                             */
-                            start = timeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
-                            end = timeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
-                        }
-                        /* Query one last time for the final values */
-                        Map<String, Long> map = stats.getEventTypesInRange(start, end);
-                        System.out.println("size built" + map.size());
-                        updateStats(aTrace, isGlobal, map);
-                    }
-                };
-                statsThread.start();
+                Job job = updateJobs.get(aTrace);
+                if (job == null) {
+                    job = new UpdateJob("Statistics update", aTrace, isGlobal, statsMod);
+                    updateJobs.put(aTrace, job);
+                    job.setSystem(true);
+                    job.schedule();
+                }
             }
         }
+    }
+
+    private class UpdateJob extends Job {
+
+        private ITmfTrace fJobTrace;
+        private boolean fIsGlobal;
+        private TmfStatisticsModule fStatsMod;
+
+        private UpdateJob(String name, ITmfTrace trace, boolean isGlobal, TmfStatisticsModule statsMod) {
+            super(name);
+            fJobTrace = trace;
+            fIsGlobal = isGlobal;
+            fStatsMod = statsMod;
+        }
+
+        @Override
+        protected IStatus run(IProgressMonitor monitor) {
+
+            /* Wait until the analysis is ready to be queried */
+            fStatsMod.waitForInitialization();
+            ITmfStatistics stats = fStatsMod.getStatistics();
+            if (stats == null) {
+                /* It should have worked, but didn't */
+                throw new IllegalStateException();
+            }
+
+            /*
+             * Wait on the state system object we are going to query.
+             *
+             * TODO Eventually this could be exposed through the
+             * TmfStateSystemAnalysisModule directly.
+             */
+            ITmfStateSystem ss = fStatsMod.getStateSystem(TmfStatisticsEventTypesModule.ID);
+            if (ss == null) {
+                /* It should be instantiated after the
+                 * statsMod.waitForInitialization() above. */
+                throw new IllegalStateException();
+            }
+
+            /*
+             * The generic statistics are stored in nanoseconds, so
+             * we must make sure the time range is scaled correctly.
+             */
+            TmfTimeRange localtimeRange = fIsGlobal ? fTimeRange : fTimeRangePartial;
+            long start = localtimeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
+            long end = localtimeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
+
+            /*
+             * Periodically update the statistics while they are
+             * being built (or, if the back-end is already completely
+             * built, it will skip over the while() immediately.
+             */
+            while(!ss.waitUntilBuilt(LIVE_UPDATE_DELAY)) {
+                if (monitor.isCanceled()) {
+                    return Status.CANCEL_STATUS;
+                }
+
+                localtimeRange = fIsGlobal ? fTimeRange : fTimeRangePartial;
+                start = localtimeRange.getStartTime().normalize(0, TIME_SCALE).getValue();
+                end = localtimeRange.getEndTime().normalize(0, TIME_SCALE).getValue();
+
+                Map<String, Long> map = stats.getEventTypesInRange(start, end);
+                updateStats(fJobTrace, fIsGlobal, map);
+            }
+            /* Query one last time for the final values */
+            Map<String, Long> map = stats.getEventTypesInRange(start, end);
+            updateStats(fJobTrace, fIsGlobal, map);
+
+            return Status.OK_STATUS;
+        }
+
     }
 
     /*
