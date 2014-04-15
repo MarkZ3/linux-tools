@@ -50,8 +50,6 @@ import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngvi
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.SessionResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.StreamResponse;
 import org.eclipse.linuxtools.internal.lttng2.core.live.relayd.connector.lttngviewerCommands.TracePacketResponse;
-import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfTmfTimestamp;
-import org.eclipse.linuxtools.tmf.core.ctfadaptor.CtfTmfTrace;
 import org.eclipse.linuxtools.tmf.core.project.model.TmfTraceType;
 import org.eclipse.linuxtools.tmf.core.project.model.TraceTypeHelper;
 import org.eclipse.linuxtools.tmf.core.signal.TmfSignalHandler;
@@ -59,7 +57,10 @@ import org.eclipse.linuxtools.tmf.core.signal.TmfSignalManager;
 import org.eclipse.linuxtools.tmf.core.signal.TmfSignalThrottler;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceClosedSignal;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
+import org.eclipse.linuxtools.tmf.core.timestamp.ITmfTimestamp;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
+import org.eclipse.linuxtools.tmf.ctf.core.CtfTmfTimestamp;
+import org.eclipse.linuxtools.tmf.ctf.core.CtfTmfTrace;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfOpenTraceHelper;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfProjectElement;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfProjectRegistry;
@@ -166,7 +167,7 @@ public class LttngRelaydConsumer {
                             if (!fInitialized) {
                                 initializeTraceResource(stream);
                                 fCtfTrace = fCtfTmfTrace.getCTFTrace();
-                                fSignalThrottler = new TmfSignalThrottler(fCtfTmfTrace, 500);
+                                fSignalThrottler = new TmfSignalThrottler(fCtfTmfTrace, 5000);
                                 fInitialized = true;
                             }
 
@@ -177,13 +178,17 @@ public class LttngRelaydConsumer {
                                     packet = relayd.getPacketFromStream(indexReply, stream.id);
                                     long nanoTimeStamp = fCtfTrace.timestampCyclesToNanos(indexReply.timestamp_end);
                                     if (nanoTimeStamp > fTimestampEnd) {
-                                        TmfTimeRange range = new TmfTimeRange(fCtfTmfTrace.getStartTime(), new CtfTmfTimestamp(nanoTimeStamp));
+                                        CtfTmfTimestamp endTime = new CtfTmfTimestamp(nanoTimeStamp);
+                                        TmfTimeRange range = new TmfTimeRange(fCtfTmfTrace.getStartTime(), endTime);
                                         TmfTraceRangeUpdatedSignal signal = new TmfTraceRangeUpdatedSignal(LttngRelaydConsumer.this, fCtfTmfTrace, range);
+                                        ITmfTimestamp delta = endTime.getDelta(new CtfTmfTimestamp(fTimestampEnd));
+                                        if (delta.getValue() > 10000000) {
+                                            System.out.println("new range: " + range);
+//                                          fSignalThrottler.queue(signal);
+                                          fCtfTmfTrace.broadcastAsync(signal);
+                                        }
+                                        //- new CtfTmfTimestamp(nanoTimeStamp);
                                         fTimestampEnd = nanoTimeStamp;
-
-                                        System.out.println("new range: " + range);
-                                        fSignalThrottler.queue(signal);
-                                        //fCtfTmfTrace.broadcastAsync(signal);
                                     }
                                     active = true;
                                 } else if (indexReply.status == NextIndexReturnCode.VIEWER_INDEX_HUP) {

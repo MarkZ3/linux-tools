@@ -67,6 +67,8 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
     @Nullable private IStateHistoryBackend fHtBackend;
     @Nullable private ITmfEventRequest fRequest;
 
+    private Object syncObj2 = new Object();
+
     /**
      * State system backend types
      *
@@ -362,7 +364,7 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
             request.cancel();
         }
 
-        request = new StateSystemEventRequest(provider);
+        request = new StateSystemEventRequest(provider, provider.getTrace().isLive() ? provider.getTrace().getTimeRange() : TmfTimeRange.ETERNITY, 0);
         provider.getTrace().sendRequest(request);
 
         /*
@@ -370,7 +372,9 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
          * class fields, so that they become visible for other callers.
          */
         fStateProvider = provider;
-        fRequest = request;
+        synchronized (syncObj2) {
+            fRequest = request;
+        }
 
         /*
          * The state system object is now created, we can consider this module
@@ -393,14 +397,10 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         private final ITmfStateProvider sci;
         private final ITmfTrace trace;
 
-        public StateSystemEventRequest(ITmfStateProvider sp) {
-            this(sp, TmfTimeRange.ETERNITY);
-        }
-
-        public StateSystemEventRequest(ITmfStateProvider sp, TmfTimeRange timeRange) {
+        public StateSystemEventRequest(ITmfStateProvider sp, TmfTimeRange timeRange, int index) {
             super(sp.getExpectedEventType(),
                     timeRange,
-                    0,
+                    index,
                     ITmfEventRequest.ALL_DATA,
                     ITmfEventRequest.ExecutionType.BACKGROUND);
             this.sci = sp;
@@ -425,6 +425,13 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
             super.handleSuccess();
             if (!trace.isLive()) {
                 disposeProvider(false);
+            } else {
+                fNbRead += getNbRead();
+                synchronized (syncObj2) {
+                    if (!getRange().equals(fTimeRange)) {
+                        startRequest();
+                    }
+                }
             }
         }
 
@@ -463,6 +470,10 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         return ret;
     }
 
+    private int fNbRead = 0;
+//    private int fNbRequests = 0;
+    @Nullable private TmfTimeRange fTimeRange = null;
+
     /**
      * Signal handler for the TmfTraceRangeUpdatedSignal signal
      *
@@ -471,18 +482,26 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
      */
     @TmfSignalHandler
     public void traceRangeUpdated(final TmfTraceRangeUpdatedSignal signal) {
+        fTimeRange = signal.getRange();
         ITmfStateProvider stateProvider = fStateProvider;
-        if (signal.getTrace() == getTrace() && stateProvider != null && stateProvider.getAssignedStateSystem() != null) {
-            synchronized (fRequest) {
+        synchronized (syncObj2) {
+            if (signal.getTrace() == getTrace() && stateProvider != null && stateProvider.getAssignedStateSystem() != null) {
                 ITmfEventRequest request = fRequest;
-                if ((request != null) && (!request.isCompleted())) {
-                    request.cancel();
+                if ((request == null) || request.isCompleted()) {
+                    startRequest();
                 }
-
-                request = new StateSystemEventRequest(stateProvider, signal.getRange());
-                stateProvider.getTrace().sendRequest(request);
-                fRequest = request;
             }
         }
+    }
+
+    private void startRequest() {
+        ITmfStateProvider stateProvider = fStateProvider;
+        TmfTimeRange timeRange = fTimeRange;
+        if (stateProvider == null || timeRange == null) {
+            return;
+        }
+        ITmfEventRequest request = new StateSystemEventRequest(stateProvider, timeRange, fNbRead);
+        stateProvider.getTrace().sendRequest(request);
+        fRequest = request;
     }
 }
