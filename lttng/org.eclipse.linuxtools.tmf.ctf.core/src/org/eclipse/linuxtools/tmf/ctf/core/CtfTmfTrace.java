@@ -16,6 +16,7 @@ package org.eclipse.linuxtools.tmf.ctf.core;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
@@ -358,9 +359,9 @@ public class CtfTmfTrace extends TmfTrace
      * @since 2.1
      */
     public boolean hasEvent(final String eventName) {
-        Map<Long, IEventDeclaration> events = fTrace.getEvents(0L);
+        List< IEventDeclaration> events = fTrace.getEvents(0L);
         if (events != null) {
-            for (IEventDeclaration decl : events.values()) {
+            for (IEventDeclaration decl : events) {
                 if (decl.getName().equals(eventName)) {
                     return true;
                 }
