@@ -48,7 +48,6 @@ import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePack
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.tracepkg.TracePackageTraceElement;
 import org.eclipse.linuxtools.tmf.core.TmfCommonConstants;
 import org.eclipse.linuxtools.tmf.ui.project.model.TmfTraceElement;
-import org.eclipse.linuxtools.tmf.ui.project.model.TmfTracesFolder;
 import org.eclipse.linuxtools.tmf.ui.project.model.TraceUtils;
 import org.eclipse.ui.internal.wizards.datatransfer.ArchiveFileExportOperation;
 import org.w3c.dom.Document;
@@ -219,13 +218,13 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
         Document doc = traceNode.getOwnerDocument();
         TmfTraceElement traceElement = ((TracePackageTraceElement) element.getParent()).getTraceElement();
         IResource resource = traceElement.getResource();
-        IPath projectPath = traceElement.getProject().getPath();
+        IPath traceFolderPath = traceElement.getProject().getTracesFolder().getPath();
 
         // project/Traces/A/B/Kernel -> Traces/A/B/
-        IPath relativeToExportFolder = resource.getFullPath().makeRelativeTo(projectPath).removeLastSegments(1);
+        IPath containerRelativeToExportFolder = resource.getFullPath().makeRelativeTo(traceFolderPath).removeLastSegments(1);
 
         // project/.traceExport/Traces/A/B
-        IFolder folder = fExportFolder.getFolder(relativeToExportFolder);
+        IFolder folder = fExportFolder.getFolder(containerRelativeToExportFolder);
         TraceUtils.createFolder(folder, monitor);
 
         IResource link = createExportResource(folder, resource);
@@ -235,8 +234,7 @@ public class TracePackageExportOperation extends AbstractTracePackageOperation {
 
         fileElement.setAttribute(ITracePackageConstants.TRACE_FILE_NAME_ATTRIB, archiveRelativePath.toString());
         traceNode.appendChild(fileElement);
-        IFolder exportTracesFolder = fExportFolder.getFolder(TmfTracesFolder.TRACES_FOLDER_NAME);
-        fResources.add(exportTracesFolder);
+        fResources.add(containerRelativeToExportFolder.isEmpty() ? link : folder);
     }
 
     /**
