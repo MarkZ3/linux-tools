@@ -116,9 +116,11 @@ public class TmfOpenTraceHelper {
         try {
           traceTypeToSet = TmfTraceTypeUIUtils.selectTraceType(pathToUse, null, tracetypeHint);
         } catch (TmfTraceImportException e) {
-            MessageBox mb = new MessageBox(shell);
-            mb.setMessage(e.getMessage());
-            mb.open();
+            if (shell != null) {
+                MessageBox mb = new MessageBox(shell);
+                mb.setMessage(e.getMessage());
+                mb.open();
+            }
             return new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage());
         }
 
