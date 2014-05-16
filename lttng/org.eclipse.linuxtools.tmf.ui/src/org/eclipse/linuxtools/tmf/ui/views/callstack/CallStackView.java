@@ -10,6 +10,7 @@
  *   Patrick Tasse - Initial API and implementation
  *   Bernd Hufmann - Updated signal handling
  *   Marc-Andre Laperle - Map from binary file
+ *   Marc-Andre Laperle - Support for loading libraries
  *******************************************************************************/
 
 package org.eclipse.linuxtools.tmf.ui.views.callstack;
@@ -21,9 +22,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.Nullable;
@@ -790,6 +793,7 @@ public class CallStackView extends TmfView {
     }
 
     private void buildThreadList(final ITmfTrace trace, IProgressMonitor monitor) {
+
         fStartTime = Long.MAX_VALUE;
         fEndTime = Long.MIN_VALUE;
         ITmfTrace[] traces = TmfTraceManager.getTraceSet(trace);
@@ -826,7 +830,8 @@ public class CallStackView extends TmfView {
                 try {
                     eventStackQuark = ss.getQuarkRelative(threadQuark, CallStackStateProvider.CALL_STACK);
                     int level = 1;
-                    for (int stackLevelQuark : ss.getSubAttributes(eventStackQuark, false)) {
+                    List<Integer> subAttributes = ss.getSubAttributes(eventStackQuark, false);
+                    for (int stackLevelQuark : subAttributes) {
                         CallStackEntry callStackEntry = new CallStackEntry(stackLevelQuark, level++, aTrace);
                         threadEntry.addChild(callStackEntry);
                     }
@@ -1268,6 +1273,30 @@ public class CallStackView extends TmfView {
                 public IStatus run(IProgressMonitor monitor) {
                     fNameMapping = doMapping(new File(filePath));
 
+                    ITmfStateSystem ss = getCallStackStateSystem(fTrace);
+                    if (ss != null) {
+                        List<Integer> libraryQuarks = ss.getQuarks(CallStackStateProvider.LIBRARIES, "*"); //$NON-NLS-1$
+                        for (Integer libraryQuark : libraryQuarks) {
+                            try {
+                                int baseAddressQuark = ss.getQuarkRelative(libraryQuark, CallStackStateProvider.LIBRARY_BASE_ADDRESS);
+
+                                int libPathQuark = ss.getQuarkRelative(libraryQuark, CallStackStateProvider.LIBRARY_PATH);
+
+                                ITmfStateInterval stateInterval;
+                                stateInterval = ss.querySingleState(ss.getCurrentEndTime(), libPathQuark);
+                                String libPath = stateInterval.getStateValue().unboxStr();
+                                loadLibraryMapping(ss, libPath, baseAddressQuark);
+
+                                // Also check debug path for a matching library with symbols
+                                IPath debugPath = new Path("/usr/lib/debug").append(libPath); //$NON-NLS-1$
+                                loadLibraryMapping(ss, debugPath.toOSString(), baseAddressQuark);
+                            } catch (AttributeNotFoundException | StateSystemDisposedException e) {
+                                continue;
+                            }
+
+                        }
+                    }
+
                     /* Refresh the time graph and the list of entries */
                     buildThreadList(fTrace, new NullProgressMonitor());
                     redraw();
@@ -1313,7 +1342,11 @@ public class CallStackView extends TmfView {
         fImportBinaryFileMappingAction = new AbstractImportFileMappingAction(Messages.CallStackView_ImportBinaryFileDialogTitle) {
             @Override
             Map<String, String> doMapping(File file) {
-                return FunctionNameMapper.mapFromBinaryFile(file);
+                Map<String, String> mapFromBinaryFile = FunctionNameMapper.mapFromBinaryFile(file);
+                if (mapFromBinaryFile != null && fNameMapping != null) {
+                    mapFromBinaryFile.putAll(fNameMapping);
+                }
+                return mapFromBinaryFile;
             }
         };
 
@@ -1329,12 +1362,50 @@ public class CallStackView extends TmfView {
             /* No mapping available, just print the addresses */
             return address;
         }
+
         String ret = fNameMapping.get(address);
         if (ret == null) {
-            /* We didn't find this address in the mapping file, just use the address */
+//            long parseInt = Long.parseLong(address, 16);
+//            String baseAddresses[] = {"7f85a571b000", "7f3bfdd60000", "7f8e70537000", "7f8e76148000"};
+//            for (String base : baseAddresses) {
+//                long baseLong = Long.parseLong(base, 16);
+//                long relative = parseInt - baseLong;
+//                String add = Long.toHexString(relative);
+//                /* We didn't find this address in the mapping file, just use the address */
+//                ret = fNameMapping.get(add);
+//                if (ret != null) {
+//                    return ret;
+//                }
+//            }
+
             return address;
+
         }
         return ret;
+    }
+
+    private void loadLibraryMapping(ITmfStateSystem ss, String libPath, int baseAddressQuark) {
+        File file = new File(libPath);
+        if (file.canRead()) {
+            Map<String, String> mapFromBinaryFile = FunctionNameMapper.mapFromBinaryFile(file);
+            if (mapFromBinaryFile != null && !mapFromBinaryFile.isEmpty()) {
+
+                ITmfStateInterval stateInterval;
+                try {
+                    stateInterval = ss.querySingleState(ss.getCurrentEndTime(), baseAddressQuark);
+                } catch (AttributeNotFoundException | StateSystemDisposedException e) {
+                    return;
+                }
+                long baseAddress = stateInterval.getStateValue().unboxLong();
+                Map<String, String> absoluteAddresses = new HashMap<>();
+                for (String key : mapFromBinaryFile.keySet()) {
+                    long relative = Long.parseLong(key, 16);
+                    absoluteAddresses.put(Long.toHexString(relative + baseAddress), mapFromBinaryFile.get(key));
+                }
+
+                fNameMapping.putAll(absoluteAddresses);
+            }
+        }
     }
 
 }

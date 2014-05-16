@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.linuxtools.tmf.core.callstack.CallStackStateProvider;
+import org.eclipse.linuxtools.tmf.core.callstack.LibraryInfo;
 import org.eclipse.linuxtools.tmf.core.event.ITmfEvent;
 import org.eclipse.linuxtools.tmf.core.event.ITmfEventField;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
@@ -48,6 +49,15 @@ public class LttngUstCallStackProvider extends CallStackStateProvider {
 
     /** Field name for the target function address */
     private static final String FIELD_ADDR = "addr"; //$NON-NLS-1$
+
+    /** Field name for the library base address */
+    private static final String FIELD_LIBRARY_BASE_ADDR = "baddr"; //$NON-NLS-1$
+
+    /** Field name for the library path */
+    private static final String FIELD_LIBRARY_PATH = "sopath"; //$NON-NLS-1$
+
+    /** Field name for the library size */
+    private static final String FIELD_LIBRARY_SIZE = "size"; //$NON-NLS-1$
 
     /** Event names indicating function entry */
     private static final Set<String> FUNC_ENTRY_EVENTS = new HashSet<>();
@@ -113,11 +123,20 @@ public class LttngUstCallStackProvider extends CallStackStateProvider {
             return false;
         }
         ITmfEventField content = ((CtfTmfEvent) event).getContent();
-        if (content.getField(CONTEXT_VTID) == null ||
-                content.getField(CONTEXT_PROCNAME) == null) {
-            return false;
+        if (content.getField(CONTEXT_VTID) != null && content.getField(CONTEXT_PROCNAME) != null) {
+            return true;
         }
-        return true;
+
+        content = ((CtfTmfEvent) event).getContent();
+        if (containsLibraryLoadedInfo(content)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean containsLibraryLoadedInfo(ITmfEventField content) {
+        return content.getField(FIELD_LIBRARY_BASE_ADDR) != null && content.getField(FIELD_LIBRARY_PATH) != null && content.getField(FIELD_LIBRARY_SIZE) != null;
     }
 
     @Override
@@ -161,4 +180,32 @@ public class LttngUstCallStackProvider extends CallStackStateProvider {
 
         return new String(procName + '-' + vtid.toString());
     }
+
+    @Override
+    protected LibraryInfo libraryLoaded(ITmfEvent event) {
+        /*
+         * Event type: ust_baddr:push
+           Timestamp: 8896898667968
+           _baddr : 0x7f8ed0688000
+           _sopath : "/usr/lib/liblttng-ust-tracepoint.so.0.0.0"
+           _size : 144461
+           mtime : 1399645290
+         */
+
+        ITmfEventField content = event.getContent();
+        if (containsLibraryLoadedInfo(content)) {
+            long baseAddress = (long) content.getField(FIELD_LIBRARY_BASE_ADDR).getValue();
+            long size = (long)content.getField(FIELD_LIBRARY_SIZE).getValue();
+            String path = (String)content.getField(FIELD_LIBRARY_PATH).getValue();
+
+            return new LibraryInfo(path, baseAddress, size);
+        }
+        return null;
+    }
+
+//    private static long stringToLong(String value) {
+//        String value2 = value.substring(2);
+//        long baseAddress = Long.parseLong(value2, 16);
+//        return baseAddress;
+//    }
 }

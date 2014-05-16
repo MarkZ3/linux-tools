@@ -161,15 +161,15 @@ public final class HTInterval implements ITmfStateInterval, Comparable<HTInterva
             buffer.position(valueOrOffset);
 
             /* the first byte = the size to read */
-            valueSize = buffer.get();
+            valueSize = buffer.getShort();
 
             /*
              * Careful though, 'valueSize' is the total size of the entry,
-             * including the 'size' byte at the start and end (0'ed) byte at the
+             * including the 'size' short at the start and end (0'ed) byte at the
              * end. Here we want 'array' to only contain the real payload of the
              * value.
              */
-            array = new byte[valueSize - 2];
+            array = new byte[valueSize - 3];
             buffer.get(array);
             value = TmfStateValue.newValueString(new String(array));
 
@@ -278,9 +278,9 @@ public final class HTInterval implements ITmfStateInterval, Comparable<HTInterva
             buffer.position(endPosOfStringEntry - stringsEntrySize);
 
             /*
-             * write the Strings entry (1st byte = size, then the bytes, then the 0)
+             * write the Strings entry (1st 2 bytes = size, then the bytes, then the 0)
              */
-            buffer.put((byte) stringsEntrySize);
+            buffer.putShort((short) stringsEntrySize);
             buffer.put(byteArrayToWrite);
             buffer.put((byte) 0);
             assert (buffer.position() == endPosOfStringEntry);
@@ -399,8 +399,8 @@ public final class HTInterval implements ITmfStateInterval, Comparable<HTInterva
             return DOUBLE_ENTRY_SIZE;
         case STRING:
             try {
-                /* String's length + 2 (1 byte for size, 1 byte for \0 at the end */
-                return sv.unboxStr().getBytes().length + 2;
+                /* String's length + 3 (2 bytes for size, 1 byte for \0 at the end */
+                return sv.unboxStr().getBytes().length + 3;
             } catch (StateValueTypeException e) {
                 /* We're inside a switch/case for the string type, can't happen */
                 throw new IllegalStateException(e);

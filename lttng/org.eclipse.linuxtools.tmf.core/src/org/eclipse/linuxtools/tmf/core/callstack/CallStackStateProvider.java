@@ -8,10 +8,12 @@
  *
  * Contributors:
  *   Patrick Tasse - Initial API and implementation
+ *   Marc-Andre Laperle - Support for loading libraries
  *******************************************************************************/
 
 package org.eclipse.linuxtools.tmf.core.callstack;
 
+import org.eclipse.core.runtime.Path;
 import org.eclipse.linuxtools.internal.tmf.core.Activator;
 import org.eclipse.linuxtools.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.linuxtools.statesystem.core.exceptions.StateValueTypeException;
@@ -50,6 +52,11 @@ import org.eclipse.osgi.util.NLS;
  *                  |-- 2
  *                 ...
  *                  \-- n
+ *        Libraries
+ *        | ---- lib.so
+ *                | -- path
+ *                | -- base address
+ *                | -- size
  *</pre>
  * where:
  * <br>
@@ -75,6 +82,21 @@ public abstract class CallStackStateProvider extends AbstractTmfStateProvider {
     private static final String ID = "org.eclipse.linuxtools.tmf.callstack"; //$NON-NLS-1$
     /** Dummy function name for when no function is expected */
     private static final String NO_FUNCTION = "no function"; //$NON-NLS-1$
+
+    /** Thread attribute
+     * @since 3.1*/
+    public static final String LIBRARIES = "Libraries"; //$NON-NLS-1$
+    /** Thread attribute
+     * @since 3.1*/
+    public static final String LIBRARY_PATH = "Path"; //$NON-NLS-1$
+    /**
+     * @since 3.1
+     */
+    public static final String LIBRARY_BASE_ADDRESS = "BaseAddr"; //$NON-NLS-1$
+    /**
+     * @since 3.1
+     */
+    public static final String LIBRARY_SIZE = "Size"; //$NON-NLS-1$
 
     /**
      * Default constructor
@@ -125,6 +147,25 @@ public abstract class CallStackStateProvider extends AbstractTmfStateProvider {
                 }
             }
 
+            LibraryInfo library = libraryLoaded(event);
+            if (library != null) {
+                long timestamp = event.getTimestamp().normalize(0, ITmfTimestamp.NANOSECOND_SCALE).getValue();
+
+                String libraryName = new Path(library.getPath()).lastSegment();
+                int quark = ss.getQuarkAbsoluteAndAdd(LIBRARIES, libraryName, LIBRARY_BASE_ADDRESS);
+                ITmfStateValue value = TmfStateValue.newValueLong(library.getBaseAddress());
+                ss.modifyAttribute(timestamp, value, quark);
+
+                quark = ss.getQuarkAbsoluteAndAdd(LIBRARIES, libraryName, LIBRARY_PATH);
+                value = TmfStateValue.newValueString(library.getPath());
+                ss.modifyAttribute(timestamp, value, quark);
+
+                quark = ss.getQuarkAbsoluteAndAdd(LIBRARIES, libraryName, LIBRARY_SIZE);
+                value = TmfStateValue.newValueLong(library.getSize());
+                ss.modifyAttribute(timestamp, value, quark);
+            }
+
+
         } catch (TimeRangeException e) {
             e.printStackTrace();
         } catch (AttributeNotFoundException e) {
@@ -167,6 +208,18 @@ public abstract class CallStackStateProvider extends AbstractTmfStateProvider {
      *         not a function exit.
      */
     protected abstract String functionExit(ITmfEvent event);
+
+    /**
+     * Check an event if it indicates a library has been loaded.
+     *
+     * @param event
+     *            An event to check for library loading
+     * @return The library information
+     * @since 3.1
+     */
+    protected LibraryInfo libraryLoaded(ITmfEvent event) {
+        return null;
+    }
 
     /**
      * Return the thread name of a function entry or exit event.
