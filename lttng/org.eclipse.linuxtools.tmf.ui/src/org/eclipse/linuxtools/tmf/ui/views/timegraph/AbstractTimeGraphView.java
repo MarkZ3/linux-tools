@@ -456,6 +456,7 @@ public abstract class AbstractTimeGraphView extends TmfView {
 
         @Override
         public void run() {
+            System.out.println("BuildThread.run");
             buildEventList(fBuildTrace, fParentTrace, fMonitor);
             synchronized (fBuildThreadMap) {
                 fBuildThreadMap.remove(fBuildTrace);
@@ -480,8 +481,13 @@ public abstract class AbstractTimeGraphView extends TmfView {
             fZoomStartTime = startTime;
             fZoomEndTime = endTime;
             fResolution = Math.max(1, (fZoomEndTime - fZoomStartTime) / fDisplayWidth);
+            System.out.println("entryList: " + entryList.size());
             fMonitor = new NullProgressMonitor();
         }
+
+        public long getEndTime() { return fZoomEndTime; }
+
+        public long getStartTime() { return fZoomStartTime; }
 
         @Override
         public void run() {
@@ -1045,6 +1051,7 @@ public abstract class AbstractTimeGraphView extends TmfView {
      * @since 3.0
      */
     protected void rebuild() {
+        System.out.println("AbstractTimeGraphView.rebuild");
         setStartTime(Long.MAX_VALUE);
         setEndTime(Long.MIN_VALUE);
         synchronized (fBuildThreadMap) {
@@ -1226,8 +1233,14 @@ public abstract class AbstractTimeGraphView extends TmfView {
 
     private void startZoomThread(long startTime, long endTime) {
         if (fZoomThread != null) {
+            //new Throwable().printStackTrace();
+            if (startTime == fZoomThread.getStartTime() && endTime == fZoomThread.getEndTime()) {
+                return;
+            }
+            System.out.println("newRange: " + startTime + ", " + endTime + "oldRange: " + fZoomThread.getStartTime() + ", " + fZoomThread.getEndTime() );
             fZoomThread.cancel();
         }
+
         fZoomThread = new ZoomThread(fEntryList, startTime, endTime, getName());
         fZoomThread.start();
     }
