@@ -239,7 +239,7 @@ public class TraceControlKernelSessionTests {
         events.add("sched_kthread_stop_ret");
         eventsDialogStub.setNames(events);
         eventsDialogStub.setIsKernel(true);
-        TraceControlDialogFactory.getInstance().setEnableEventsDialog(eventsDialogStub);
+        //TraceControlDialogFactory.getInstance().setEnableEventsDialog(eventsDialogStub);
 
         // ------------------------------------------------------------------------
         // disable channels

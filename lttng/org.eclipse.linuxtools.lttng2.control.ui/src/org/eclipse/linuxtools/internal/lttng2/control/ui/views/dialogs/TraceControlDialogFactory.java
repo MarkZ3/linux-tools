@@ -51,7 +51,7 @@ public final class TraceControlDialogFactory {
     /**
      * The enable events dialog.
      */
-    private IEnableEventsDialog fEnableEventsDialog;
+    private EnableEventsDialog fEnableEventsDialog;
 
     /**
      * The get event info dialog.
@@ -159,7 +159,7 @@ public final class TraceControlDialogFactory {
     /**
      * @return enable events dialog implementation.
      */
-    public IEnableEventsDialog getEnableEventsDialog() {
+    public EnableEventsDialog getEnableEventsDialog() {
         if (fEnableEventsDialog == null) {
             fEnableEventsDialog = new EnableEventsDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell());
         }
@@ -170,7 +170,7 @@ public final class TraceControlDialogFactory {
      * Sets a enable events dialog implementation.
      * @param enableEventsDialog - a enable events dialog implementation.
      */
-    public void setEnableEventsDialog(IEnableEventsDialog enableEventsDialog) {
+    public void setEnableEventsDialog(EnableEventsDialog enableEventsDialog) {
         fEnableEventsDialog = enableEventsDialog;
     }
 

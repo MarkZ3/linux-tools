@@ -14,9 +14,6 @@ package org.eclipse.linuxtools.internal.lttng2.control.ui.views.dialogs;
 
 import java.util.List;
 
-import org.eclipse.linuxtools.internal.lttng2.control.core.model.LogLevelType;
-import org.eclipse.linuxtools.internal.lttng2.control.core.model.TraceLogLevel;
-
 /**
  * <p>
  * Interface for providing information about UST events to be enabled.
@@ -45,39 +42,5 @@ public interface IEnableUstEvents {
      */
     List<String> getEventNames();
 
-    /**
-     * @return a flag whether events using wildcards should be enabled
-     */
-    boolean isWildcard();
-
-    /**
-     * @return a wildcard
-     */
-    String getWildcard();
-
-    /**
-     * @return a flag whether events using log levels should be enabled
-     */
-    boolean isLogLevel();
-
-    /**
-     * @return a log level type (loglevel or loglevel-only)
-     */
-    LogLevelType getLogLevelType();
-
-    /**
-     * @return a log level
-     */
-    TraceLogLevel getLogLevel();
-
-    /**
-     * @return a event name for the log level enable action
-     */
-    String getLogLevelEventName();
-
-    /**
-     * @return a filter expression
-     */
-    String getFilterExpression();
 
 }

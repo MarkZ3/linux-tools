@@ -14,8 +14,6 @@ package org.eclipse.linuxtools.internal.lttng2.control.stubs.dialogs;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.linuxtools.internal.lttng2.control.core.model.LogLevelType;
-import org.eclipse.linuxtools.internal.lttng2.control.core.model.TraceLogLevel;
 import org.eclipse.linuxtools.internal.lttng2.control.ui.views.dialogs.IEnableEventsDialog;
 import org.eclipse.linuxtools.internal.lttng2.control.ui.views.model.impl.TraceDomainComponent;
 import org.eclipse.linuxtools.internal.lttng2.control.ui.views.model.impl.TraceProviderGroup;
@@ -39,13 +37,6 @@ public class EnableEventsDialogStub implements IEnableEventsDialog {
     private boolean fIsFunctionProbe;
     private String fFunctionEventName;
     private String fFunctionProbe;
-    private boolean fIsWildcard;
-    private String fWildcard;
-    private boolean fIsLogLevel;
-    private String fLogLevelEventName;
-    private TraceLogLevel fLogLevel;
-    private LogLevelType fLogLevelType;
-    private String fFilter;
     private List<String> fNames = new ArrayList<>();
 
     // ------------------------------------------------------------------------
@@ -91,36 +82,8 @@ public class EnableEventsDialogStub implements IEnableEventsDialog {
         fFunctionProbe = functionProbe;
     }
 
-    public void setIsWildcard(boolean isWildcard) {
-        fIsWildcard = isWildcard;
-    }
-
-    public void setWildcard(String wildcard) {
-        fWildcard = wildcard;
-    }
-
-    public void setIsLogLevel(boolean isLogLevel) {
-        fIsLogLevel = isLogLevel;
-    }
-
-    public void setLogLevelEventName(String logLevelEventName) {
-        fLogLevelEventName = logLevelEventName;
-    }
-
-    public void setLogLevel(TraceLogLevel logLevel) {
-        fLogLevel = logLevel;
-    }
-
-    public void setLogLevelType(LogLevelType logLevelType) {
-        fLogLevelType = logLevelType;
-    }
-
     public void setNames(List<String> names) {
         fNames = names;
-    }
-
-    public void setFilterExpression(String filter) {
-        fFilter = filter;
     }
 
     @Override
@@ -179,36 +142,6 @@ public class EnableEventsDialogStub implements IEnableEventsDialog {
     }
 
     @Override
-    public boolean isWildcard() {
-        return fIsWildcard;
-    }
-
-    @Override
-    public String getWildcard() {
-        return fWildcard;
-    }
-
-    @Override
-    public boolean isLogLevel() {
-        return fIsLogLevel;
-    }
-
-    @Override
-    public LogLevelType getLogLevelType() {
-        return fLogLevelType;
-    }
-
-    @Override
-    public TraceLogLevel getLogLevel() {
-        return fLogLevel;
-    }
-
-    @Override
-    public String getLogLevelEventName() {
-        return fLogLevelEventName;
-    }
-
-    @Override
     public boolean isKernel() {
         return fIsKernel;
     }
@@ -224,11 +157,6 @@ public class EnableEventsDialogStub implements IEnableEventsDialog {
     @Override
     public int open() {
         return 0;
-    }
-
-    @Override
-    public String getFilterExpression() {
-        return fFilter;
     }
 
 }
