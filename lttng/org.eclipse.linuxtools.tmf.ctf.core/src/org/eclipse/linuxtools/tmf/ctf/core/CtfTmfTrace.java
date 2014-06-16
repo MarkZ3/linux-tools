@@ -465,7 +465,7 @@ public class CtfTmfTrace extends TmfTrace
 
     @Override
     protected ITmfTraceIndexer createIndexer(int interval) {
-        return new TmfBTreeTraceIndexer(this, interval);
+        return new TmfBTreeTraceIndexer(this, 50);
     }
 
     /**

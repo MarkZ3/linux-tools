@@ -17,6 +17,13 @@
             name="%memoryusage.view.name"
             restorable="true">
       </view>
+      <view
+            category="org.eclipse.linuxtools.lttng2.ui.views.category"
+            class="org.eclipse.linuxtools.internal.lttng2.ust.ui.views.memleak.MemoryLeakView"
+            id="org.eclipse.linuxtools.lttng2.ust.memoryleak"
+            name="%memoryleak.view.name"
+            restorable="true">
+      </view>
    </extension>
    <extension
          point="org.eclipse.linuxtools.tmf.core.analysis">

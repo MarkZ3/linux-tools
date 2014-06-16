@@ -8,4 +8,12 @@
             </message_arguments>
         </filter>
     </resource>
+    <resource path="src/org/eclipse/linuxtools/tmf/ui/viewers/events/TmfEventsTable.java" type="org.eclipse.linuxtools.tmf.ui.viewers.events.TmfEventsTable$FilterThread">
+        <filter id="338722907">
+            <message_arguments>
+                <message_argument value="org.eclipse.linuxtools.tmf.ui.viewers.events.TmfEventsTable.FilterThread"/>
+                <message_argument value="FilterThread(TmfEventsTable, ITmfFilterTreeNode)"/>
+            </message_arguments>
+        </filter>
+    </resource>
 </component>

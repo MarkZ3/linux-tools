@@ -1371,7 +1371,7 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
      */
     protected void startFilterThread() {
         synchronized (fFilterSyncObj) {
-            final ITmfFilterTreeNode filter = (ITmfFilterTreeNode) fTable.getData(Key.FILTER_OBJ);
+            final ITmfFilter filter = (ITmfFilter) fTable.getData(Key.FILTER_OBJ);
             if (fFilterThread == null || fFilterThread.filter != filter) {
                 if (fFilterThread != null) {
                     fFilterThread.cancel();
@@ -1454,7 +1454,7 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
      * Wrapper Thread object for the filtering thread.
      */
     protected class FilterThread extends Thread {
-        private final ITmfFilterTreeNode filter;
+        private final ITmfFilter filter;
         private TmfEventRequest request;
         private boolean refreshBusy = false;
         private boolean refreshPending = false;
@@ -1463,10 +1463,11 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
         /**
          * Constructor.
          *
-         * @param filter
+         * @param filter2
          *            The filter this thread will be processing
+         * @since 3.1
          */
-        public FilterThread(final ITmfFilterTreeNode filter) {
+        public FilterThread(final ITmfFilter filter) {
             super("Filter Thread"); //$NON-NLS-1$
             this.filter = filter;
         }

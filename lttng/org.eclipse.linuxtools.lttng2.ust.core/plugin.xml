@@ -22,5 +22,13 @@
                class="org.eclipse.linuxtools.lttng2.ust.core.trace.LttngUstTrace">
          </tracetype>
       </module>
+      <module
+            analysis_module="org.eclipse.linuxtools.internal.lttng2.ust.core.memoryleak.UstMemoryLeakAnalysisModule"
+            id="org.eclipse.linuxtools.lttng2.ust.analysis.memory.leak"
+            name="Ust Memory Leak">
+         <tracetype
+               class="org.eclipse.linuxtools.lttng2.ust.core.trace.LttngUstTrace">
+         </tracetype>
+      </module>
    </extension>
 </plugin>
