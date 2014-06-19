@@ -42,6 +42,7 @@ import org.eclipse.linuxtools.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.linuxtools.tmf.core.signal.TmfTraceRangeUpdatedSignal;
 import org.eclipse.linuxtools.tmf.core.timestamp.TmfTimeRange;
 import org.eclipse.linuxtools.tmf.core.trace.ITmfTrace;
+import org.eclipse.linuxtools.tmf.core.trace.ITmfTraceCompleteness;
 import org.eclipse.linuxtools.tmf.core.trace.TmfExperiment;
 import org.eclipse.linuxtools.tmf.core.trace.TmfTraceManager;
 
@@ -400,7 +401,15 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
             request.cancel();
         }
 
-        request = new StateSystemEventRequest(provider, provider.getTrace().isLive() ? provider.getTrace().getTimeRange() : TmfTimeRange.ETERNITY, 0);
+        @NonNull TmfTimeRange timeRange = TmfTimeRange.ETERNITY;
+        final ITmfTrace trace = provider.getTrace();
+        if (trace != null && !isCompleteTrace(trace)) {
+            TmfTimeRange traceTimeRange = trace.getTimeRange();
+            if (traceTimeRange != null) {
+                timeRange = traceTimeRange;
+            }
+        }
+        request = new StateSystemEventRequest(provider, timeRange, 0);
         provider.getTrace().sendRequest(request);
 
         /*
@@ -517,14 +526,13 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
     }
 
     private int fNbRead = 0;
-//    private int fNbRequests = 0;
     @Nullable private TmfTimeRange fTimeRange = null;
 
     /**
      * Signal handler for the TmfTraceRangeUpdatedSignal signal
      *
      * @param signal The incoming signal
-     * @since 2.0
+     * @since 3.1
      */
     @TmfSignalHandler
     public void traceRangeUpdated(final TmfTraceRangeUpdatedSignal signal) {
@@ -549,5 +557,9 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         ITmfEventRequest request = new StateSystemEventRequest(stateProvider, timeRange, fNbRead);
         stateProvider.getTrace().sendRequest(request);
         fRequest = request;
+    }
+
+    private static boolean isCompleteTrace(ITmfTrace trace) {
+        return !(trace instanceof ITmfTraceCompleteness) || ((ITmfTraceCompleteness)trace).isComplete();
     }
 }

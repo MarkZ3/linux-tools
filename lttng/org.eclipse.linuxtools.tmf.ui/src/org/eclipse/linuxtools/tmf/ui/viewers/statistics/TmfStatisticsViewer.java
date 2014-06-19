@@ -624,7 +624,6 @@ public class TmfStatisticsViewer extends TmfViewer {
      *            partial one.
      */
     private void buildStatisticsTree(final ITmfTrace trace, final TmfTimeRange timeRange, final boolean isGlobal) {
-        System.out.println("buildStatisticsTree: " + timeRange);
         final TmfStatisticsTreeNode statTree = TmfStatisticsTreeManager.getStatTreeRoot(getTreeID());
         final TmfStatisticsTree statsData = TmfStatisticsTreeManager.getStatTree(getTreeID());
         if (statsData == null) {
@@ -661,7 +660,7 @@ public class TmfStatisticsViewer extends TmfViewer {
 
                 Job job = updateJobs.get(aTrace);
                 if (job == null) {
-                    job = new UpdateJob("Statistics update", aTrace, isGlobal, statsMod);
+                    job = new UpdateJob("Statistics update", aTrace, isGlobal, statsMod); //$NON-NLS-1$
                     updateJobs.put(aTrace, job);
                     job.setSystem(true);
                     job.schedule();
