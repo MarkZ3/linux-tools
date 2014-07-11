@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -24,6 +25,7 @@ import org.eclipse.test.internal.performance.InternalDimensions;
 import org.eclipse.test.internal.performance.PerformanceTestPlugin;
 import org.eclipse.test.internal.performance.db.DB;
 import org.eclipse.test.internal.performance.db.Scenario;
+import org.eclipse.test.internal.performance.db.SummaryEntry;
 import org.eclipse.test.internal.performance.db.TimeSeries;
 import org.eclipse.test.internal.performance.db.Variations;
 import org.json.JSONArray;
@@ -38,7 +40,7 @@ public class PerfResultsToJSon {
 
     private static final String BUILD_DATE_FORMAT = "yyyyMMdd-HHmm";
 
-    private static final String OVERVIEW_CHART_FILE_NAME = "chart_overview0";
+    private static final String OVERVIEW_CHART_FILE_NAME = "chart_overview";
     private static final String CHART_FILE_NAME = "chart";
     private static final String CHART_FILE_NAME_EXTENSION = ".json";
 
@@ -63,21 +65,67 @@ public class PerfResultsToJSon {
         Scenario[] scenarios = DB.queryScenarios(variations, scenarioPattern, seriesKey, null);
         System.out.println("Converting results for " + scenarios.length + " Scenarios"); //$NON-NLS-1$
 
-        JSONArray root = new JSONArray();
-        for (Scenario s : scenarios) {
-            root.put(createSerie(s, variations));
-        }
-        try (FileWriter fw = new FileWriter(OVERVIEW_CHART_FILE_NAME + CHART_FILE_NAME_EXTENSION)) {
-            fw.write(root.toString());
-        }
-
         for (int i = 0; i < scenarios.length; i++) {
             JSONArray rootScenario = new JSONArray();
-            rootScenario.put(createSerie(scenarios[i], variations));
+            rootScenario.put(createSerie(scenarios[i], variations, scenarios[i].getScenarioName()));
             try (FileWriter fw = new FileWriter(CHART_FILE_NAME + i + CHART_FILE_NAME_EXTENSION)) {
                 fw.write(rootScenario.toString());
             }
         }
+
+        JSONArray rootSummary = new JSONArray();
+        SummaryEntry[] querySummaries = DB.querySummaries(variations, scenarioPattern);
+        for (SummaryEntry entry : querySummaries) {
+            if (entry.isGlobal) {
+                for (int i = 0; i < scenarios.length; i++) {
+                    Scenario s = scenarios[i];
+                    if (s.getScenarioName().equals(entry.scenarioName)) {
+                        rootSummary.put(createSerie(s, variations, entry.shortName));
+                    }
+                }
+            }
+        }
+        try (FileWriter fw = new FileWriter(OVERVIEW_CHART_FILE_NAME + CHART_FILE_NAME_EXTENSION)) {
+            fw.write(rootSummary.toString(4));
+        }
+
+        generateMetaData(variations);
+    }
+
+    private void generateMetaData(Variations variations) throws JSONException {
+        JSONObject rootMetadata = new JSONObject();
+        rootMetadata.put("osjvm", createOsJvm(variations));
+    }
+
+    private JSONObject createOsJvm(Variations variations) throws JSONException {
+        JSONObject osjvm = new JSONObject();
+        List<String> configs = new ArrayList<>();
+        String key = PerformanceTestPlugin.CONFIG;
+        String scenarioPattern = "%"; //$NON-NLS-1$
+        Variations v = new Variations();
+        v.setProperty("%", "%");
+
+        DB.queryDistinctValues(configs, key, v, scenarioPattern);
+
+        int i = 1;
+        for (String config : configs) {
+            List<String> vms = new ArrayList<>();
+            key = "jvm";
+            v = new Variations();
+            v.setProperty("config", config);
+
+            List<String> jvms = new ArrayList<>();
+            DB.queryDistinctValues(configs, key, v, scenarioPattern);
+            for (String jvm : jvms) {
+                JSONObject osjvmItem = new JSONObject();
+                osjvm.put(Integer.toString(i), osjvmItem);
+                i++;
+            }
+        }
+
+
+        // TODO Auto-generated method stub
+        return osjvm;
     }
 
     /**
@@ -95,9 +143,9 @@ public class PerfResultsToJSon {
         new PerfResultsToJSon().parseResults();
     }
 
-    private static JSONObject createSerie(Scenario s, Variations variations) throws JSONException {
+    private static JSONObject createSerie(Scenario s, Variations variations, String shortName) throws JSONException {
         JSONObject o = new JSONObject();
-        o.putOpt("key", s.getScenarioName());
+        o.putOpt("key", shortName);
         o.putOpt("values", createPoints(s, variations));
         return o;
     }
