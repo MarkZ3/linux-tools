@@ -41,9 +41,17 @@ public class Messages extends NLS {
     */
     public static String ImportTraceWizard_DirectoryLocation;
     /**
+     * The label of the archive location (import trace wizard)
+    */
+    public static String ImportTraceWizard_ArchiveLocation;
+    /**
      * The title of the select trace directory dialog (import trace wizard)
      */
     public static String ImportTraceWizard_SelectTraceDirectoryTitle;
+    /**
+     * The title of the select trace archive dialog (import trace wizard)
+     */
+    public static String ImportTraceWizard_SelectTraceArchiveTitle;
     /**
      * The message of the select trace directory dialog (import trace wizard)
      */
