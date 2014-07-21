@@ -35,6 +35,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -194,7 +195,6 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
      * platform.
      */
     private ResourceTreeAndListGroup fSelectionGroup;
-    private boolean fImportFromDirectory;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -552,7 +552,6 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
             fArchiveNameField.setFocus();
             fCreateLinksInWorkspaceButton.setSelection(false);
             fCreateLinksInWorkspaceButton.setEnabled(false);
-            fImportFromDirectory = fImportFromDirectoryRadio.getSelection();
         }
     }
 
@@ -566,7 +565,6 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
             directoryNameField.setFocus();
             fCreateLinksInWorkspaceButton.setSelection(true);
             fCreateLinksInWorkspaceButton.setEnabled(true);
-            fImportFromDirectory = fImportFromDirectoryRadio.getSelection();
         }
     }
 
@@ -730,7 +728,7 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
     private TraceFileSystemElement getFileSystemTree() {
         Object rootElement = getSourceDirectory();
         IImportStructureProvider importStructureProvider = null;
-        if (fImportFromDirectory) {
+        if (fImportFromDirectoryRadio.getSelection()) {
             importStructureProvider = FileSystemStructureProvider.INSTANCE;
         } else {
             ILeveledImportStructureProvider leveledIportStructureProvider = null;
@@ -946,7 +944,7 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
     @Override
     public boolean validateSourceGroup() {
 
-        File source = fImportFromDirectory ? getSourceDirectory() : getSourceArchiveFile();
+        File source = fImportFromDirectoryRadio.getSelection() ? getSourceDirectory() : getSourceArchiveFile();
         if (source == null) {
             setMessage(Messages.ImportTraceWizard_SelectTraceSourceEmpty);
             return false;
@@ -1009,7 +1007,9 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         }
         fImportFromDirectoryRadio.setSelection(value);
         fImportFromArchiveRadio.setSelection(!value);
-        fImportFromDirectory = fImportFromDirectoryRadio.getSelection();
+        if (!value) {
+            archiveRadioSelected();
+        }
 
         restoreComboValues(directoryNameField, settings, IMPORT_WIZARD_ROOT_DIRECTORY_ID);
         restoreComboValues(fArchiveNameField, settings, IMPORT_WIZARD_ARCHIVE_FILE_NAME_ID);
@@ -1074,7 +1074,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         saveWidgetValues();
 
         IPath baseSourceContainerPath = new Path(getSourceContainerPath());
-        final TraceValidateAndImportOperation operation = new TraceValidateAndImportOperation(traceId, baseSourceContainerPath, getContainerFullPath(),
+        IPath archivePath = new Path(getSourceArchiveFile().getAbsolutePath());
+        final TraceValidateAndImportOperation operation = new TraceValidateAndImportOperation(traceId, baseSourceContainerPath, getContainerFullPath(), archivePath,
                 fImportUnrecognizedButton.getSelection(), fOverwriteExistingResourcesCheckbox.getSelection(), fCreateLinksInWorkspaceButton.getSelection(), fPreserveFolderStructureButton.getSelection());
 
         IStatus status = Status.OK_STATUS;
@@ -1112,7 +1113,7 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
     }
 
     private String getSourceContainerPath() {
-        if (fImportFromDirectory) {
+        if (fImportFromDirectoryRadio.getSelection()) {
             File sourceDirectory = getSourceDirectory();
             if (sourceDirectory != null) {
                 return sourceDirectory.getAbsolutePath();
@@ -1135,15 +1136,17 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
         private String fTraceType;
         private IPath fDestinationContainerPath;
         private IPath fBaseSourceContainerPath;
+        private IPath fArchivePath;
         private boolean fImportUnrecognizedTraces;
         private boolean fLink;
         private boolean fPreserveFolderStructure;
         private ImportConfirmation fConfirmationMode = ImportConfirmation.SKIP;
 
-        private TraceValidateAndImportOperation(String traceId, IPath baseSourceContainerPath, IPath destinationContainerPath, boolean doImport, boolean overwrite, boolean link, boolean preserveFolderStructure) {
+        private TraceValidateAndImportOperation(String traceId, IPath baseSourceContainerPath, IPath destinationContainerPath, IPath archivePath, boolean doImport, boolean overwrite, boolean link, boolean preserveFolderStructure) {
             fTraceType = traceId;
             fBaseSourceContainerPath = baseSourceContainerPath;
             fDestinationContainerPath = destinationContainerPath;
+            fArchivePath = archivePath;
             fImportUnrecognizedTraces = doImport;
             if (overwrite) {
                 fConfirmationMode = ImportConfirmation.OVERWRITE_ALL;
@@ -1187,7 +1190,6 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                     currentPath = null;
                     TraceFileSystemElement element = fileSystemElementsIter.next();
                     Object fileSystemObject = element.getFileSystemObject();
-                    //File fileResource = (File) fileSystemObject;
                     String resourcePath = getAbsolutePath(element.getFileSystemObject());
                     element.setDestinationContainerPath(computeDestinationContainerPath(new Path(resourcePath)));
 
@@ -1210,13 +1212,117 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                                 folderElements.put(parentPath, parentElement);
                                 validateAndImportTrace(parentElement, sub);
                             } else {
-                                if (!(fileSystemObject instanceof File) || ((File)fileSystemObject).exists()) {
+                                if (!(fileSystemObject instanceof File) || ((File) fileSystemObject).exists()) {
                                     validateAndImportTrace(element, sub);
                                 }
                             }
                         }
                     }
                 }
+
+                // Detecting the trace type is a post-import operation when
+                // importing from archive
+                if (fArchivePath != null) {
+                    Iterator<TraceFileSystemElement> traceTypeIter = fileSystemElements.iterator();
+                    subMonitor = SubMonitor.convert(progressMonitor, fileSystemElements.size());
+                    while (traceTypeIter.hasNext()) {
+                        TraceFileSystemElement element = traceTypeIter.next();
+                        IPath containerPath = element.getDestinationContainerPath();
+                        String label = element.getLabel();
+                        IPath tracePath = containerPath.addTrailingSeparator().append(label);
+                        IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(tracePath);
+                        if (!file.exists()) {
+                            continue;
+                        }
+
+                        IResource traceResource = null;
+
+                        TraceTypeHelper traceTypeHelper = null;
+
+                        if (fTraceType == null) {
+                            // Auto Detection
+                            try {
+                                traceTypeHelper = TmfTraceTypeUIUtils.selectTraceType(file.getLocation().toOSString(), null, null);
+                            } catch (TmfTraceImportException e) {
+                                // the trace did not match any trace type
+                            }
+                            if (traceTypeHelper == null) {
+                                try {
+                                    traceTypeHelper = TmfTraceTypeUIUtils.selectTraceType(file.getParent().getLocation().toOSString(), null, null);
+                                    traceResource = file.getParent();
+                                } catch (TmfTraceImportException e) {
+                                    // the trace did not match any trace type
+                                }
+                            }
+
+                            if (traceTypeHelper == null) {
+                                try {
+                                    traceTypeHelper = TmfTraceTypeUIUtils.selectTraceType(file.getParent().getParent().getLocation().toOSString(), null, null);
+                                    traceResource = file.getParent().getParent();
+                                } catch (TmfTraceImportException e) {
+                                    // the trace did not match any trace type
+                                    continue;
+                                }
+                            }
+                        } else {
+                            boolean isDirectoryTraceType = TmfTraceType.isDirectoryTraceType(fTraceType);
+                            traceTypeHelper = TmfTraceType.getTraceType(fTraceType);
+
+                            if (traceTypeHelper == null) {
+                                // Trace type not found
+                                throw new TmfTraceImportException(Messages.ImportTraceWizard_TraceTypeNotFound);
+                            }
+
+                            if (!traceTypeHelper.validate(file.getLocation().toOSString()).isOK()) {
+                                if (isDirectoryTraceType) {
+                                    traceResource = file.getParent();
+                                    if (!traceTypeHelper.validate(file.getParent().getLocation().toOSString()).isOK()) {
+                                        traceResource = file.getParent().getParent();
+                                        if (!traceTypeHelper.validate(file.getParent().getParent().getLocation().toOSString()).isOK()) {
+                                            continue;
+                                        }
+                                    }
+                                } else {
+                                    // Trace type exist but doesn't validate for given trace.
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if (traceTypeHelper != null) {
+                            TmfTraceTypeUIUtils.setTraceType(traceResource, traceTypeHelper);
+                        }
+                    }
+
+                    // Need to clean up what was not detected
+                    if (!fImportUnrecognizedTraces) {
+                        Iterator<TraceFileSystemElement> unrecognizedIter = fileSystemElements.iterator();
+                        subMonitor = SubMonitor.convert(progressMonitor, fileSystemElements.size());
+                        while (unrecognizedIter.hasNext()) {
+                            TraceFileSystemElement element = unrecognizedIter.next();
+                            IPath containerPath = element.getDestinationContainerPath();
+                            String label = element.getLabel();
+                            IPath tracePath = containerPath.addTrailingSeparator().append(label);
+                            IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(tracePath);
+                            if (!file.exists()) {
+                                continue;
+                            }
+
+                            String traceType = file.getPersistentProperty(TmfCommonConstants.TRACETYPE);
+                            if (traceType == null) {
+                                traceType = file.getParent().getPersistentProperty(TmfCommonConstants.TRACETYPE);
+                                if (traceType == null) {
+                                    traceType = file.getParent().getParent().getPersistentProperty(TmfCommonConstants.TRACETYPE);
+                                    if (traceType == null) {
+                                        file.delete(true, null);
+                                        deleteEmptyContainer(file.getParent());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 setStatus(Status.OK_STATUS);
             } catch (InterruptedException e) {
                 setStatus(Status.CANCEL_STATUS);
@@ -1228,16 +1334,23 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
             }
         }
 
+        private void deleteEmptyContainer(IContainer parent) throws CoreException {
+            if (parent.exists() && parent.members().length == 0) {
+                parent.delete(true, null);
+                deleteEmptyContainer(parent.getParent());
+            }
+        }
+
         private String getAbsolutePath(Object fileSystemObject) {
             if (fileSystemObject instanceof File) {
                 File fileResource = (File) fileSystemObject;
                 return fileResource.getAbsolutePath();
             } else if (fileSystemObject instanceof TarEntry) {
                 TarEntry tarEntry = (TarEntry) fileSystemObject;
-                return new Path(getSourceContainerPath()).append(tarEntry.getName()).toOSString();
+                return fBaseSourceContainerPath.append(tarEntry.getName()).toOSString();
             } else if (fileSystemObject instanceof ZipEntry) {
                 ZipEntry zipEntry = (ZipEntry) fileSystemObject;
-                return new Path(getSourceContainerPath()).append(zipEntry.getName()).toOSString();
+                return fBaseSourceContainerPath.append(zipEntry.getName()).toOSString();
             }
 
             throw new IllegalStateException("Unsupported file system object type"); //$NON-NLS-1$
@@ -1267,6 +1380,11 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                 throws TmfTraceImportException, CoreException, InvocationTargetException, InterruptedException {
             String path = getAbsolutePath(fileSystemElement.getFileSystemObject());
             TraceTypeHelper traceTypeHelper = null;
+
+            if (fArchivePath != null) {
+                importResource(fileSystemElement, monitor);
+                return;
+            }
 
             if (fTraceType == null) {
                 // Auto Detection
@@ -1351,7 +1469,8 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
             FileSystemElement parentFolder = fileSystemElement.getParent();
 
             IPath containerPath = fileSystemElement.getDestinationContainerPath();
-            IPath tracePath = containerPath.addTrailingSeparator().append(fileSystemElement.getLabel());
+            String label = fileSystemElement.getLabel();
+            IPath tracePath = containerPath.addTrailingSeparator().append(label);
             if (fileSystemElement.isDirectory() && (!fLink)) {
                 containerPath = tracePath;
 
@@ -1404,14 +1523,22 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                 }
             } else if (fileSystemObject instanceof TarEntry) {
                 TarEntry tarEntry = (TarEntry) fileSystemObject;
-                URI uri = new File(getSourceArchiveFile().getAbsolutePath()).toURI();
+                URI uri = new File(fArchivePath.toOSString()).toURI();
+                IPath entryPath = new Path(tarEntry.getName());
+                sourceLocation = URIUtil.toUnencodedString(URIUtil.toJarURI(uri, entryPath));
+                //TODO: does this support folders?
+            } else if (fileSystemObject instanceof ZipEntry) {
+                ZipEntry tarEntry = (ZipEntry) fileSystemObject;
+                URI uri = new File(fArchivePath.toOSString()).toURI();
                 IPath entryPath = new Path(tarEntry.getName());
                 sourceLocation = URIUtil.toUnencodedString(URIUtil.toJarURI(uri, entryPath));
                 //TODO: does this support folders?
             }
 
             IResource resource = ResourcesPlugin.getWorkspace().getRoot().findMember(tracePath);
-            resource.setPersistentProperty(TmfCommonConstants.SOURCE_LOCATION, sourceLocation);
+            if (sourceLocation != null) {
+                resource.setPersistentProperty(TmfCommonConstants.SOURCE_LOCATION, sourceLocation);
+            }
 
             return resource;
         }
@@ -1629,10 +1756,10 @@ public class ImportTraceWizardPage extends WizardResourceImportPage {
                     return name;
                 } else if (fileSystemObject instanceof TarEntry) {
                     TarEntry tarEntry = (TarEntry) fileSystemObject;
-                    return tarEntry.getName();
+                    return new Path(tarEntry.getName()).lastSegment();
                 } else if (fileSystemObject instanceof ZipEntry) {
                     ZipEntry zipEntry = (ZipEntry) fileSystemObject;
-                    return zipEntry.getName();
+                    return new Path(zipEntry.getName()).lastSegment();
                 }
             }
             return fLabel;
