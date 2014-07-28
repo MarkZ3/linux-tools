@@ -14,6 +14,8 @@ package org.eclipse.linuxtools.tmf.ctf.ui.swtbot.tests;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.io.File;
+
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.linuxtools.internal.tmf.ui.project.wizards.importtrace.ImportTraceWizard;
@@ -25,6 +27,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.results.VoidResult;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -42,6 +45,8 @@ import org.junit.runner.RunWith;
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class StandardImportAndReadSmokeTest extends AbstractImportAndReadSmokeTest {
 
+    private static final String TRACE_FOLDER_PATH = fTrace.getPath() + File.separator + ".." + File.separator;
+    private static final String TRACE_ARCHIVE_PATH = TRACE_FOLDER_PATH + ".." + File.separator + "synctraces.tar.gz";
     private static final String TRACE_PROJECT_NAME = "Tracing";
 
     /**
@@ -62,6 +67,45 @@ public class StandardImportAndReadSmokeTest extends AbstractImportAndReadSmokeTe
         testStatisticsView(getViewPart("Statistics"));
 
         deleteProject();
+    }
+
+    /**
+     * Test import from archive
+     */
+    @Test
+    public void testImportFromArchive() {
+        createProject();
+
+        importOpenWizard();
+
+        importAddArchive();
+        importFinish();
+
+        TmfEventsEditor tmfEd = openEditor();
+
+        testHistogramView(getViewPart("Histogram"), tmfEd);
+        testPropertyView(getViewPart("Properties"));
+        testStatisticsView(getViewPart("Statistics"));
+
+        deleteProject();
+    }
+
+    private static void importAddArchive() {
+        SWTBotTree tree = fBot.tree();
+        SWTBotRadio button = fBot.radio("Select &archive file:");
+        button.click();
+
+        SWTBotCombo sourceCombo = fBot.comboBox(1);
+
+        sourceCombo.setText(new File(TRACE_ARCHIVE_PATH).getAbsolutePath());
+
+        SWTBotText text = fBot.text();
+        text.setFocus();
+
+        fBot.waitUntil(Conditions.widgetIsEnabled(tree));
+        final SWTBotTreeItem genericCtfTreeItem = tree.getTreeItem("/");
+        fBot.waitUntil(Conditions.widgetIsEnabled(genericCtfTreeItem));
+        genericCtfTreeItem.check();
     }
 
     private static void importOpenWizard() {
@@ -88,7 +132,7 @@ public class StandardImportAndReadSmokeTest extends AbstractImportAndReadSmokeTe
 
     private static void importAddDirectory() {
         SWTBotCombo sourceCombo = fBot.comboBox();
-        sourceCombo.setText(fTrace.getPath());
+        sourceCombo.setText(new File(TRACE_FOLDER_PATH).getAbsolutePath());
 
         SWTBotText text = fBot.text();
         text.setFocus();
@@ -96,7 +140,7 @@ public class StandardImportAndReadSmokeTest extends AbstractImportAndReadSmokeTe
         fBot.activeShell();
         SWTBotTree tree = fBot.tree();
         fBot.waitUntil(Conditions.widgetIsEnabled(tree));
-        final SWTBotTreeItem genericCtfTreeItem = tree.getTreeItem(TRACE_NAME);
+        final SWTBotTreeItem genericCtfTreeItem = tree.getTreeItem(TRACE_FOLDER);
         fBot.waitUntil(Conditions.widgetIsEnabled(genericCtfTreeItem));
         genericCtfTreeItem.check();
     }

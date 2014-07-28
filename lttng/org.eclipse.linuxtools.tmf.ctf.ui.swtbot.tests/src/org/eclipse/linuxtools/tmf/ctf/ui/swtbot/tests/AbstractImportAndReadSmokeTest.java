@@ -22,6 +22,7 @@ import org.apache.log4j.varia.NullAppender;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
@@ -69,11 +70,13 @@ import org.junit.runner.RunWith;
 public abstract class AbstractImportAndReadSmokeTest {
 
     /** Trace name */
-    protected static final String TRACE_NAME = "synthetic-trace";
+    protected static final String TRACE_NAME = "scp_dest";
+    /** Trace folder */
+    protected static final String TRACE_FOLDER = "synctraces";
     /** Trace type name for generic CTF traces */
     protected static final String TRACE_TYPE_NAME = "Generic CTF Trace";
     /** A Generic CTF Trace*/
-    protected static final CtfTmfTestTrace fTrace = CtfTmfTestTrace.SYNTHETIC_TRACE;
+    protected static final CtfTmfTestTrace fTrace = CtfTmfTestTrace.SYNC_DEST;
     /** SWT BOT workbench reference */
     protected static SWTWorkbenchBot fBot;
     /** Wizard to use */
@@ -88,7 +91,7 @@ public abstract class AbstractImportAndReadSmokeTest {
         SWTBotUtil.failIfUIThread();
 
         /* set up for swtbot */
-        SWTBotPreferences.TIMEOUT = 50000; /* 50 second timeout */
+        SWTBotPreferences.TIMEOUT = 5000000; /* 50 second timeout */
         fLogger.addAppender(new NullAppender());
         fBot = new SWTWorkbenchBot();
 
@@ -146,18 +149,21 @@ public abstract class AbstractImportAndReadSmokeTest {
         final SWTBotTreeItem treeItem = tree.getTreeItem(getProjectName());
         treeItem.expand();
 
-        List<String> nodes = treeItem.getNodes();
-        String nodeName = "";
-        for (String node : nodes) {
-            if (node.startsWith("Traces")) {
-                nodeName = node;
-            }
-        }
+        String nodeName = getFullNodeName(treeItem, "Traces");
         fBot.waitUntil(ConditionHelpers.IsTreeChildNodeAvailable(nodeName, treeItem));
-        treeItem.getNode(nodeName).expand();
-        fBot.waitUntil(ConditionHelpers.IsTreeChildNodeAvailable(TRACE_NAME, treeItem.getNode(nodeName)));
-        treeItem.getNode(nodeName).getNode(TRACE_NAME).select();
-        treeItem.getNode(nodeName).getNode(TRACE_NAME).doubleClick();
+        SWTBotTreeItem tracesNode = treeItem.getNode(nodeName);
+        tracesNode.expand();
+
+
+        String nodeFolderName = getFullNodeName(tracesNode, TRACE_FOLDER);
+        fBot.waitUntil(ConditionHelpers.IsTreeChildNodeAvailable(nodeFolderName, tracesNode));
+        SWTBotTreeItem traceFolder = tracesNode.getNode(nodeFolderName);
+        traceFolder.select();
+        traceFolder.doubleClick();
+
+        fBot.waitUntil(ConditionHelpers.IsTreeChildNodeAvailable(TRACE_NAME, traceFolder));
+        traceFolder.getNode(TRACE_NAME).select();
+        traceFolder.getNode(TRACE_NAME).doubleClick();
         SWTBotUtil.delay(1000);
         SWTBotUtil.waitForJobs();
 
@@ -169,7 +175,7 @@ public abstract class AbstractImportAndReadSmokeTest {
                 assertNotNull(ieds);
                 iep[0] = null;
                 for (IEditorReference ied : ieds) {
-                    if (ied.getTitle().equals(TRACE_NAME)) {
+                    if (ied.getTitle().equals(TRACE_FOLDER + IPath.SEPARATOR + TRACE_NAME)) {
                         iep[0] = ied.getEditor(true);
                         break;
                     }
@@ -178,6 +184,17 @@ public abstract class AbstractImportAndReadSmokeTest {
         });
         assertNotNull(iep[0]);
         return (TmfEventsEditor) iep[0];
+    }
+
+    private static String getFullNodeName(final SWTBotTreeItem treeItem, String prefix) {
+        List<String> nodes = treeItem.getNodes();
+        String nodeName = "";
+        for (String node : nodes) {
+            if (node.startsWith(prefix)) {
+                nodeName = node;
+            }
+        }
+        return nodeName;
     }
 
     /**
