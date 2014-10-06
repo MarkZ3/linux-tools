@@ -478,7 +478,7 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         @Override
         public void handleSuccess() {
             super.handleSuccess();
-            if (!trace.isLive()) {
+            if (isCompleteTrace(trace)) {
                 disposeProvider(false);
             } else {
                 fNbRead += getNbRead();
@@ -493,7 +493,7 @@ public abstract class TmfStateSystemAnalysisModule extends TmfAbstractAnalysisMo
         @Override
         public void handleCancel() {
             super.handleCancel();
-            if (!trace.isLive()) {
+            if (isCompleteTrace(trace)) {
                 disposeProvider(true);
             }
         }
